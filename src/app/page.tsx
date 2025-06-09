@@ -23,20 +23,26 @@ export default function Page() {
 	});
 
 	useEffect(() => {
-		window.addEventListener("keydown", (e) => {
-			if (
-				e.key.length === 1 &&
-				!e.ctrlKey &&
-				!e.metaKey &&
-				!e.altKey &&
-				document.activeElement &&
-				document.activeElement.tagName !== "INPUT" &&
-				document.activeElement.tagName !== "TEXTAREA" &&
-				document.activeElement.getAttribute("contenteditable") !== "true"
-			) {
+		const handleKeyDown = (event: KeyboardEvent) => {
+			const isBasicKeyPress =
+				event.key.length === 1 &&
+				!event.ctrlKey &&
+				!event.metaKey &&
+				!event.altKey;
+			const isEditableElement = document.activeElement?.matches(
+				'input, textarea, [contenteditable="true"]'
+			);
+
+			if (isBasicKeyPress && !isEditableElement) {
 				inputAreaRef.current?.focus();
 			}
-		});
+		};
+
+		window.addEventListener("keydown", handleKeyDown);
+
+		return () => {
+			window.removeEventListener("keydown", handleKeyDown);
+		};
 	}, []);
 
 	const updateMessages = (

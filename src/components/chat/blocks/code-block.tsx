@@ -1,8 +1,10 @@
 "use client";
 
 import copyToClipboard from "@/utils/copy-to-clipboard";
+import { Copy } from "lucide-react";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { dracula } from "react-syntax-highlighter/dist/esm/styles/prism";
+import IconButton from "../buttons/icon-button";
 
 export default function CodeBlock({
 	language,
@@ -13,16 +15,13 @@ export default function CodeBlock({
 }) {
 	return (
 		<div className="rounded-lg overflow-hidden border border-neutral-300 my-2">
-			<div className="flex justify-between gap-2 w-full h-10 bg-neutral-200 p-2 text-sm">
+			<div className="flex justify-between items-center gap-2 w-full bg-neutral-200 p-1 pl-3 text-sm">
 				<div>{language}</div>
-				<button
-					className="cursor-pointer"
-					onClick={() => {
-						copyToClipboard(code);
-					}}
-				>
-					Copy
-				</button>
+				<div>
+					<IconButton onClick={() => copyToClipboard(code)} hasConfirmation>
+						<Copy />
+					</IconButton>
+				</div>
 			</div>
 			<div>
 				<SyntaxHighlighter

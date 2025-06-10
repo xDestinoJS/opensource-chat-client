@@ -8,6 +8,10 @@ import { cn } from "@/lib/utils";
 import copyToClipboard from "@/utils/copy-to-clipboard";
 
 import IconButton from "../buttons/icon-button";
+import {
+	AutosizeTextarea,
+	AutosizeTextAreaRef,
+} from "@/components/ui/autosize-textarea";
 
 export default function UserMessage({
 	message,
@@ -18,7 +22,7 @@ export default function UserMessage({
 	onEdit: (content: string) => void;
 	onRetry: () => void;
 }) {
-	const textAreaRef = useRef<HTMLTextAreaElement>(null);
+	const textAreaRef = useRef<AutosizeTextAreaRef>(null);
 
 	const [newContent, setNewContent] = useState(message.content);
 	const [isEditing, setIsEditing] = useState(false);
@@ -48,8 +52,8 @@ export default function UserMessage({
 			setNewContent(newContent);
 			setTimeout(() => {
 				if (textAreaRef.current) {
-					textAreaRef.current.focus();
-					textAreaRef.current.setSelectionRange(
+					textAreaRef.current.textArea.focus();
+					textAreaRef.current.textArea.setSelectionRange(
 						newContent.length,
 						newContent.length
 					);
@@ -62,16 +66,19 @@ export default function UserMessage({
 		<div className="w-full flex flex-col justify-end items-end group">
 			<div
 				className={cn(
-					"border border-neutral-400 px-2.5 py-2 rounded-xl",
-					isEditing ? "w-3/4" : "w-max"
+					"border border-neutral-400 px-2.5 py-2 rounded-xl max-w-3/4",
+					isEditing ? "w-full" : "w-max"
 				)}
 			>
 				{!isEditing ? (
-					<p className="w-max whitespace-pre-wrap">{message.content}</p>
+					<p className="w-full whitespace-pre-wrap break-all">
+						{message.content}
+					</p>
 				) : (
-					<textarea
+					<AutosizeTextarea
 						ref={textAreaRef}
 						className="w-full focus:outline-none resize-none bg-transparent"
+						type="transparent"
 						value={newContent}
 						onChange={(e) => setNewContent(e.target.value)}
 						onKeyDown={handleKeyDown}

@@ -9,6 +9,9 @@ import AssistantMessage from "@/components/chat/messages/assistant-message";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
 import { redirect } from "next/navigation";
+import { ArrowUp, Square } from "lucide-react";
+import { Button } from "./ui/button";
+import { AutosizeTextarea, AutosizeTextAreaRef } from "./ui/autosize-textarea";
 
 export default function ChatPage({ chatId }: { chatId?: string }) {
 	const messages = !chatId
@@ -18,13 +21,16 @@ export default function ChatPage({ chatId }: { chatId?: string }) {
 			});
 
 	const sendMessage = useMutation(api.messages.sendMessage);
+
+	const branchMessage = useMutation(api.messages.branchMessage);
 	const editMessage = useMutation(api.messages.editMessage);
 	const retryMessage = useMutation(api.messages.retryMessage);
+	const cancelMessage = useMutation(api.messages.cancelMessage);
 
-	const inputAreaRef = useRef<HTMLTextAreaElement>(null);
+	const inputAreaRef = useRef<AutosizeTextAreaRef>(null);
 
 	async function handleSubmit() {
-		const currentInput = inputAreaRef.current?.value.trim();
+		const currentInput = inputAreaRef.current?.textArea.value.trim();
 		if (!currentInput) return;
 
 		// Send message to the server
@@ -42,8 +48,8 @@ export default function ChatPage({ chatId }: { chatId?: string }) {
 		})();
 
 		if (inputAreaRef.current) {
-			inputAreaRef.current.value = "";
-			inputAreaRef.current.focus();
+			inputAreaRef.current.textArea.value = "";
+			inputAreaRef.current.textArea.focus();
 		}
 	}
 
@@ -59,14 +65,31 @@ export default function ChatPage({ chatId }: { chatId?: string }) {
 			);
 
 			if (isBasicKeyPress && !isEditableElement) {
-				inputAreaRef.current?.focus();
+				inputAreaRef.current?.textArea.focus();
+			}
+		};
+
+		const handlePaste = (event: ClipboardEvent) => {
+			if (document.activeElement !== inputAreaRef.current) {
+				inputAreaRef.current?.textArea.focus();
+			}
+
+			const text = event.clipboardData?.getData("text");
+			if (text && inputAreaRef.current) {
+				inputAreaRef.current.textArea.value += text;
+				// Move the cursor to the end of the text
+				inputAreaRef.current.textArea.selectionStart =
+					inputAreaRef.current.textArea.selectionEnd =
+						inputAreaRef.current.textArea.value.length;
 			}
 		};
 
 		window.addEventListener("keydown", handleKeyDown);
+		window.addEventListener("paste", handlePaste);
 
 		return () => {
 			window.removeEventListener("keydown", handleKeyDown);
+			window.removeEventListener("paste", handlePaste);
 		};
 	}, []);
 
@@ -99,7 +122,13 @@ export default function ChatPage({ chatId }: { chatId?: string }) {
 							) : (
 								<AssistantMessage
 									message={message}
-									onBranch={() => alert("branching")}
+									onBranch={async () => {
+										const chatId = await branchMessage({
+											messageId: message._id,
+										});
+
+										redirect("/chat/" + chatId);
+									}}
 									onRetry={() => {
 										retryMessage({
 											messageId: message._id,
@@ -116,9 +145,11 @@ export default function ChatPage({ chatId }: { chatId?: string }) {
 				onSubmit={handleSubmit}
 				className="bg-gray-100 p-4 rounded-2xl mt-4 border border-neutral-300"
 			>
-				<textarea
+				<AutosizeTextarea
 					ref={inputAreaRef}
 					name="prompt"
+					type="transparent"
+					maxHeight={200}
 					className="w-full focus:outline-none resize-none bg-transparent"
 					onKeyDown={(e) => {
 						if (e.key === "Enter" && !e.shiftKey) {
@@ -128,8 +159,26 @@ export default function ChatPage({ chatId }: { chatId?: string }) {
 						}
 					}}
 				/>
-				<div className="flex justify-end mt-2">
-					<button type="submit">Submit</button>
+				<div className="flex justify-end mt-2 bottom-0 right-0">
+					{messages?.length == 0 ||
+					(messages && messages[messages.length - 1].isComplete) ? (
+						<Button size="icon" type="button" onClick={handleSubmit}>
+							<ArrowUp />
+						</Button>
+					) : (
+						<Button
+							size="icon"
+							type="button"
+							onClick={async () => {
+								await cancelMessage({
+									chatId: chatId as Id<"chats">,
+								});
+								return;
+							}}
+						>
+							<Square />
+						</Button>
+					)}
 				</div>
 			</form>
 		</>

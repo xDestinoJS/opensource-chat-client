@@ -26,7 +26,11 @@ function getModel(modelId: ModelId) {
 /**
  * Stream a chat completion using the specified AI model.
  */
-export async function streamText(modelId: ModelId, messages: CoreMessage[]) {
+export async function streamText(
+	modelId: ModelId,
+	messages: CoreMessage[],
+	abortSignal?: AbortSignal
+) {
 	let model = getModel(modelId);
 
 	if (messages.length === 0) {
@@ -43,6 +47,7 @@ export async function streamText(modelId: ModelId, messages: CoreMessage[]) {
 		messages,
 		temperature: 0.3,
 		maxRetries: 3,
+		abortSignal: abortSignal,
 	});
 }
 

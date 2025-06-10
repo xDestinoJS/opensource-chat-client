@@ -44,7 +44,8 @@ export const generateTitle = internalAction({
 
 export const createChat = internalMutation({
 	args: {
-		content: v.string(),
+		content: v.optional(v.string()),
+		messages: v.optional(v.array(v.id("messages"))),
 	},
 	handler: async (ctx, args) => {
 		// Create a new chat and generate a title based on the provided content
@@ -52,12 +53,56 @@ export const createChat = internalMutation({
 			title: "",
 		});
 
-		// Immediately generate a title for the new chat
-		await ctx.scheduler.runAfter(0, internal.chat.generateTitle, {
-			chatId,
-			content: args.content,
-		});
+		// If it's a new chat, we can generate a title based on the content
+		if (args.content) {
+			await ctx.scheduler.runAfter(0, internal.chat.generateTitle, {
+				chatId,
+				content: args.content,
+			});
+		}
 
 		return chatId;
+	},
+});
+
+export const branchChat = internalMutation({
+	args: {
+		messageId: v.id("messages"),
+		title: v.string(),
+	},
+	handler: async (ctx, args) => {
+		const message = await ctx.db.get(args.messageId);
+		if (!message) {
+			throw new Error("[DB] Message not found.");
+		}
+
+		const chat = await ctx.db.get(message.chatId);
+		if (!chat) {
+			throw new Error("[DB] Chat not found.");
+		}
+
+		const messages = await ctx.runQuery(internal.messages.getMessageHistory, {
+			chatId: chat._id,
+		});
+		const index = messages.findIndex((msg) => msg._id === args.messageId);
+		const messagesToKeep = messages.slice(0, index + 1);
+
+		// Create a new chat with the same messages but a different title
+		const newChatId = await ctx.db.insert("chats", {
+			title: args.title,
+		});
+
+		// Insert the messages into the new chat
+		for (const message of messagesToKeep) {
+			await ctx.db.insert("messages", {
+				chatId: newChatId,
+				role: message.role,
+				content: message.content,
+				model: message.model,
+				isComplete: message.isComplete,
+			});
+		}
+
+		return newChatId;
 	},
 });

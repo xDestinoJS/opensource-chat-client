@@ -7,6 +7,7 @@ import copyToClipboard from "@/utils/copy-to-clipboard";
 
 import MemoizedMarkdown from "../memoized-markdown";
 import IconButton from "../buttons/icon-button";
+import { cn } from "@/lib/utils";
 
 export default function AssistantMessage({
 	message,
@@ -20,7 +21,12 @@ export default function AssistantMessage({
 	return (
 		<div className="w-full flex flex-col group">
 			<MemoizedMarkdown content={message.content} />
-			<div className="flex items-center mt-1 group-hover:opacity-100 opacity-0 transition-opacity">
+			<div
+				className={cn(
+					"flex items-center mt-1 opacity-0 transition-opacity",
+					message.isComplete && "group-hover:opacity-100"
+				)}
+			>
 				<IconButton
 					onClick={() => copyToClipboard(message.content)}
 					hasConfirmation

@@ -181,7 +181,7 @@ export default function ChatPage({ chatId }: { chatId?: string }) {
 				/>
 				<div className="flex justify-between items-center mt-2 bottom-0 right-0">
 					<Select onValueChange={setModelId} value={modelId}>
-						<SelectTrigger className="w-[225px]">
+						<SelectTrigger className="w-[225px] h-full">
 							<SelectValue placeholder="Model" />
 						</SelectTrigger>
 						<SelectContent>

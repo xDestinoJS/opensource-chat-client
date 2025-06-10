@@ -7,10 +7,11 @@ import {
 } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { v } from "convex/values";
+import { z } from "zod";
 
 import { streamText } from "../src/lib/ai";
 import { Doc, Id } from "./_generated/dataModel";
-import { ModelId } from "../src/lib/models";
+import { ModelId, modelIds } from "../src/lib/models";
 
 /**
  * Internal mutation to update a message's content (now an array) and completion status.
@@ -179,9 +180,12 @@ export const sendMessage = mutation({
 	args: {
 		chatId: v.optional(v.id("chats")),
 		content: v.string(), // User input is still a single string here
-		model: v.optional(v.string()),
+		model: v.string(),
 	},
 	handler: async (ctx, args) => {
+		// Validate and parse the model ID, defaulting to "mistral-small" if not provided
+		args.model = modelIds.parse(args.model ?? "mistral-small");
+
 		// Create a new chat if chatId is not provided
 		if (!args.chatId) {
 			args.chatId = await ctx.runMutation(internal.chat.createChat, {

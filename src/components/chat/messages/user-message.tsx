@@ -15,23 +15,25 @@ import {
 
 export default function UserMessage({
 	message,
+	content,
 	onEdit,
 	onRetry,
 }: {
 	message: Doc<"messages">;
+	content: string;
 	onEdit: (content: string) => void;
 	onRetry: () => void;
 }) {
 	const textAreaRef = useRef<AutosizeTextAreaRef>(null);
 
-	const [newContent, setNewContent] = useState(message.content);
+	const [newContent, setNewContent] = useState(content);
 	const [isEditing, setIsEditing] = useState(false);
 
 	function handleKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
 		if (e.key === "Escape") {
 			e.preventDefault();
 			setIsEditing(false);
-			setNewContent(message.content);
+			setNewContent(content);
 			return;
 		}
 
@@ -47,7 +49,7 @@ export default function UserMessage({
 
 		// If we are switching to editing mode, set the content to the current content
 		if (isEditing) {
-			setNewContent(message.content);
+			setNewContent(content);
 		} else {
 			setNewContent(newContent);
 			setTimeout(() => {
@@ -92,10 +94,7 @@ export default function UserMessage({
 				<IconButton onClick={toggleEditing}>
 					<EditIcon />
 				</IconButton>
-				<IconButton
-					onClick={() => copyToClipboard(message.content)}
-					hasConfirmation
-				>
+				<IconButton onClick={() => copyToClipboard(content)} hasConfirmation>
 					<Copy />
 				</IconButton>
 			</div>

@@ -11,26 +11,25 @@ import { cn } from "@/lib/utils";
 
 export default function AssistantMessage({
 	message,
+	content,
 	onBranch,
 	onRetry,
 }: {
 	message: Doc<"messages">;
+	content: string;
 	onBranch: () => void;
 	onRetry: () => void;
 }) {
 	return (
 		<div className="w-full flex flex-col group">
-			<MemoizedMarkdown content={message.content} />
+			<MemoizedMarkdown content={content} />
 			<div
 				className={cn(
 					"flex items-center mt-1 opacity-0 transition-opacity",
 					message.isComplete && "group-hover:opacity-100"
 				)}
 			>
-				<IconButton
-					onClick={() => copyToClipboard(message.content)}
-					hasConfirmation
-				>
+				<IconButton onClick={() => copyToClipboard(content)} hasConfirmation>
 					<Copy />
 				</IconButton>
 				<IconButton onClick={onBranch}>

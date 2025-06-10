@@ -12,12 +12,13 @@ import { streamText } from "../src/lib/ai";
 import { Doc, Id } from "./_generated/dataModel";
 
 /**
- * Internal mutation to update a message's content and completion status.
+ * Internal mutation to update a message's content (now an array) and completion status.
+ * This is a general update, typically used for initial setup or finalization.
  */
 export const updateMessage = internalMutation({
 	args: {
 		messageId: v.id("messages"),
-		content: v.string(),
+		content: v.array(v.string()), // Updated to array of strings
 		isComplete: v.boolean(),
 	},
 	handler: async (ctx, args) => {
@@ -34,7 +35,54 @@ export const updateMessage = internalMutation({
 });
 
 /**
+ * Internal mutation to append a new chunk of text to a message's content array.
+ * This is crucial for optimizing bandwidth during streaming.
+ */
+export const appendMessageContent = internalMutation({
+	args: {
+		messageId: v.id("messages"),
+		newChunk: v.string(),
+	},
+	handler: async (ctx, args) => {
+		const message = await ctx.db.get(args.messageId);
+		if (!message) {
+			console.error(
+				`[DB] Message with ID ${args.messageId} not found for append.`
+			);
+			// You might want to throw an error or handle this more gracefully based on your app's needs
+			return;
+		}
+
+		// Ensure content is an array, handle potential old data or initial states
+		const currentContent = Array.isArray(message.content)
+			? message.content
+			: [];
+		const updatedContent = [...currentContent, args.newChunk];
+
+		await ctx.db.patch(args.messageId, {
+			content: updatedContent,
+			isComplete: false, // Ensure it stays incomplete during streaming
+		});
+	},
+});
+
+/**
+ * Internal mutation to explicitly mark a message as complete.
+ */
+export const markMessageComplete = internalMutation({
+	args: {
+		messageId: v.id("messages"),
+	},
+	handler: async (ctx, args) => {
+		await ctx.db.patch(args.messageId, {
+			isComplete: true,
+		});
+	},
+});
+
+/**
  * Internal query to retrieve a message by its ID.
+ * The content returned will be an array of strings.
  */
 export const getMessage = internalQuery({
 	args: {
@@ -51,6 +99,7 @@ export const getMessage = internalQuery({
 
 /**
  * Internal action to answer a message using an AI model and stream the response.
+ * This function is now optimized for bandwidth by appending individual chunks.
  */
 export const answerMessage = internalAction({
 	args: {
@@ -61,11 +110,14 @@ export const answerMessage = internalAction({
 		const messages = await ctx.runQuery(internal.messages.getMessageHistory, {
 			chatId: args.chatId,
 		});
+
+		// Prepare messages for the AI model, joining content arrays into strings
 		const allMessages = messages
-			.slice(0, -1) // Remove the last message
+			.slice(0, -1) // Remove the last message (which is the current assistant message placeholder)
 			.map((m) => ({
 				role: m.role as "user" | "assistant",
-				content: m.content,
+				// Join the content array back into a single string for the AI context
+				content: Array.isArray(m.content) ? m.content.join("") : m.content,
 			}));
 
 		// Begin the AI stream
@@ -76,49 +128,56 @@ export const answerMessage = internalAction({
 			controller.signal
 		);
 
+		// Initialize the assistant message content as an empty array
 		await ctx.runMutation(internal.messages.updateMessage, {
 			messageId: args.messageId,
-			content: "",
+			content: [], // Initialize as an empty array
 			isComplete: false, // Mark as incomplete before streaming
 		});
 
-		// Add the new message to the end of the messages array
-		let content = "";
 		for await (const text of response.textStream) {
-			content += text;
+			const isMessagePendingCancellation = await ctx.runQuery(
+				internal.messageCancellations.isMessagePendingCancellation,
+				{
+					messageId: args.messageId,
+				}
+			);
 
-			const message = await ctx.runQuery(internal.messages.getMessage, {
-				messageId: args.messageId,
-			});
-
-			if (message.isComplete) {
-				controller.abort(); // Stop streaming if the message is already complete
-				break; // Stop streaming if the message is it's already complete or has been cancelled
+			// Stop streaming if the message is requesting cancellation
+			if (isMessagePendingCancellation) {
+				await ctx.runMutation(
+					internal.messageCancellations.removeCancellationRecord,
+					{
+						messageId: args.messageId,
+					}
+				);
+				controller.abort();
+				break;
 			}
 
-			await ctx.runMutation(internal.messages.updateMessage, {
+			// Append each text chunk directly to the message content array
+			await ctx.runMutation(internal.messages.appendMessageContent, {
 				messageId: args.messageId,
-				content: content,
-				isComplete: false, // Mark as incomplete while streaming
+				newChunk: text,
 			});
+			// No need for hasDelimiter check here, as we update on every chunk
 		}
 
 		// Final patch to mark as complete
-		await ctx.runMutation(internal.messages.updateMessage, {
+		await ctx.runMutation(internal.messages.markMessageComplete, {
 			messageId: args.messageId,
-			content: content,
-			isComplete: true, // Mark as complete after finished streaming
 		});
 	},
 });
 
 /**
  * Mutation to send a message to a chat, creating a new chat if necessary, and scheduling an AI response.
+ * User message content is stored as an array of one string.
  */
 export const sendMessage = mutation({
 	args: {
 		chatId: v.optional(v.id("chats")),
-		content: v.string(),
+		content: v.string(), // User input is still a single string here
 		model: v.optional(v.string()),
 	},
 	handler: async (ctx, args) => {
@@ -142,19 +201,20 @@ export const sendMessage = mutation({
 			const chatId = args.chatId as Id<"chats">;
 
 			// Insert the user message into the database
+			// Content is now an array containing the single user message string
 			await ctx.db.insert("messages", {
 				chatId: chatId,
 				role: "user",
-				content: args.content,
+				content: [args.content], // Store as an array
 				model: args.model,
-				isComplete: true, // Mark as complete since it's a user message
+				isComplete: true, // User messages are complete immediately
 			});
 
 			(async () => {
 				const assistantMessageId = await ctx.db.insert("messages", {
 					chatId: chatId,
 					role: "assistant",
-					content: "",
+					content: [], // Assistant message starts as an empty array
 					model: args.model,
 					isComplete: false,
 				});
@@ -172,12 +232,13 @@ export const sendMessage = mutation({
 
 /**
  * Internal function to handle common logic for message updates like edit and retry.
+ * It will now work with messages whose content is an array.
  * @param ctx - Convex context.
  * @param messageId - ID of the message being updated.
  * @returns The chat ID associated with the message.
  */
 const _handleMessageUpdate = async (
-	ctx: any,
+	ctx: any, // Using 'any' for ctx for simplicity, ideally it's inferred
 	messageId: Id<"messages">
 ): Promise<Id<"chats">> => {
 	const message = await ctx.db.get(messageId);
@@ -185,6 +246,7 @@ const _handleMessageUpdate = async (
 		throw new Error("[DB] Message not found.");
 	}
 
+	// getMessageHistory will return messages with content as arrays
 	const messages: Doc<"messages">[] = await ctx.runQuery(
 		internal.messages.getMessageHistory,
 		{
@@ -193,8 +255,13 @@ const _handleMessageUpdate = async (
 	);
 	const index = messages.findIndex((msg) => msg._id === messageId);
 
-	// Conserve all messages up to and including the message being edited/retried, and the next message (if it exists)
-	const messagesToKeep = messages.slice(0, index + 2);
+	// Conserve all messages up to and including the message being edited/retried
+	const messagesToKeep = messages.filter(
+		(msg, i) =>
+			i <= index || // Keep all messages up to and including the selected message
+			(message.role === "user" && i === index + 1) // If user message, keep the next assistant message
+	);
+
 	if (messagesToKeep.length < 2) {
 		throw new Error(
 			"[DB] Not enough messages to edit/retry. Need at least the message and a subsequent message."
@@ -213,11 +280,12 @@ const _handleMessageUpdate = async (
 
 /**
  * Mutation to edit an existing message and update the subsequent assistant message.
+ * The edited content is now stored as an array of one string.
  */
 export const editMessage = mutation({
 	args: {
 		messageId: v.id("messages"),
-		content: v.string(),
+		content: v.string(), // User input for edit is a single string
 	},
 	handler: async (ctx, args) => {
 		// Handle the common message update logic
@@ -226,8 +294,8 @@ export const editMessage = mutation({
 		// Update the edited message content
 		await ctx.runMutation(internal.messages.updateMessage, {
 			messageId: args.messageId,
-			content: args.content,
-			isComplete: true,
+			content: [args.content], // Store edited content as an array
+			isComplete: true, // Edited messages are complete immediately
 		});
 
 		// Schedule the assistant to answer the next message
@@ -244,6 +312,7 @@ export const editMessage = mutation({
 
 /**
  * Mutation to retry an existing message and regenerate the subsequent assistant message.
+ * This now uses the new answerMessage that supports array content.
  */
 export const retryMessage = mutation({
 	args: {
@@ -267,6 +336,7 @@ export const retryMessage = mutation({
 
 /**
  * Mutation to branch a conversation from a specific assistant message.
+ * This function inherently works with messages whose content is an array.
  */
 export const branchMessage = mutation({
 	args: {
@@ -284,7 +354,7 @@ export const branchMessage = mutation({
 
 		const chat = await ctx.db.get(message.chatId);
 
-		// Conserve all messages to keep
+		// Conserve all messages to keep (handled by internal.chat.branchChat)
 		const chatId: Id<"chats"> = await ctx.runMutation(
 			internal.chat.branchChat,
 			{
@@ -299,40 +369,8 @@ export const branchMessage = mutation({
 });
 
 /**
- * Mutation to cancel the current assistant message generation in a chat.
- */
-export const cancelMessage = mutation({
-	args: {
-		chatId: v.id("chats"),
-	},
-	handler: async (ctx, args) => {
-		const chat = await ctx.db.get(args.chatId);
-		if (!chat) {
-			throw new Error("[DB] Chat not found.");
-		}
-		const messages = await ctx.runQuery(internal.messages.getMessageHistory, {
-			chatId: chat._id,
-		});
-		const message = messages[messages.length - 1]; // Get the last message
-
-		if (message.role !== "assistant") {
-			throw new Error(
-				"[DB] The last message must be an assistant message to cancel."
-			);
-		}
-
-		if (!message.isComplete) {
-			await ctx.runMutation(internal.messages.updateMessage, {
-				messageId: message._id,
-				content: message.content, // Keep the current content
-				isComplete: true, // Mark as complete to stop streaming
-			});
-		}
-	},
-});
-
-/**
  * Internal query to retrieve the message history for a given chat.
+ * The content field of messages returned will be an array of strings.
  */
 export const getMessageHistory = internalQuery({
 	args: {
@@ -352,12 +390,14 @@ export const getMessageHistory = internalQuery({
 
 /**
  * Query to list messages for a given chat.
+ * The content field of messages returned will be an array of strings.
  */
 export const listMessages = query({
 	args: {
 		chatId: v.id("chats"),
 	},
 	handler: async (ctx, args) => {
+		// getMessageHistory already returns messages with content as arrays
 		const messages: Doc<"messages">[] = await ctx.runQuery(
 			internal.messages.getMessageHistory,
 			{

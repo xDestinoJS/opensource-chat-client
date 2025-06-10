@@ -25,7 +25,7 @@ export default function ChatPage({ chatId }: { chatId?: string }) {
 	const branchMessage = useMutation(api.messages.branchMessage);
 	const editMessage = useMutation(api.messages.editMessage);
 	const retryMessage = useMutation(api.messages.retryMessage);
-	const cancelMessage = useMutation(api.messages.cancelMessage);
+	const cancelMessage = useMutation(api.messageCancellations.cancelMessage);
 
 	const inputAreaRef = useRef<AutosizeTextAreaRef>(null);
 
@@ -42,7 +42,8 @@ export default function ChatPage({ chatId }: { chatId?: string }) {
 			});
 
 			// If the chatId is not provided, we redirect to the chat page
-			if (messages?.length == 0) {
+			if (messages?.length === 0) {
+				// Changed to strict equality
 				redirect("/chat/" + newChatId);
 			}
 		})();
@@ -70,10 +71,13 @@ export default function ChatPage({ chatId }: { chatId?: string }) {
 		};
 
 		const handlePaste = (event: ClipboardEvent) => {
-			if (document.activeElement !== inputAreaRef.current) {
+			if (document.activeElement !== inputAreaRef.current?.textArea) {
+				// Check specific element
 				inputAreaRef.current?.textArea.focus();
+				return;
 			}
 
+			event.preventDefault();
 			const text = event.clipboardData?.getData("text");
 			if (text && inputAreaRef.current) {
 				inputAreaRef.current.textArea.value += text;
@@ -94,62 +98,70 @@ export default function ChatPage({ chatId }: { chatId?: string }) {
 	}, []);
 
 	return (
-		<>
-			<div className="flex flex-col gap-2">
-				{messages?.map((message) => (
-					<div key={message._id} className={"flex w-full"}>
-						<div
-							className={cn(
-								"w-full",
-								message.role == "user" ? "justify-end" : "justify-start"
-							)}
-						>
-							{message.role == "user" ? (
-								<UserMessage
-									message={message}
-									onEdit={(content) => {
-										editMessage({
-											messageId: message._id,
-											content,
-										});
-									}}
-									onRetry={() => {
-										retryMessage({
-											messageId: message._id,
-										});
-									}}
-								/>
-							) : (
-								<AssistantMessage
-									message={message}
-									onBranch={async () => {
-										const chatId = await branchMessage({
-											messageId: message._id,
-										});
+		<main className="flex flex-col items-center justify-center w-full h-full p-4">
+			<div className="flex flex-col gap-2 w-3xl">
+				{messages?.map((message) => {
+					const content = Array.isArray(message.content)
+						? message.content.join("")
+						: message.content;
+					return (
+						<div key={message._id} className={"flex w-full"}>
+							<div
+								className={cn(
+									"w-full",
+									message.role === "user" ? "justify-end" : "justify-start"
+								)}
+							>
+								{message.role === "user" ? (
+									<UserMessage
+										message={message}
+										content={content}
+										onEdit={(content) => {
+											editMessage({
+												messageId: message._id,
+												content, // This 'content' is the user's string input, already handled by mutation
+											});
+										}}
+										onRetry={() => {
+											retryMessage({
+												messageId: message._id,
+											});
+										}}
+									/>
+								) : (
+									<AssistantMessage
+										message={message}
+										content={content}
+										onBranch={async () => {
+											const newChatId = await branchMessage({
+												// Renamed to avoid conflict with existing 'chatId'
+												messageId: message._id,
+											});
 
-										redirect("/chat/" + chatId);
-									}}
-									onRetry={() => {
-										retryMessage({
-											messageId: message._id,
-										});
-									}}
-								/>
-							)}
+											redirect("/chat/" + newChatId);
+										}}
+										onRetry={() => {
+											retryMessage({
+												messageId: message._id,
+											});
+										}}
+									/>
+								)}
+							</div>
 						</div>
-					</div>
-				))}
+					);
+				})}
 			</div>
 
 			<form
 				onSubmit={handleSubmit}
-				className="bg-gray-100 p-4 rounded-2xl mt-4 border border-neutral-300"
+				className="sticky bottom-4 bg-gray-100 p-4 rounded-2xl mt-4 border w-3xl border-neutral-300"
 			>
 				<AutosizeTextarea
 					ref={inputAreaRef}
 					name="prompt"
 					type="transparent"
-					maxHeight={200}
+					maxHeight={170}
 					className="w-full focus:outline-none resize-none bg-transparent"
 					onKeyDown={(e) => {
 						if (e.key === "Enter" && !e.shiftKey) {
@@ -160,9 +172,11 @@ export default function ChatPage({ chatId }: { chatId?: string }) {
 					}}
 				/>
 				<div className="flex justify-end mt-2 bottom-0 right-0">
-					{messages?.length == 0 ||
-					(messages && messages[messages.length - 1].isComplete) ? (
-						<Button size="icon" type="button" onClick={handleSubmit}>
+					{messages?.length === 0 ||
+					(messages && messages[messages.length - 1]?.isComplete) ? ( // Added optional chaining for safety
+						<Button size="icon" type="submit" onClick={handleSubmit}>
+							{" "}
+							{/* Changed type to submit and kept onClick */}
 							<ArrowUp />
 						</Button>
 					) : (
@@ -181,6 +195,6 @@ export default function ChatPage({ chatId }: { chatId?: string }) {
 					)}
 				</div>
 			</form>
-		</>
+		</main>
 	);
 }

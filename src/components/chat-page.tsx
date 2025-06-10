@@ -14,6 +14,8 @@ import { Button } from "./ui/button";
 import { AutosizeTextarea, AutosizeTextAreaRef } from "./ui/autosize-textarea";
 import chunkArray from "@/utils/chunk-array";
 import clamp from "@/utils/clamp";
+import { useChatInputEvents } from "@/hooks/useChatInputEvents";
+import { useChatScrollManagement } from "@/hooks/useChatScrollManagement";
 
 export default function ChatPage({ chatId }: { chatId?: string }) {
 	const messages =
@@ -37,6 +39,17 @@ export default function ChatPage({ chatId }: { chatId?: string }) {
 	const blankSpaceRef = useRef<HTMLDivElement>(null);
 	const scrollContainerRef = useRef<HTMLDivElement>(null);
 	const lastPairContainerRef = useRef<HTMLDivElement>(null);
+
+	// Use the custom hook for input events
+	useChatInputEvents(inputAreaRef);
+
+	// Use the custom hook for scroll management
+	useChatScrollManagement(
+		lastPairContainerRef,
+		blankSpaceRef,
+		scrollContainerRef,
+		messages
+	);
 
 	async function handleSubmit() {
 		const currentInput = inputAreaRef.current?.textArea.value.trim();
@@ -62,75 +75,9 @@ export default function ChatPage({ chatId }: { chatId?: string }) {
 		}
 	}
 
-	useEffect(() => {
-		const handleKeyDown = (event: KeyboardEvent) => {
-			const isBasicKeyPress =
-				event.key.length === 1 &&
-				!event.ctrlKey &&
-				!event.metaKey &&
-				!event.altKey;
-			const isEditableElement = document.activeElement?.matches(
-				'input, textarea, [contenteditable="true"]'
-			);
-
-			if (isBasicKeyPress && !isEditableElement) {
-				inputAreaRef.current?.textArea.focus();
-			}
-		};
-
-		const handlePaste = (event: ClipboardEvent) => {
-			if (document.activeElement !== inputAreaRef.current?.textArea) {
-				// Check specific element
-				inputAreaRef.current?.textArea.focus();
-				return;
-			}
-
-			event.preventDefault();
-			const text = event.clipboardData?.getData("text");
-			if (text && inputAreaRef.current) {
-				inputAreaRef.current.textArea.value += text;
-				// Move the cursor to the end of the text
-				inputAreaRef.current.textArea.selectionStart =
-					inputAreaRef.current.textArea.selectionEnd =
-						inputAreaRef.current.textArea.value.length;
-			}
-		};
-
-		window.addEventListener("keydown", handleKeyDown);
-		window.addEventListener("paste", handlePaste);
-
-		return () => {
-			window.removeEventListener("keydown", handleKeyDown);
-			window.removeEventListener("paste", handlePaste);
-		};
-	}, []);
-
-	useEffect(() => {
-		const lastPairNode = lastPairContainerRef.current;
-		const blankSpaceNode = blankSpaceRef.current;
-		const scrollNode = scrollContainerRef.current;
-
-		const updateBlankSpace = () => {
-			if (lastPairNode && blankSpaceNode && scrollNode) {
-				const scrollHeight = scrollNode.clientHeight;
-				const lastPairHeight = lastPairNode.offsetHeight;
-
-				blankSpaceNode.style.paddingTop = `${scrollHeight - lastPairHeight - 16}px`;
-			}
-		};
-
-		updateBlankSpace();
-
-		window.addEventListener("resize", updateBlankSpace);
-
-		return () => {
-			window.removeEventListener("resize", updateBlankSpace);
-		};
-	}, [messages]);
-
 	return (
 		/* TODO: CHANGE h-screen TO h-full later on */
-		<main className="flex flex-col items-center justify-center w-full h-screen p-4">
+		<main className="flex flex-col items-center justify-center w-full h-screen">
 			<div
 				ref={scrollContainerRef}
 				className="flex w-full justify-center grow min-h-0 overflow-y-scroll pb-4"

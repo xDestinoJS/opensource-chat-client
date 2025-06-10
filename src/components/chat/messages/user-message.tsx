@@ -24,6 +24,13 @@ export default function UserMessage({
 	const [isEditing, setIsEditing] = useState(false);
 
 	function handleKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
+		if (e.key === "Escape") {
+			e.preventDefault();
+			setIsEditing(false);
+			setNewContent(message.content);
+			return;
+		}
+
 		if (e.key === "Enter" && !e.shiftKey) {
 			e.preventDefault();
 			onEdit(newContent);

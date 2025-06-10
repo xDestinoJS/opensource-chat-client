@@ -8,7 +8,7 @@ export default defineSchema({
 		content: v.string(),
 		model: v.optional(v.string()),
 		isComplete: v.boolean(),
-	}).index("by_chatId_creationTime", ["chatId", "_creationTime"]),
+	}),
 	chats: defineTable({
 		title: v.string(),
 	}),

@@ -1,7 +1,6 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { useChat } from "@ai-sdk/react";
 import { useMutation, useQuery } from "convex/react";
 import { useEffect, useRef, useState } from "react";
 
@@ -11,12 +10,15 @@ import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
 
 export default function Page() {
-	const chatId = "j97c159vt723jjg6wdnq886xgs7hjeyv" as Id<"chats">;
+	const chatId = "j97367sjx62qhk6xhgpsszbkf17hk624" as Id<"chats">;
 
 	const messages = useQuery(api.messages.listMessages, {
 		chatId,
 	});
+
 	const sendMessage = useMutation(api.messages.sendMessage);
+	const editMessage = useMutation(api.messages.editMessage);
+	const retryMessage = useMutation(api.messages.retryMessage);
 
 	const inputAreaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -25,9 +27,8 @@ export default function Page() {
 	function handleSubmit() {
 		if (!input.trim()) return;
 
-		sendMessage({
+		const chatId = sendMessage({
 			content: input,
-			chatId,
 			model: "mistral-small",
 		});
 
@@ -37,21 +38,6 @@ export default function Page() {
 			inputAreaRef.current.focus();
 		}
 	}
-
-	/* const {
-		messages,
-		append,
-		input,
-		reload,
-		handleInputChange,
-		handleSubmit,
-		setMessages,
-	} = useChat({
-		api: "/api/ai/chat",
-		body: {
-			model: "mistral-small",
-		},
-	}); */
 
 	useEffect(() => {
 		const handleKeyDown = (event: KeyboardEvent) => {
@@ -101,25 +87,26 @@ export default function Page() {
 								<UserMessage
 									message={message}
 									onEdit={(content) => {
-										console.log("edit");
-										/* updateMessages(message.id, false);
-										append({
-											id: message.id,
+										editMessage({
+											messageId: message._id,
 											content,
-											role: "user",
-										}); */
+										});
 									}}
 									onRetry={() => {
-										console.log("retry");
-										/* updateMessages(message.id, true);
-										reload(); */
+										retryMessage({
+											messageId: message._id,
+										});
 									}}
 								/>
 							) : (
 								<AssistantMessage
 									message={message}
 									onBranch={() => alert("branching")}
-									onRetry={() => {} /* reload */}
+									onRetry={() => {
+										retryMessage({
+											messageId: message._id,
+										});
+									}}
 								/>
 							)}
 						</div>

@@ -12,13 +12,18 @@ import { redirect } from "next/navigation";
 import { ArrowUp, Square } from "lucide-react";
 import { Button } from "./ui/button";
 import { AutosizeTextarea, AutosizeTextAreaRef } from "./ui/autosize-textarea";
+import chunkArray from "@/utils/chunk-array";
+import clamp from "@/utils/clamp";
 
 export default function ChatPage({ chatId }: { chatId?: string }) {
-	const messages = !chatId
-		? []
-		: useQuery(api.messages.listMessages, {
-				chatId: chatId as Id<"chats">,
-			});
+	const messages =
+		(!chatId
+			? []
+			: useQuery(api.messages.listMessages, {
+					chatId: chatId as Id<"chats">,
+				})) ?? [];
+
+	const pairedMessages = chunkArray(messages, 2);
 
 	const sendMessage = useMutation(api.messages.sendMessage);
 
@@ -29,13 +34,17 @@ export default function ChatPage({ chatId }: { chatId?: string }) {
 
 	const inputAreaRef = useRef<AutosizeTextAreaRef>(null);
 
+	const blankSpaceRef = useRef<HTMLDivElement>(null);
+	const scrollContainerRef = useRef<HTMLDivElement>(null);
+	const lastPairContainerRef = useRef<HTMLDivElement>(null);
+
 	async function handleSubmit() {
 		const currentInput = inputAreaRef.current?.textArea.value.trim();
 		if (!currentInput) return;
 
 		// Send message to the server
 		(async () => {
-			const newChatId = await sendMessage({
+			const response = await sendMessage({
 				content: currentInput,
 				chatId: chatId as Id<"chats">,
 				model: "mistral-small",
@@ -43,8 +52,7 @@ export default function ChatPage({ chatId }: { chatId?: string }) {
 
 			// If the chatId is not provided, we redirect to the chat page
 			if (messages?.length === 0) {
-				// Changed to strict equality
-				redirect("/chat/" + newChatId);
+				redirect("/chat/" + response?.chatId);
 			}
 		})();
 
@@ -97,65 +105,107 @@ export default function ChatPage({ chatId }: { chatId?: string }) {
 		};
 	}, []);
 
-	return (
-		<main className="flex flex-col items-center justify-center w-full h-full p-4">
-			<div className="flex flex-col gap-2 w-3xl">
-				{messages?.map((message) => {
-					const content = Array.isArray(message.content)
-						? message.content.join("")
-						: message.content;
-					return (
-						<div key={message._id} className={"flex w-full"}>
-							<div
-								className={cn(
-									"w-full",
-									message.role === "user" ? "justify-end" : "justify-start"
-								)}
-							>
-								{message.role === "user" ? (
-									<UserMessage
-										message={message}
-										content={content}
-										onEdit={(content) => {
-											editMessage({
-												messageId: message._id,
-												content, // This 'content' is the user's string input, already handled by mutation
-											});
-										}}
-										onRetry={() => {
-											retryMessage({
-												messageId: message._id,
-											});
-										}}
-									/>
-								) : (
-									<AssistantMessage
-										message={message}
-										content={content}
-										onBranch={async () => {
-											const newChatId = await branchMessage({
-												// Renamed to avoid conflict with existing 'chatId'
-												messageId: message._id,
-											});
+	useEffect(() => {
+		const lastPairNode = lastPairContainerRef.current;
+		const blankSpaceNode = blankSpaceRef.current;
+		const scrollNode = scrollContainerRef.current;
 
-											redirect("/chat/" + newChatId);
-										}}
-										onRetry={() => {
-											retryMessage({
-												messageId: message._id,
-											});
-										}}
-									/>
-								)}
+		const updateBlankSpace = () => {
+			if (lastPairNode && blankSpaceNode && scrollNode) {
+				const scrollHeight = scrollNode.clientHeight;
+				const lastPairHeight = lastPairNode.offsetHeight;
+
+				blankSpaceNode.style.paddingTop = `${scrollHeight - lastPairHeight - 16}px`;
+			}
+		};
+
+		updateBlankSpace();
+
+		window.addEventListener("resize", updateBlankSpace);
+
+		return () => {
+			window.removeEventListener("resize", updateBlankSpace);
+		};
+	}, [messages]);
+
+	return (
+		/* TODO: CHANGE h-screen TO h-full later on */
+		<main className="flex flex-col items-center justify-center w-full h-screen p-4">
+			<div
+				ref={scrollContainerRef}
+				className="flex w-full justify-center grow min-h-0 overflow-y-scroll pb-4"
+			>
+				<div className="flex flex-col gap-2 w-full max-w-3xl">
+					{pairedMessages?.map((chunk, index) => {
+						const isLastPair = pairedMessages.length - 1 === index;
+
+						return (
+							<div
+								key={index}
+								ref={isLastPair ? lastPairContainerRef : null}
+								className={isLastPair ? "pb-4" : undefined}
+							>
+								{chunk.map((message) => {
+									const content = message.content.join("");
+
+									return (
+										<div key={message._id} className="flex w-full">
+											<div
+												className={cn(
+													"w-full",
+													message.role === "user"
+														? "justify-end"
+														: "justify-start"
+												)}
+											>
+												{message.role === "user" ? (
+													<UserMessage
+														message={message}
+														content={content}
+														onEdit={(content) => {
+															editMessage({
+																messageId: message._id,
+																content,
+															});
+														}}
+														onRetry={() => {
+															retryMessage({
+																messageId: message._id,
+															});
+														}}
+													/>
+												) : (
+													<AssistantMessage
+														message={message}
+														content={content}
+														onBranch={async () => {
+															const response = await branchMessage({
+																messageId: message._id,
+															});
+
+															redirect("/chat/" + response.chatId);
+														}}
+														onRetry={() => {
+															retryMessage({
+																messageId: message._id,
+															});
+														}}
+													/>
+												)}
+											</div>
+										</div>
+									);
+								})}
 							</div>
-						</div>
-					);
-				})}
+						);
+					})}
+					<div ref={blankSpaceRef} />
+				</div>
 			</div>
 
 			<form
 				onSubmit={handleSubmit}
-				className="sticky bottom-4 bg-gray-100 p-4 rounded-2xl mt-4 border w-3xl border-neutral-300"
+				className="bg-gray-100 p-4 rounded-2xl border w-3xl border-neutral-300 shrink-0"
 			>
 				<AutosizeTextarea
 					ref={inputAreaRef}
@@ -173,10 +223,8 @@ export default function ChatPage({ chatId }: { chatId?: string }) {
 				/>
 				<div className="flex justify-end mt-2 bottom-0 right-0">
 					{messages?.length === 0 ||
-					(messages && messages[messages.length - 1]?.isComplete) ? ( // Added optional chaining for safety
+					(messages && messages[messages.length - 1]?.isComplete) ? (
 						<Button size="icon" type="submit" onClick={handleSubmit}>
-							{" "}
-							{/* Changed type to submit and kept onClick */}
 							<ArrowUp />
 						</Button>
 					) : (

@@ -202,7 +202,7 @@ export const sendMessage = mutation({
 
 			// Insert the user message into the database
 			// Content is now an array containing the single user message string
-			await ctx.db.insert("messages", {
+			const messageId = await ctx.db.insert("messages", {
 				chatId: chatId,
 				role: "user",
 				content: [args.content], // Store as an array
@@ -225,7 +225,10 @@ export const sendMessage = mutation({
 				});
 			})();
 
-			return chatId;
+			return {
+				chatId: chatId,
+				messageId: messageId,
+			};
 		}
 	},
 });
@@ -364,7 +367,7 @@ export const branchMessage = mutation({
 		);
 
 		if (!chatId) throw new Error("[DB] Branch was not succesful.");
-		return chatId;
+		return { chatId };
 	},
 });
 

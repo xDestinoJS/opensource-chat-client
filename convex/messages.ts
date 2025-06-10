@@ -10,6 +10,7 @@ import { v } from "convex/values";
 
 import { streamText } from "../src/lib/ai";
 import { Doc, Id } from "./_generated/dataModel";
+import { ModelId } from "../src/lib/models";
 
 /**
  * Internal mutation to update a message's content (now an array) and completion status.
@@ -123,7 +124,7 @@ export const answerMessage = internalAction({
 		// Begin the AI stream
 		const controller = new AbortController();
 		const response = await streamText(
-			"mistral-small",
+			(messages[messages.length - 1].model ?? "mistral-small") as ModelId,
 			allMessages,
 			controller.signal
 		);

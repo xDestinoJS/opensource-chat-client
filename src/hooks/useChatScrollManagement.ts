@@ -23,12 +23,14 @@ export function useChatScrollManagement(
 		const latestMessage = messages[messages.length - 1];
 
 		// Only scroll if the message changed
-		if (lastMessageScrolledTo.current === latestMessage._id) return;
 
 		// Update blank space
-		const scrollHeight = scrollNode.clientHeight;
+		const scrollHeight = scrollNode.offsetHeight;
 		const lastPairHeight = lastPairNode.offsetHeight;
-		blankSpaceNode.style.paddingTop = `${scrollHeight - lastPairHeight - 16}px`;
+
+		blankSpaceNode.style.paddingTop = `${Math.max(scrollHeight - lastPairHeight - 16, 0)}px`;
+
+		if (lastMessageScrolledTo.current === latestMessage._id) return;
 
 		// Scroll to bottom
 		requestAnimationFrame(() => {

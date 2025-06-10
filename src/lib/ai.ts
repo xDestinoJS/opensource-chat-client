@@ -7,8 +7,7 @@ import { z } from "zod";
 
 import { google } from "@ai-sdk/google";
 import { mistral } from "@ai-sdk/mistral";
-
-export type ModelId = "gemini-2.5-pro" | "gemini-2.0-flash" | "mistral-small";
+import { ModelId } from "./models";
 
 function getModel(modelId: ModelId) {
 	switch (modelId) {

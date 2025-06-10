@@ -2,7 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import { useMutation, useQuery } from "convex/react";
-import { useEffect, useRef, useState } from "react";
+import { useRef } from "react";
 
 import UserMessage from "@/components/chat/messages/user-message";
 import AssistantMessage from "@/components/chat/messages/assistant-message";
@@ -13,9 +13,17 @@ import { ArrowUp, Square } from "lucide-react";
 import { Button } from "./ui/button";
 import { AutosizeTextarea, AutosizeTextAreaRef } from "./ui/autosize-textarea";
 import chunkArray from "@/utils/chunk-array";
-import clamp from "@/utils/clamp";
 import { useChatInputEvents } from "@/hooks/useChatInputEvents";
 import { useChatScrollManagement } from "@/hooks/useChatScrollManagement";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
+import useChatModel from "@/hooks/useChatModel";
+import models from "@/lib/models";
 
 export default function ChatPage({ chatId }: { chatId?: string }) {
 	const messages =
@@ -40,6 +48,9 @@ export default function ChatPage({ chatId }: { chatId?: string }) {
 	const scrollContainerRef = useRef<HTMLDivElement>(null);
 	const lastPairContainerRef = useRef<HTMLDivElement>(null);
 
+	// Get model
+	const { modelId, setModelId, modelData } = useChatModel();
+
 	// Use the custom hook for input events
 	useChatInputEvents(inputAreaRef);
 
@@ -60,7 +71,7 @@ export default function ChatPage({ chatId }: { chatId?: string }) {
 			const response = await sendMessage({
 				content: currentInput,
 				chatId: chatId as Id<"chats">,
-				model: "mistral-small",
+				model: modelId,
 			});
 
 			// If the chatId is not provided, we redirect to the chat page
@@ -168,10 +179,25 @@ export default function ChatPage({ chatId }: { chatId?: string }) {
 						}
 					}}
 				/>
-				<div className="flex justify-end mt-2 bottom-0 right-0">
+				<div className="flex justify-between items-center mt-2 bottom-0 right-0">
+					<Select onValueChange={setModelId} value={modelId}>
+						<SelectTrigger className="w-[225px]">
+							<SelectValue placeholder="Model" />
+						</SelectTrigger>
+						<SelectContent>
+							{models.map((model) => {
+								return (
+									<SelectItem key={model.id} value={model.id}>
+										{model.name}
+									</SelectItem>
+								);
+							})}
+						</SelectContent>
+					</Select>
+
 					{messages?.length === 0 ||
 					(messages && messages[messages.length - 1]?.isComplete) ? (
-						<Button size="icon" type="submit" onClick={handleSubmit}>
+						<Button size="icon" type="button" onClick={handleSubmit}>
 							<ArrowUp />
 						</Button>
 					) : (

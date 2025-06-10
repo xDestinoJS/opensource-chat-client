@@ -23,15 +23,14 @@ export default function ChatPage({ chatId }: { chatId?: string }) {
 
 	const inputAreaRef = useRef<HTMLTextAreaElement>(null);
 
-	const [input, setInput] = useState("");
-
 	async function handleSubmit() {
-		if (!input.trim()) return;
+		const currentInput = inputAreaRef.current?.value.trim();
+		if (!currentInput) return;
 
 		// Send message to the server
 		(async () => {
 			const newChatId = await sendMessage({
-				content: input,
+				content: currentInput,
 				chatId: chatId as Id<"chats">,
 				model: "mistral-small",
 			});
@@ -42,7 +41,6 @@ export default function ChatPage({ chatId }: { chatId?: string }) {
 			}
 		})();
 
-		setInput("");
 		if (inputAreaRef.current) {
 			inputAreaRef.current.value = "";
 			inputAreaRef.current.focus();
@@ -72,16 +70,6 @@ export default function ChatPage({ chatId }: { chatId?: string }) {
 		};
 	}, []);
 
-	/* const updateMessages = (
-		messageId: string,
-		includeCurrentMessage: boolean
-	) => {
-		setMessages((prev) => {
-			const index = prev.findIndex((msg) => msg.id === messageId);
-			return prev.slice(0, includeCurrentMessage ? index + 1 : index);
-		});
-	};
- */
 	return (
 		<>
 			<div className="flex flex-col gap-2">
@@ -132,10 +120,6 @@ export default function ChatPage({ chatId }: { chatId?: string }) {
 					ref={inputAreaRef}
 					name="prompt"
 					className="w-full focus:outline-none resize-none bg-transparent"
-					value={input}
-					onChange={(e) => {
-						setInput(e.target.value);
-					}}
 					onKeyDown={(e) => {
 						if (e.key === "Enter" && !e.shiftKey) {
 							e.preventDefault();

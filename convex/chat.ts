@@ -1,8 +1,23 @@
 import { v } from "convex/values";
-import { internalAction, internalMutation } from "./_generated/server";
+import { internalAction, internalMutation, query } from "./_generated/server";
 import { generateObject } from "../src/lib/ai";
 import { z } from "zod";
 import { internal } from "./_generated/api";
+
+export const getChat = query({
+	args: {
+		chatId: v.id("chats"),
+	},
+	handler: async (ctx, args) => {
+		// Fetch the chat by ID
+		const chat = await ctx.db.get(args.chatId);
+		if (!chat) {
+			throw new Error("[DB] Chat not found.");
+		}
+
+		return chat;
+	},
+});
 
 export const updateChat = internalMutation({
 	args: {

@@ -2,7 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import { useMutation, useQuery } from "convex/react";
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 
 import UserMessage from "@/components/chat/messages/user-message";
 import AssistantMessage from "@/components/chat/messages/assistant-message";
@@ -27,11 +27,13 @@ import models from "@/lib/models";
 
 export default function ChatPage({ chatId }: { chatId?: string }) {
 	const messages =
-		(!chatId
-			? []
-			: useQuery(api.messages.listMessages, {
-					chatId: chatId as Id<"chats">,
-				})) ?? [];
+		useQuery(api.messages.listMessages, {
+			chatId: chatId as Id<"chats">,
+		}) ?? [];
+
+	const chat = useQuery(api.chat.getChat, {
+		chatId: chatId as Id<"chats">,
+	}) ?? { title: "Loading..." };
 
 	const pairedMessages = chunkArray(messages, 2);
 
@@ -62,6 +64,11 @@ export default function ChatPage({ chatId }: { chatId?: string }) {
 		messages
 	);
 
+	useEffect(() => {
+		if (typeof document === "undefined") return;
+		document.title = chat.title || "Chat";
+	}, [chat]);
+
 	async function handleSubmit() {
 		const currentInput = inputAreaRef.current?.textArea.value.trim();
 		if (!currentInput) return;
@@ -91,9 +98,9 @@ export default function ChatPage({ chatId }: { chatId?: string }) {
 		<main className="flex flex-col items-center justify-center w-full h-screen">
 			<div
 				ref={scrollContainerRef}
-				className="flex w-full justify-center grow min-h-0 overflow-y-scroll pb-4"
+				className="flex w-full justify-center grow min-h-0 overflow-y-scroll py-4"
 			>
-				<div className="flex flex-col gap-2 w-full max-w-3xl">
+				<div className="flex flex-col gap-2 w-full max-w-3xl px-4">
 					{pairedMessages?.map((chunk, index) => {
 						const isLastPair = pairedMessages.length - 1 === index;
 
@@ -163,7 +170,7 @@ export default function ChatPage({ chatId }: { chatId?: string }) {
 
 			<form
 				onSubmit={handleSubmit}
-				className="bg-gray-100 p-4 rounded-2xl border w-3xl border-neutral-300 shrink-0"
+				className="bg-gray-100 p-4 rounded-tl-2xl w-full max-w-3xl rounded-tr-2xl border border-neutral-300 shrink-0"
 			>
 				<AutosizeTextarea
 					ref={inputAreaRef}

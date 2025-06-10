@@ -124,7 +124,7 @@ export const sendMessage = mutation({
 				isComplete: true, // Mark as complete since it's a user message
 			});
 
-			async () => {
+			(async () => {
 				const assistantMessageId = await ctx.db.insert("messages", {
 					chatId: chatId,
 					role: "assistant",
@@ -137,7 +137,7 @@ export const sendMessage = mutation({
 					chatId: chatId,
 					messageId: assistantMessageId,
 				});
-			};
+			})();
 
 			return chatId;
 		}

@@ -5,7 +5,7 @@ import { Copy, GitBranch, RefreshCcw } from "lucide-react";
 
 import copyToClipboard from "@/utils/copy-to-clipboard";
 
-import { MemoizedMarkdown } from "../memoized-markdown";
+import MemoizedMarkdown from "../memoized-markdown";
 import IconButton from "../buttons/icon-button";
 
 export default function AssistantMessage({
@@ -19,7 +19,7 @@ export default function AssistantMessage({
 }) {
 	return (
 		<div className="w-full flex flex-col group">
-			<MemoizedMarkdown id={message._id} content={message.content} />
+			<MemoizedMarkdown content={message.content} />
 			<div className="flex items-center mt-1 group-hover:opacity-100 opacity-0 transition-opacity">
 				<IconButton
 					onClick={() => copyToClipboard(message.content)}
@@ -33,6 +33,7 @@ export default function AssistantMessage({
 				<IconButton onClick={onRetry}>
 					<RefreshCcw />
 				</IconButton>
+				<p className="ml-2.5 text-xs">{message.model}</p>
 			</div>
 		</div>
 	);

@@ -1,6 +1,6 @@
 "use client";
 
-import { UIMessage } from "ai";
+import { Doc } from "@/../convex/_generated/dataModel";
 import { KeyboardEvent, useRef, useState } from "react";
 import { Copy, EditIcon, RefreshCcw } from "lucide-react";
 
@@ -14,7 +14,7 @@ export default function UserMessage({
 	onEdit,
 	onRetry,
 }: {
-	message: UIMessage;
+	message: Doc<"messages">;
 	onEdit: (content: string) => void;
 	onRetry: () => void;
 }) {

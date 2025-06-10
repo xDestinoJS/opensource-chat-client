@@ -2,15 +2,43 @@
 
 import { cn } from "@/lib/utils";
 import { useChat } from "@ai-sdk/react";
-import { useEffect, useRef } from "react";
+import { useMutation, useQuery } from "convex/react";
+import { useEffect, useRef, useState } from "react";
 
 import UserMessage from "@/components/chat/messages/user-message";
 import AssistantMessage from "@/components/chat/messages/assistant-message";
+import { api } from "../../convex/_generated/api";
+import { Id } from "../../convex/_generated/dataModel";
 
 export default function Page() {
+	const chatId = "j97c159vt723jjg6wdnq886xgs7hjeyv" as Id<"chats">;
+
+	const messages = useQuery(api.messages.listMessages, {
+		chatId,
+	});
+	const sendMessage = useMutation(api.messages.sendMessage);
+
 	const inputAreaRef = useRef<HTMLTextAreaElement>(null);
 
-	const {
+	const [input, setInput] = useState("");
+
+	function handleSubmit() {
+		if (!input.trim()) return;
+
+		sendMessage({
+			content: input,
+			chatId,
+			model: "mistral-small",
+		});
+
+		setInput("");
+		if (inputAreaRef.current) {
+			inputAreaRef.current.value = "";
+			inputAreaRef.current.focus();
+		}
+	}
+
+	/* const {
 		messages,
 		append,
 		input,
@@ -20,7 +48,10 @@ export default function Page() {
 		setMessages,
 	} = useChat({
 		api: "/api/ai/chat",
-	});
+		body: {
+			model: "mistral-small",
+		},
+	}); */
 
 	useEffect(() => {
 		const handleKeyDown = (event: KeyboardEvent) => {
@@ -45,7 +76,7 @@ export default function Page() {
 		};
 	}, []);
 
-	const updateMessages = (
+	/* const updateMessages = (
 		messageId: string,
 		includeCurrentMessage: boolean
 	) => {
@@ -54,12 +85,12 @@ export default function Page() {
 			return prev.slice(0, includeCurrentMessage ? index + 1 : index);
 		});
 	};
-
+ */
 	return (
 		<>
 			<div className="flex flex-col gap-2">
-				{messages.map((message) => (
-					<div key={message.id} className={"flex w-full"}>
+				{messages?.map((message) => (
+					<div key={message._id} className={"flex w-full"}>
 						<div
 							className={cn(
 								"w-full",
@@ -70,23 +101,25 @@ export default function Page() {
 								<UserMessage
 									message={message}
 									onEdit={(content) => {
-										updateMessages(message.id, false);
+										console.log("edit");
+										/* updateMessages(message.id, false);
 										append({
 											id: message.id,
 											content,
 											role: "user",
-										});
+										}); */
 									}}
 									onRetry={() => {
-										updateMessages(message.id, true);
-										reload();
+										console.log("retry");
+										/* updateMessages(message.id, true);
+										reload(); */
 									}}
 								/>
 							) : (
 								<AssistantMessage
 									message={message}
 									onBranch={() => alert("branching")}
-									onRetry={reload}
+									onRetry={() => {} /* reload */}
 								/>
 							)}
 						</div>
@@ -103,7 +136,9 @@ export default function Page() {
 					name="prompt"
 					className="w-full focus:outline-none resize-none bg-transparent"
 					value={input}
-					onChange={handleInputChange}
+					onChange={() => {
+						setInput(inputAreaRef.current?.value || "");
+					}}
 					onKeyDown={(e) => {
 						if (e.key === "Enter" && !e.shiftKey) {
 							e.preventDefault();

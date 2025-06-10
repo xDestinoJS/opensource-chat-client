@@ -1,6 +1,6 @@
 "use client";
 
-import { UIMessage } from "ai";
+import { Doc } from "@/../convex/_generated/dataModel";
 import { Copy, GitBranch, RefreshCcw } from "lucide-react";
 
 import copyToClipboard from "@/utils/copy-to-clipboard";
@@ -13,13 +13,13 @@ export default function AssistantMessage({
 	onBranch,
 	onRetry,
 }: {
-	message: UIMessage;
+	message: Doc<"messages">;
 	onBranch: () => void;
 	onRetry: () => void;
 }) {
 	return (
 		<div className="w-full flex flex-col group">
-			<MemoizedMarkdown id={message.id} content={message.content} />
+			<MemoizedMarkdown id={message._id} content={message.content} />
 			<div className="flex items-center mt-1 group-hover:opacity-100 opacity-0 transition-opacity">
 				<IconButton
 					onClick={() => copyToClipboard(message.content)}

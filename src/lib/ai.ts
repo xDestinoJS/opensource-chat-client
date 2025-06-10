@@ -1,4 +1,8 @@
-import { generateObject, CoreMessage, streamText } from "ai";
+import {
+	generateObject as generateO,
+	CoreMessage,
+	streamText as streamT,
+} from "ai";
 import { z } from "zod";
 
 import { google } from "@ai-sdk/google";
@@ -22,10 +26,7 @@ function getModel(modelId: ModelId) {
 /**
  * Stream a chat completion using the specified AI model.
  */
-export async function streamChatCompletion(
-	modelId: ModelId,
-	messages: CoreMessage[]
-) {
+export async function streamText(modelId: ModelId, messages: CoreMessage[]) {
 	let model = getModel(modelId);
 
 	if (messages.length === 0) {
@@ -36,7 +37,8 @@ export async function streamChatCompletion(
 		throw new Error("[AI] Last message must be from the user.");
 	}
 
-	return streamText({
+	return streamT({
+		// streamT to not conflict with the `streamText` function
 		model,
 		messages,
 		temperature: 0.3,
@@ -47,20 +49,22 @@ export async function streamChatCompletion(
 /**
  * Generates a structured chat completion using the specified AI model.
  */
-export async function generateStructuredChatCompletion(
+export async function generateObject(
 	modelId: ModelId,
 	systemPrompt: string,
+	messages: CoreMessage[],
 	schema: z.ZodSchema
 ) {
 	let model = getModel(modelId);
 
-	const { object } = await generateObject({
+	const { object } = await generateO({
 		model,
 		schema,
+		messages,
 		system: systemPrompt,
 		temperature: 0.3,
 		maxRetries: 3,
 	});
 
-	return object;
+	return object as z.infer<typeof schema>;
 }

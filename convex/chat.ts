@@ -19,6 +19,16 @@ export const getChat = query({
 	},
 });
 
+export const listChats = query({
+	handler: async (ctx) => {
+		return await ctx.db
+			.query("chats")
+			.withIndex("by_creation_time")
+			.order("desc")
+			.collect();
+	},
+});
+
 export const updateChat = internalMutation({
 	args: {
 		chatId: v.id("chats"),

@@ -1,6 +1,5 @@
 "use client";
 
-import { cn } from "@/lib/utils";
 import { useMutation, useQuery } from "convex/react";
 import { useMemo, useEffect, useRef } from "react";
 
@@ -98,11 +97,10 @@ export default function ChatPage({ chatId }: { chatId?: string }) {
 	}
 
 	return (
-		/* TODO: CHANGE h-screen TO h-full later on */
-		<main className="flex flex-col items-center justify-center w-full h-screen">
+		<main className="flex flex-col items-center justify-center w-full h-full">
 			<div
 				ref={scrollContainerRef}
-				className="flex w-full justify-center grow min-h-0 overflow-y-scroll py-4"
+				className="flex w-full justify-center grow min-h-0 overflow-y-scroll pb-4 pt-8"
 			>
 				<div className="flex flex-col gap-2 w-full max-w-3xl px-4">
 					{pairedMessages?.map((chunk, index) => {
@@ -158,17 +156,17 @@ export default function ChatPage({ chatId }: { chatId?: string }) {
 				/>
 				<div className="flex justify-between items-center mt-2 bottom-0 right-0">
 					<Select onValueChange={setModelId} value={modelId}>
-						<SelectTrigger className="w-[225px] h-full">
+						<SelectTrigger className="w-[225px]">
 							<SelectValue placeholder="Model" />
 						</SelectTrigger>
 						<SelectContent>
 							{models.map((model) => {
 								return (
 									<SelectItem key={model.id} value={model.id}>
-										<div className="flex items-center gap-.5">
+										<div className="flex items-center gap-0.75">
 											<Image
-												height={16}
-												width={16}
+												height={18}
+												width={18}
 												src={model.icon}
 												alt={model.name}
 											/>

@@ -56,6 +56,9 @@ export const updateChatData = mutation({
 		title: v.optional(v.string()),
 	},
 	handler: async (ctx, args) => {
+		if (args.title && args.title.trim() === "") {
+			throw new Error("Title cannot be empty.");
+		}
 		await ctx.db.patch(args.id, { title: args.title });
 	},
 });

@@ -1,13 +1,15 @@
 "use client";
 
 import { Doc } from "@/../convex/_generated/dataModel";
-import { Copy, Split, RefreshCcw } from "lucide-react";
+import { Copy, Split, RefreshCcw, Volume2, Square } from "lucide-react";
 
 import copyToClipboard from "@/utils/copy-to-clipboard";
 
 import MemoizedMarkdown from "../memoized-markdown";
+import { useSpeech } from "react-text-to-speech";
 import IconButton from "../buttons/icon-button";
 import { cn } from "@/lib/utils";
+import stripMarkdownFromString from "@/hooks/stripMarkdownFromString";
 
 export default function AssistantMessage({
 	message,
@@ -20,6 +22,18 @@ export default function AssistantMessage({
 	onBranch: () => void;
 	onRetry: () => void;
 }) {
+	const { start, speechStatus, stop } = useSpeech({
+		text: stripMarkdownFromString(content),
+	});
+
+	function onPlayAudio() {
+		if (speechStatus === "started") {
+			stop();
+		} else {
+			start();
+		}
+	}
+
 	return (
 		<div className="w-full flex flex-col group">
 			<MemoizedMarkdown content={content} />
@@ -34,6 +48,9 @@ export default function AssistantMessage({
 				</IconButton>
 				<IconButton onClick={onBranch}>
 					<Split />
+				</IconButton>
+				<IconButton onClick={onPlayAudio}>
+					{speechStatus != "started" ? <Volume2 /> : <Square />}
 				</IconButton>
 				<IconButton onClick={onRetry}>
 					<RefreshCcw />

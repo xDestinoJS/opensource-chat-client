@@ -13,7 +13,18 @@ export function useChatInputEvents(
 				!event.ctrlKey &&
 				!event.metaKey &&
 				!event.altKey;
-			const isEditableElement = document.activeElement?.matches(
+
+			let focusedElement = document.activeElement;
+			// If the active element is a shadow host, check the active element within its shadow root
+			if (
+				focusedElement &&
+				focusedElement.shadowRoot &&
+				focusedElement.shadowRoot.activeElement
+			) {
+				focusedElement = focusedElement.shadowRoot.activeElement;
+			}
+
+			const isEditableElement = focusedElement?.matches(
 				'input, textarea, [contenteditable="true"]'
 			);
 
@@ -23,6 +34,24 @@ export function useChatInputEvents(
 		};
 
 		const handlePaste = (event: ClipboardEvent) => {
+			let focusedElement = document.activeElement;
+			// If the active element is a shadow host, check the active element within its shadow root
+			if (
+				focusedElement &&
+				focusedElement.shadowRoot &&
+				focusedElement.shadowRoot.activeElement
+			) {
+				focusedElement = focusedElement.shadowRoot.activeElement;
+			}
+
+			const isEditableElement = focusedElement?.matches(
+				'input, textarea, [contenteditable="true"]'
+			);
+
+			if (isEditableElement) {
+				return;
+			}
+
 			if (document.activeElement !== inputAreaRef.current?.textArea) {
 				// Check specific element
 				inputAreaRef.current?.textArea.focus();

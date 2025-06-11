@@ -2,12 +2,11 @@
 
 import { cn } from "@/lib/utils";
 import { useMutation, useQuery } from "convex/react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useEffect, useRef } from "react";
 
-import UserMessage from "@/components/chat/messages/user-message";
-import AssistantMessage from "@/components/chat/messages/assistant-message";
+import MessagePair from "@/components/chat/message-pair";
 import { api } from "../../convex/_generated/api";
-import { Id, Doc } from "../../convex/_generated/dataModel";
+import { Id } from "../../convex/_generated/dataModel";
 import { redirect } from "next/navigation";
 import { ArrowUp, Square } from "lucide-react";
 import { Button } from "./ui/button";
@@ -24,7 +23,7 @@ import {
 } from "@/components/ui/select";
 import useChatModel from "@/hooks/useChatModel";
 import models from "@/lib/models";
-import { VariableSizeList as List } from "react-window";
+import Image from "next/image";
 
 export default function ChatPage({ chatId }: { chatId?: string }) {
 	const chat = (chatId
@@ -50,9 +49,10 @@ export default function ChatPage({ chatId }: { chatId?: string }) {
 	const cancelMessage = useMutation(api.messageCancellations.cancelMessage);
 
 	const inputAreaRef = useRef<AutosizeTextAreaRef>(null);
-	const listRef = useRef<List>(null);
+
+	const blankSpaceRef = useRef<HTMLDivElement>(null);
 	const scrollContainerRef = useRef<HTMLDivElement>(null);
-	const itemSizes = useRef<Map<number, number>>(new Map());
+	const lastPairContainerRef = useRef<HTMLDivElement>(null);
 
 	// Get model
 	const { modelId, setModelId } = useChatModel();
@@ -60,98 +60,12 @@ export default function ChatPage({ chatId }: { chatId?: string }) {
 	// Use the custom hook for input events
 	useChatInputEvents(inputAreaRef);
 
-	// Auto-scroll to bottom when new messages arrive
-	useEffect(() => {
-		if (pairedMessages.length > 0 && listRef.current) {
-			listRef.current.scrollToItem(pairedMessages.length - 1, "end");
-		}
-	}, [pairedMessages.length]);
-
-	// Get item size with fallback
-	const getItemSize = useCallback((index: number) => {
-		return itemSizes.current.get(index) || 200; // Default height
-	}, []);
-
-	// Set item size when rendered
-	const setItemSize = useCallback((index: number, size: number) => {
-		if (itemSizes.current.get(index) !== size) {
-			itemSizes.current.set(index, size);
-			if (listRef.current) {
-				listRef.current.resetAfterIndex(index);
-			}
-		}
-	}, []);
-
-	// Render individual message pair
-	const renderMessagePair = useCallback(
-		({ index, style }: { index: number; style: React.CSSProperties }) => {
-			const chunk = pairedMessages[index];
-			const isLastPair = pairedMessages.length - 1 === index;
-
-			return (
-				<div
-					style={style}
-					className={isLastPair ? "pb-4" : undefined}
-					ref={(el) => {
-						if (el) {
-							const height = el.getBoundingClientRect().height;
-							setItemSize(index, height);
-						}
-					}}
-				>
-					{chunk.map((message) => {
-						const content = message.content.join("");
-
-						return (
-							<div key={message._id} className="flex w-full">
-								<div
-									className={cn(
-										"w-full",
-										message.role === "user" ? "justify-end" : "justify-start"
-									)}
-								>
-									{message.role === "user" ? (
-										<UserMessage
-											message={message}
-											content={content}
-											onEdit={(content) => {
-												editMessage({
-													messageId: message._id,
-													content,
-												});
-											}}
-											onRetry={() => {
-												retryMessage({
-													messageId: message._id,
-												});
-											}}
-										/>
-									) : (
-										<AssistantMessage
-											message={message}
-											content={content}
-											onBranch={async () => {
-												const response = await branchMessage({
-													messageId: message._id,
-												});
-
-												redirect("/chat/" + response.chatId);
-											}}
-											onRetry={() => {
-												retryMessage({
-													messageId: message._id,
-												});
-											}}
-										/>
-									)}
-								</div>
-							</div>
-						);
-					})}
-				</div>
-			);
-		},
-		[pairedMessages, editMessage, retryMessage, branchMessage, setItemSize]
+	// Use the custom hook for scroll management
+	useChatScrollManagement(
+		lastPairContainerRef,
+		blankSpaceRef,
+		scrollContainerRef,
+		messages
 	);
 
 	useEffect(() => {
@@ -188,28 +102,46 @@ export default function ChatPage({ chatId }: { chatId?: string }) {
 		<main className="flex flex-col items-center justify-center w-full h-screen">
 			<div
 				ref={scrollContainerRef}
-				className="flex w-full justify-center grow min-h-0 overflow-hidden py-4"
+				className="flex w-full justify-center grow min-h-0 overflow-y-scroll py-4"
 			>
 				<div className="flex flex-col gap-2 w-full max-w-3xl px-4">
-					{pairedMessages.length > 0 ? (
-						<List
-							ref={listRef}
-							height={scrollContainerRef.current?.clientHeight || 600}
-							itemCount={pairedMessages.length}
-							itemSize={getItemSize}
-							width="100%"
-							style={{ width: "100%" }}
-						>
-							{renderMessagePair}
-						</List>
-					) : null}
+					{pairedMessages?.map((chunk, index) => {
+						const isLastPair = pairedMessages.length - 1 === index;
+						const userMessage = chunk[0]; // Always user first
+						const assistantMessage = chunk[1]; // Assistant second (might be undefined)
+
+						return (
+							<MessagePair
+								key={index}
+								userMessage={userMessage}
+								assistantMessage={assistantMessage}
+								isLastPair={isLastPair}
+								lastPairContainerRef={lastPairContainerRef}
+								onEditMessage={(messageId, content) => {
+									editMessage({
+										messageId,
+										content,
+									});
+								}}
+								onRetryMessage={(messageId) => {
+									retryMessage({
+										messageId,
+									});
+								}}
+								onBranchMessage={async (messageId) => {
+									const response = await branchMessage({
+										messageId,
+									});
+									redirect("/chat/" + response.chatId);
+								}}
+							/>
+						);
+					})}
+					<div ref={blankSpaceRef} />
 				</div>
 			</div>
 
-			<form
-				onSubmit={handleSubmit}
-				className="bg-gray-100 p-4 rounded-tl-2xl w-full max-w-3xl rounded-tr-2xl border border-neutral-300 shrink-0"
-			>
+			<form className="bg-gray-100 p-4 rounded-tl-2xl w-full max-w-3xl rounded-tr-2xl border border-neutral-300 shrink-0">
 				<AutosizeTextarea
 					ref={inputAreaRef}
 					name="prompt"
@@ -233,7 +165,15 @@ export default function ChatPage({ chatId }: { chatId?: string }) {
 							{models.map((model) => {
 								return (
 									<SelectItem key={model.id} value={model.id}>
-										{model.name}
+										<div className="flex items-center gap-.5">
+											<Image
+												height={16}
+												width={16}
+												src={model.icon}
+												alt={model.name}
+											/>
+											<span className="ml-2">{model.name}</span>
+										</div>
 									</SelectItem>
 								);
 							})}

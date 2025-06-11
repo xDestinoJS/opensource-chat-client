@@ -25,7 +25,7 @@ const models: ModelConfig[] = [
 		maxTokens: 8192,
 		temperature: 0.2,
 		available: true,
-		icon: "https://example.com/icons/gemini-2.0-flash.png",
+		icon: "/assets/icons/gemini.svg",
 	},
 	{
 		id: "mistral-small",
@@ -34,7 +34,7 @@ const models: ModelConfig[] = [
 		maxTokens: 4096,
 		temperature: 0.5,
 		available: true,
-		icon: "https://example.com/icons/mistral-small.png",
+		icon: "/assets/icons/mistral.svg",
 	},
 ];
 

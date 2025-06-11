@@ -9,7 +9,7 @@ import MemoizedMarkdown from "../memoized-markdown";
 import { useSpeech } from "react-text-to-speech";
 import IconButton from "../buttons/icon-button";
 import { cn } from "@/lib/utils";
-import stripMarkdownFromString from "@/hooks/stripMarkdownFromString";
+import stripMarkdownFromString from "@/utils/strip-markdown-from-string";
 
 export default function AssistantMessage({
 	message,

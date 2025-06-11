@@ -16,5 +16,6 @@ export default defineSchema({
 	chats: defineTable({
 		title: v.string(),
 		branchOf: v.optional(v.id("chats")),
+		isPinned: v.boolean(),
 	}),
 });

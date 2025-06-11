@@ -7,10 +7,11 @@
   - [x] Create sidebar menu
   - [x] Rename chat
   - [x] Add voice feature (https://developer.puter.com/tutorials/free-unlimited-text-to-speech-api/)
-  - [ ] Sort sidebar by: Today / Yesterday / Last 7 Days / Last 30 Days / Older
-  - [ ] Pin chat
-  - [ ] Delete chat
-  - [ ] add quoting system
+  - [x] Sort sidebar by: Today / Yesterday / Last 7 Days / Last 30 Days / Older
+  - [x] Add additional chat features
+    - [x] Pin chat
+    - [x] Delete chat
+  - [ ] Add quoting system
   - [ ] Add Convex streaming component
   - [ ] Add Better-auth
   - [ ] Add Spotlight-like feature

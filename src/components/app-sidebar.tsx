@@ -5,21 +5,26 @@ import {
 	Sidebar,
 	SidebarContent,
 	SidebarFooter,
-	SidebarGroup,
-	SidebarGroupContent,
-	SidebarGroupLabel,
 	SidebarHeader,
-	SidebarMenu,
 	SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
-import { Id } from "../../convex/_generated/dataModel";
+import { Doc, Id } from "../../convex/_generated/dataModel";
 import Link from "next/link";
 import { Button } from "./ui/button";
 import { Plus } from "lucide-react";
-import { redirect } from "next/navigation";
-import { ChatListItem } from "./chat/chat-list-item";
+import { ChatGroupSection } from "./chat/chat-group-section";
+
+interface ChatGroup {
+	label: string;
+	chats: Doc<"chats">[];
+}
+
+interface GroupedChatsResult {
+	pinnedChats: Doc<"chats">[];
+	dateBasedGroups: ChatGroup[];
+}
 
 export function AppSidebar() {
 	const [editingChatId, setEditingChatId] = useState<Id<"chats"> | null>(null);
@@ -55,6 +60,66 @@ export function AppSidebar() {
 		}
 	}
 
+	const getChatGroups = (): GroupedChatsResult => {
+		const now = new Date();
+		const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+		const yesterday = new Date(today);
+		yesterday.setDate(today.getDate() - 1);
+		const sevenDaysAgo = new Date(today);
+		sevenDaysAgo.setDate(today.getDate() - 7);
+		const thirtyDaysAgo = new Date(today);
+		thirtyDaysAgo.setDate(today.getDate() - 30);
+
+		const pinnedChats: Doc<"chats">[] = [];
+		const unpinnedChats: Doc<"chats">[] = [];
+
+		chats.forEach((chat) => {
+			// Assuming chat objects have a 'pinned' boolean property
+			if (chat.isPinned) {
+				pinnedChats.push(chat);
+			} else {
+				unpinnedChats.push(chat);
+			}
+		});
+
+		// Sort pinned chats by creation time, newest first
+		pinnedChats.sort((a, b) => b._creationTime - a._creationTime);
+
+		const groups: Record<string, Doc<"chats">[]> = {
+			Today: [],
+			Yesterday: [],
+			"Last 7 Days": [],
+			"Last 30 Days": [],
+			Older: [],
+		};
+
+		unpinnedChats.forEach((chat) => {
+			const chatDate = new Date(chat._creationTime);
+			if (chatDate >= today) {
+				groups.Today.push(chat);
+			} else if (chatDate >= yesterday) {
+				groups.Yesterday.push(chat);
+			} else if (chatDate >= sevenDaysAgo) {
+				groups["Last 7 Days"].push(chat);
+			} else if (chatDate >= thirtyDaysAgo) {
+				groups["Last 30 Days"].push(chat);
+			} else {
+				groups.Older.push(chat);
+			}
+		});
+
+		const dateBasedGroups = Object.entries(groups)
+			.map(([label, groupedChats]) => ({
+				label,
+				chats: groupedChats.sort((a, b) => b._creationTime - a._creationTime), // Sort within groups, newest first
+			}))
+			.filter((group) => group.chats.length > 0);
+
+		return { pinnedChats, dateBasedGroups };
+	};
+
+	const { pinnedChats, dateBasedGroups } = getChatGroups();
+
 	return (
 		<Sidebar className="duration-250 ease-in-out">
 			<SidebarHeader>
@@ -71,39 +136,31 @@ export function AppSidebar() {
 				</div>
 			</SidebarHeader>
 			<SidebarContent>
-				<SidebarGroup>
-					<SidebarGroupLabel>Chats</SidebarGroupLabel>
-					<SidebarGroupContent>
-						<SidebarMenu>
-							{chats.map((chat) => {
-								const animateOnAppearForDisplay = chat.title
-									? isRecentlyCreated(chat._creationTime)
-									: false;
-
-								const branchData = chat.branchOf
-									? chats.find((c) => c._id === chat.branchOf)
-									: undefined;
-
-								return (
-									<ChatListItem
-										key={chat._id}
-										chat={chat}
-										isEditing={editingChatId === chat._id}
-										animateOnAppear={animateOnAppearForDisplay}
-										branchData={branchData}
-										onStartEdit={() => setEditingChatId(chat._id)}
-										onUpdateTitle={updateTitle}
-										onEditKeyDown={handleEditKeyDown}
-										editInputAreaRef={editInputAreaRef}
-										onNavigateToBranch={() =>
-											redirect(`/chat/${chat.branchOf}`)
-										}
-									/>
-								);
-							})}
-						</SidebarMenu>
-					</SidebarGroupContent>
-				</SidebarGroup>
+				<ChatGroupSection
+					label="Pinned"
+					chats={pinnedChats}
+					allChats={chats}
+					editingChatId={editingChatId}
+					isRecentlyCreated={isRecentlyCreated}
+					updateTitle={updateTitle}
+					handleEditKeyDown={handleEditKeyDown}
+					editInputAreaRef={editInputAreaRef}
+					setEditingChatId={setEditingChatId}
+				/>
+				{dateBasedGroups.map((group) => (
+					<ChatGroupSection
+						key={group.label}
+						label={group.label}
+						chats={group.chats}
+						allChats={chats}
+						editingChatId={editingChatId}
+						isRecentlyCreated={isRecentlyCreated}
+						updateTitle={updateTitle}
+						handleEditKeyDown={handleEditKeyDown}
+						editInputAreaRef={editInputAreaRef}
+						setEditingChatId={setEditingChatId}
+					/>
+				))}
 			</SidebarContent>
 			<SidebarFooter />
 		</Sidebar>

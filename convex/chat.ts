@@ -54,12 +54,21 @@ export const updateChatData = mutation({
 	args: {
 		id: v.id("chats"),
 		title: v.optional(v.string()),
+		isPinned: v.optional(v.boolean()),
 	},
 	handler: async (ctx, args) => {
-		if (args.title && args.title.trim() === "") {
+		if (args.title != undefined && args.title.trim() === "") {
 			throw new Error("Title cannot be empty.");
 		}
-		await ctx.db.patch(args.id, { title: args.title });
+
+		const updates: { title?: string; isPinned?: boolean } = {};
+		if (args.title !== undefined) {
+			updates.title = args.title;
+		}
+		if (args.isPinned !== undefined) {
+			updates.isPinned = args.isPinned;
+		}
+		await ctx.db.patch(args.id, updates);
 	},
 });
 
@@ -94,6 +103,7 @@ export const createChat = internalMutation({
 		// Create a new chat and generate a title based on the provided content
 		const chatId = await ctx.db.insert("chats", {
 			title: "",
+			isPinned: false,
 		});
 
 		// If it's a new chat, we can generate a title based on the content
@@ -134,6 +144,7 @@ export const branchChat = internalMutation({
 		const newChatId = await ctx.db.insert("chats", {
 			title: args.title,
 			branchOf: chat._id,
+			isPinned: false,
 		});
 
 		// Insert the messages into the new chat
@@ -148,5 +159,19 @@ export const branchChat = internalMutation({
 		}
 
 		return newChatId;
+	},
+});
+
+export const deleteChat = mutation({
+	args: {
+		id: v.id("chats"),
+	},
+	handler: async (ctx, args) => {
+		const chat = await ctx.db.get(args.id);
+		if (!chat) {
+			throw new Error("[DB] Chat not found.");
+		}
+
+		await ctx.db.delete(args.id);
 	},
 });

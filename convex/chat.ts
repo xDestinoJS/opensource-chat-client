@@ -1,5 +1,10 @@
 import { v } from "convex/values";
-import { internalAction, internalMutation, query } from "./_generated/server";
+import {
+	internalAction,
+	internalMutation,
+	mutation,
+	query,
+} from "./_generated/server";
 import { generateObject } from "../src/lib/ai";
 import { z } from "zod";
 import { internal } from "./_generated/api";
@@ -42,6 +47,16 @@ export const updateChat = internalMutation({
 
 		// Update the chat with the new title
 		await ctx.db.patch(args.chatId, { title: args.title });
+	},
+});
+
+export const updateChatData = mutation({
+	args: {
+		id: v.id("chats"),
+		title: v.optional(v.string()),
+	},
+	handler: async (ctx, args) => {
+		await ctx.db.patch(args.id, { title: args.title });
 	},
 });
 

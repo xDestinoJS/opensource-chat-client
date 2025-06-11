@@ -5,6 +5,11 @@
 - Must-add:
 
   - [x] Create sidebar menu
+  - [ ] Rename chat
+  - [ ] Pin chat
+  - [ ] Delete chat
+  - [ ] Add voice feature (https://developer.puter.com/tutorials/free-unlimited-text-to-speech-api/)
+  - [ ] Add Spotlight-like feature
   - [ ] Add Convex streaming component
   - [ ] Add Better-auth
   - [ ] Add chat sharing

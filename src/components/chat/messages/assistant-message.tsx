@@ -1,7 +1,7 @@
 "use client";
 
 import { Doc } from "@/../convex/_generated/dataModel";
-import { Copy, GitBranch, RefreshCcw } from "lucide-react";
+import { Copy, Split, RefreshCcw } from "lucide-react";
 
 import copyToClipboard from "@/utils/copy-to-clipboard";
 
@@ -33,7 +33,7 @@ export default function AssistantMessage({
 					<Copy />
 				</IconButton>
 				<IconButton onClick={onBranch}>
-					<GitBranch />
+					<Split />
 				</IconButton>
 				<IconButton onClick={onRetry}>
 					<RefreshCcw />

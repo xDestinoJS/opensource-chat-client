@@ -62,7 +62,7 @@ export const generateTitle = internalAction({
 		// Update the chat with the generated title
 		await ctx.runMutation(internal.chat.updateChat, {
 			chatId: args.chatId,
-			title: data.title,
+			title: data.title ?? "Untitled Chat",
 		});
 	},
 });
@@ -115,6 +115,7 @@ export const branchChat = internalMutation({
 		// Create a new chat with the same messages but a different title
 		const newChatId = await ctx.db.insert("chats", {
 			title: args.title,
+			branchOf: chat._id,
 		});
 
 		// Insert the messages into the new chat

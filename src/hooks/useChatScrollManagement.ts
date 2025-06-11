@@ -28,7 +28,7 @@ export function useChatScrollManagement(
 		const scrollHeight = scrollNode.offsetHeight;
 		const lastPairHeight = lastPairNode.offsetHeight;
 
-		blankSpaceNode.style.paddingTop = `${Math.max(scrollHeight - lastPairHeight - 16, 0)}px`;
+		blankSpaceNode.style.paddingTop = `${Math.max(scrollHeight - lastPairHeight - 32, 0)}px`;
 
 		if (lastMessageScrolledTo.current === latestMessage._id) return;
 
@@ -39,7 +39,7 @@ export function useChatScrollManagement(
 				isFirstLoadRef.current = false;
 			} else {
 				scrollNode.scrollTo({
-					top: scrollNode.scrollHeight,
+					top: scrollNode.scrollHeight - 16, // 16px for the bottom margin
 					behavior: "smooth",
 				});
 			}

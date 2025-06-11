@@ -23,9 +23,6 @@ export default function MessagePair({
 	onRetryMessage,
 	onBranchMessage,
 }: MessagePairProps) {
-	const userContent = userMessage.content.join("");
-	const assistantContent = assistantMessage?.content.join("") || "";
-
 	return (
 		<div
 			ref={isLastPair ? lastPairContainerRef : null}
@@ -36,7 +33,6 @@ export default function MessagePair({
 				<div className="w-full justify-end">
 					<UserMessage
 						message={userMessage}
-						content={userContent}
 						onEdit={(content) => {
 							onEditMessage(userMessage._id, content);
 						}}
@@ -53,7 +49,6 @@ export default function MessagePair({
 					<div className="w-full justify-start">
 						<AssistantMessage
 							message={assistantMessage}
-							content={assistantContent}
 							onBranch={async () => {
 								await onBranchMessage(assistantMessage._id);
 							}}

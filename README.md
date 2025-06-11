@@ -5,13 +5,15 @@
 - Must-add:
 
   - [x] Create sidebar menu
-  - [ ] Rename chat
+  - [x] Rename chat
+  - [x] Add voice feature (https://developer.puter.com/tutorials/free-unlimited-text-to-speech-api/)
+  - [ ] Sort sidebar by: Today / Yesterday / Last 7 Days / Last 30 Days / Older
   - [ ] Pin chat
   - [ ] Delete chat
-  - [ ] Add voice feature (https://developer.puter.com/tutorials/free-unlimited-text-to-speech-api/)
-  - [ ] Add Spotlight-like feature
+  - [ ] add quoting system
   - [ ] Add Convex streaming component
   - [ ] Add Better-auth
+  - [ ] Add Spotlight-like feature
   - [ ] Add chat sharing
   - [ ] Add Openrouter support
   - [ ] Look if Openrouter supports selecting any model in existance

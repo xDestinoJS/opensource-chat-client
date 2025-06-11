@@ -15,18 +15,17 @@ import {
 
 export default function UserMessage({
 	message,
-	content,
 	onEdit,
 	onRetry,
 }: {
 	message: Doc<"messages">;
-	content: string;
 	onEdit: (content: string) => void;
 	onRetry: () => void;
 }) {
 	const textAreaRef = useRef<AutosizeTextAreaRef>(null);
+	const content = message.content.join("");
 
-	const [newContent, setNewContent] = useState(content);
+	const [newContent, setNewContent] = useState<string>(content);
 	const [isEditing, setIsEditing] = useState(false);
 
 	function handleKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
@@ -65,17 +64,15 @@ export default function UserMessage({
 	}
 
 	return (
-		<div className="w-full flex flex-col justify-end items-end group">
+		<div className="flex flex-col justify-end items-end group">
 			<div
 				className={cn(
 					"border border-neutral-400 px-2.5 py-2 rounded-xl max-w-3/4",
-					isEditing ? "w-full" : "w-max"
+					isEditing ? "w-full" : "max-w-2/3"
 				)}
 			>
 				{!isEditing ? (
-					<p className="w-full whitespace-pre-wrap break-all">
-						{message.content}
-					</p>
+					<p className="whitespace-pre-wrap break-all">{content}</p>
 				) : (
 					<AutosizeTextarea
 						ref={textAreaRef}

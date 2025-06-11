@@ -13,15 +13,15 @@ import stripMarkdownFromString from "@/hooks/stripMarkdownFromString";
 
 export default function AssistantMessage({
 	message,
-	content,
 	onBranch,
 	onRetry,
 }: {
 	message: Doc<"messages">;
-	content: string;
 	onBranch: () => void;
 	onRetry: () => void;
 }) {
+	const content = message?.content.join("") || "";
+
 	const { start, speechStatus, stop } = useSpeech({
 		text: stripMarkdownFromString(content),
 	});

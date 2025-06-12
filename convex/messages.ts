@@ -121,6 +121,23 @@ export const answerMessage = internalAction({
 				content: Array.isArray(m.content) ? m.content.join("") : m.content,
 			}));
 
+		// Add the quote to the last user message
+		for (let i = allMessages.length - 1; i >= 0; i--) {
+			const message = allMessages[i];
+
+			if (message.role === "user") {
+				const quote = messages[i]?.quote;
+
+				if (quote) {
+					allMessages[i].content =
+						`The user has quoted a previous message. You must answer the user based on this quote. Don't make any mentions of it being a quote: "${quote}"` +
+						allMessages[allMessages.length - 1].content;
+				}
+
+				break;
+			}
+		}
+
 		// Begin the AI stream
 		const controller = new AbortController();
 		const response = await streamText(
@@ -179,6 +196,7 @@ export const answerMessage = internalAction({
  */
 export const sendMessage = mutation({
 	args: {
+		quote: v.optional(v.string()), // Optional quote for the message
 		chatId: v.optional(v.id("chats")),
 		content: v.string(), // User input is still a single string here
 		model: v.string(),
@@ -212,6 +230,7 @@ export const sendMessage = mutation({
 				chatId: chatId,
 				role: "user",
 				content: [args.content], // Store as an array
+				quote: args.quote,
 				model: args.model,
 				isComplete: true, // User messages are complete immediately
 			});

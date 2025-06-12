@@ -12,6 +12,7 @@ interface MessagePairProps {
 	onEditMessage: (messageId: Id<"messages">, content: string) => void;
 	onRetryMessage: (messageId: Id<"messages">) => void;
 	onBranchMessage: (messageId: Id<"messages">) => Promise<void>;
+	onQuote: (quote: string) => void;
 }
 
 export default function MessagePair({
@@ -22,6 +23,7 @@ export default function MessagePair({
 	onEditMessage,
 	onRetryMessage,
 	onBranchMessage,
+	onQuote,
 }: MessagePairProps) {
 	return (
 		<div
@@ -55,6 +57,7 @@ export default function MessagePair({
 							onRetry={() => {
 								onRetryMessage(assistantMessage._id);
 							}}
+							onQuote={onQuote}
 						/>
 					</div>
 				</div>

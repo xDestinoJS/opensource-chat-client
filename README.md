@@ -11,13 +11,15 @@
   - [x] Add additional chat features
     - [x] Pin chat
     - [x] Delete chat
+  - [x] Add Openrouter support
   - [ ] Add quoting system
-  - [ ] Add Convex streaming component
+    - [x] Make quoting appear
+    - [ ] Make quoting function
+    - [ ] Change icon
   - [ ] Add Better-auth
+  - [ ] Add Convex streaming component
   - [ ] Add Spotlight-like feature
   - [ ] Add chat sharing
-  - [ ] Add Openrouter support
-  - [ ] Look if Openrouter supports selecting any model in existance
   - [ ] Make retry button allow user to retry with different model (or with shift, no modal)
   - [ ] Add custom GPT
   - [ ] Add settings

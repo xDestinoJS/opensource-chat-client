@@ -12,6 +12,7 @@ import {
 	AutosizeTextarea,
 	AutosizeTextAreaRef,
 } from "@/components/ui/autosize-textarea";
+import { TextQuote } from "@/components/text-quote";
 
 export default function UserMessage({
 	message,
@@ -65,6 +66,13 @@ export default function UserMessage({
 
 	return (
 		<div className="flex flex-col justify-end items-end group">
+			{message.quote && (
+				<TextQuote
+					quote={message.quote}
+					variant="background"
+					className="mb-2 w-max max-w-full"
+				/>
+			)}
 			<div
 				className={cn(
 					"border border-neutral-400 px-2.5 py-2 rounded-xl max-w-3/4",

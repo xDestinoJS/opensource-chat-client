@@ -7,7 +7,7 @@ import MessagePair from "@/components/chat/message-pair";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
 import { redirect } from "next/navigation";
-import { ArrowUp, Square } from "lucide-react";
+import { ArrowUp, CornerDownRight, Square, X } from "lucide-react";
 import { Button } from "./ui/button";
 import { AutosizeTextarea, AutosizeTextAreaRef } from "./ui/autosize-textarea";
 import chunkArray from "@/utils/chunk-array";
@@ -23,9 +23,10 @@ import {
 import useChatModel from "@/hooks/useChatModel";
 import Image from "next/image";
 import Head from "next/head";
-import { cn } from "@/lib/utils";
+import { TextQuote } from "./text-quote";
 
 export default function ChatPage({ chatId }: { chatId?: Id<"chats"> }) {
+	const [quote, setQuote] = useState<string | undefined>();
 	const [mounted, setMounted] = useState(false);
 
 	// If chatId is not of a real chat, we redirect to the chat page
@@ -89,10 +90,13 @@ export default function ChatPage({ chatId }: { chatId?: Id<"chats"> }) {
 		// Send message to the server
 		(async () => {
 			const response = await sendMessage({
+				quote: quote,
 				content: currentInput,
 				chatId: chatId as Id<"chats">,
 				model: modelId,
 			});
+
+			setQuote(undefined); // Clear the quote after sending
 
 			// If the chatId is not provided, we redirect to the chat page
 			if (messages?.length === 0) {
@@ -146,6 +150,7 @@ export default function ChatPage({ chatId }: { chatId?: Id<"chats"> }) {
 										});
 										redirect("/chat/" + response.chatId);
 									}}
+									onQuote={setQuote}
 								/>
 							);
 						})}
@@ -154,7 +159,14 @@ export default function ChatPage({ chatId }: { chatId?: Id<"chats"> }) {
 				</div>
 
 				<form className="w-full max-w-3xl max-lg:px-4 shrink-0">
-					<div className="bg-gray-100 p-4 rounded-tl-2xl rounded-tr-2xl  border border-neutral-300">
+					<div className="bg-neutral-50 p-4 rounded-tl-2xl rounded-tr-2xl  border border-neutral-300">
+						{quote && (
+							<TextQuote
+								quote={quote}
+								variant="foreground"
+								onRemove={() => setQuote(undefined)}
+							/>
+						)}
 						<AutosizeTextarea
 							ref={inputAreaRef}
 							name="prompt"

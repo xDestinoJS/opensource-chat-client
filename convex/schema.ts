@@ -8,6 +8,7 @@ export default defineSchema({
 		content: v.array(v.string()),
 		model: v.optional(v.string()),
 		isComplete: v.boolean(),
+		quote: v.optional(v.string()),
 	}),
 	messageCancellations: defineTable({
 		messageId: v.id("messages"),

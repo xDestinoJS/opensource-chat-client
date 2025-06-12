@@ -10,9 +10,11 @@ import {
 import { Doc, Id } from "../../../convex/_generated/dataModel";
 import { ChatListItem } from "./chat-list-item";
 import { redirect, useParams } from "next/navigation"; // Added for onNavigateToBranch
+import { LucideIcon } from "lucide-react";
 
 interface ChatGroupSectionProps {
 	label: string;
+	Icon?: LucideIcon;
 	chats: Doc<"chats">[];
 	allChats: Doc<"chats">[]; // To find branchData
 	editingChatId: Id<"chats"> | null;
@@ -26,6 +28,7 @@ interface ChatGroupSectionProps {
 
 export function ChatGroupSection({
 	label,
+	Icon,
 	chats,
 	allChats,
 	editingChatId,
@@ -43,7 +46,10 @@ export function ChatGroupSection({
 
 	return (
 		<SidebarGroup>
-			<SidebarGroupLabel>{label}</SidebarGroupLabel>
+			<SidebarGroupLabel className="[&>svg]:size-3">
+				{Icon && <Icon />}
+				<span className={Icon && "ml-1"}>{label}</span>
+			</SidebarGroupLabel>
 			<SidebarGroupContent>
 				<SidebarMenu>
 					{chats.map((chat) => {

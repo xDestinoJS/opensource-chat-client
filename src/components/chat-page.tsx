@@ -111,127 +111,121 @@ export default function ChatPage({ chatId }: { chatId?: Id<"chats"> }) {
 	}
 
 	return (
-		<>
-			<Head>
-				<title>Hey</title>
-			</Head>
-			<main className="flex flex-col items-center justify-center flex-1 h-screen">
-				<div
-					ref={scrollContainerRef}
-					className="flex w-full justify-center grow min-h-0 overflow-y-scroll pb-4 pt-8"
-				>
-					<div className="flex flex-col gap-2 w-full max-w-3xl max-lg:px-8 px-4">
-						{pairedMessages?.map((chunk, index) => {
-							const isLastPair = pairedMessages.length - 1 === index;
-							const userMessage = chunk[0]; // Always user first
-							const assistantMessage = chunk[1]; // Assistant second (might be undefined)
+		<main className="flex flex-col items-center justify-center flex-1 h-screen">
+			<div
+				ref={scrollContainerRef}
+				className="flex w-full justify-center grow min-h-0 overflow-y-scroll pb-4 pt-8"
+			>
+				<div className="flex flex-col gap-2 w-full max-w-3xl max-lg:px-8 px-4">
+					{pairedMessages?.map((chunk, index) => {
+						const isLastPair = pairedMessages.length - 1 === index;
+						const userMessage = chunk[0]; // Always user first
+						const assistantMessage = chunk[1]; // Assistant second (might be undefined)
 
-							return (
-								<MessagePair
-									key={index}
-									userMessage={userMessage}
-									assistantMessage={assistantMessage}
-									isLastPair={isLastPair}
-									lastPairContainerRef={lastPairContainerRef}
-									onEditMessage={(messageId, content) => {
-										editMessage({
-											messageId,
-											content,
-										});
-									}}
-									onRetryMessage={(messageId) => {
-										retryMessage({
-											messageId,
-										});
-									}}
-									onBranchMessage={async (messageId) => {
-										const response = await branchMessage({
-											messageId,
-										});
-										redirect("/chat/" + response.chatId);
-									}}
-									onQuote={setQuote}
-								/>
-							);
-						})}
-						<div ref={blankSpaceRef} />
+						return (
+							<MessagePair
+								key={index}
+								userMessage={userMessage}
+								assistantMessage={assistantMessage}
+								isLastPair={isLastPair}
+								lastPairContainerRef={lastPairContainerRef}
+								onEditMessage={(messageId, content) => {
+									editMessage({
+										messageId,
+										content,
+									});
+								}}
+								onRetryMessage={(messageId) => {
+									retryMessage({
+										messageId,
+									});
+								}}
+								onBranchMessage={async (messageId) => {
+									const response = await branchMessage({
+										messageId,
+									});
+									redirect("/chat/" + response.chatId);
+								}}
+								onQuote={setQuote}
+							/>
+						);
+					})}
+					<div ref={blankSpaceRef} />
+				</div>
+			</div>
+			<form className="w-full max-w-3xl max-lg:px-4 shrink-0">
+				<div className="bg-neutral-50 p-4 rounded-tl-2xl rounded-tr-2xl  border border-neutral-300">
+					{quote && (
+						<TextQuote
+							quote={quote}
+							variant="foreground"
+							onRemove={() => setQuote(undefined)}
+						/>
+					)}
+					<AutosizeTextarea
+						ref={inputAreaRef}
+						name="prompt"
+						type="transparent"
+						maxHeight={170}
+						className="w-full focus:outline-none resize-none bg-transparent"
+						onKeyDown={(e) => {
+							if (e.key === "Enter" && !e.shiftKey) {
+								e.preventDefault();
+								handleSubmit();
+								return;
+							}
+						}}
+					/>
+					<div className="flex justify-between items-center mt-2 bottom-0 right-0">
+						<Select onValueChange={setModelId} value={modelId}>
+							<SelectTrigger className="w-[225px]">
+								<SelectValue placeholder="Model" />
+							</SelectTrigger>
+							<SelectContent>
+								{modelList.length > 0 ? (
+									modelList.map((model) => {
+										return (
+											<SelectItem key={model.id} value={model.id}>
+												<div className="flex items-center gap-0.75">
+													<Image
+														height={18}
+														width={18}
+														src={model.icon}
+														alt={model.name}
+													/>
+													<span className="ml-2">{model.name}</span>
+												</div>
+											</SelectItem>
+										);
+									})
+								) : (
+									<p>You haven't set up any API keys yet!</p>
+								)}
+							</SelectContent>
+						</Select>
+
+						{messages?.length === 0 ||
+						(messages && messages[messages.length - 1]?.isComplete) ? (
+							<Button size="icon" type="button" onClick={handleSubmit}>
+								<ArrowUp />
+							</Button>
+						) : (
+							<Button
+								size="icon"
+								type="button"
+								onClick={async () => {
+									await cancelMessage({
+										chatId: chatId as Id<"chats">,
+									});
+									return;
+								}}
+							>
+								<Square />
+							</Button>
+						)}
 					</div>
 				</div>
-
-				<form className="w-full max-w-3xl max-lg:px-4 shrink-0">
-					<div className="bg-neutral-50 p-4 rounded-tl-2xl rounded-tr-2xl  border border-neutral-300">
-						{quote && (
-							<TextQuote
-								quote={quote}
-								variant="foreground"
-								onRemove={() => setQuote(undefined)}
-							/>
-						)}
-						<AutosizeTextarea
-							ref={inputAreaRef}
-							name="prompt"
-							type="transparent"
-							maxHeight={170}
-							className="w-full focus:outline-none resize-none bg-transparent"
-							onKeyDown={(e) => {
-								if (e.key === "Enter" && !e.shiftKey) {
-									e.preventDefault();
-									handleSubmit();
-									return;
-								}
-							}}
-						/>
-						<div className="flex justify-between items-center mt-2 bottom-0 right-0">
-							<Select onValueChange={setModelId} value={modelId}>
-								<SelectTrigger className="w-[225px]">
-									<SelectValue placeholder="Model" />
-								</SelectTrigger>
-								<SelectContent>
-									{modelList.length > 0 ? (
-										modelList.map((model) => {
-											return (
-												<SelectItem key={model.id} value={model.id}>
-													<div className="flex items-center gap-0.75">
-														<Image
-															height={18}
-															width={18}
-															src={model.icon}
-															alt={model.name}
-														/>
-														<span className="ml-2">{model.name}</span>
-													</div>
-												</SelectItem>
-											);
-										})
-									) : (
-										<p>You haven't set up any API keys yet!</p>
-									)}
-								</SelectContent>
-							</Select>
-
-							{messages?.length === 0 ||
-							(messages && messages[messages.length - 1]?.isComplete) ? (
-								<Button size="icon" type="button" onClick={handleSubmit}>
-									<ArrowUp />
-								</Button>
-							) : (
-								<Button
-									size="icon"
-									type="button"
-									onClick={async () => {
-										await cancelMessage({
-											chatId: chatId as Id<"chats">,
-										});
-										return;
-									}}
-								>
-									<Square />
-								</Button>
-							)}
-						</div>
-					</div>
-				</form>
-			</main>
-		</>
+			</form>
+		</main>
 	);
 }

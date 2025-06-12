@@ -21,9 +21,9 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import useChatModel from "@/hooks/useChatModel";
-import models from "@/lib/models";
 import Image from "next/image";
 import Head from "next/head";
+import { cn } from "@/lib/utils";
 
 export default function ChatPage({ chatId }: { chatId?: Id<"chats"> }) {
 	const [mounted, setMounted] = useState(false);
@@ -60,8 +60,7 @@ export default function ChatPage({ chatId }: { chatId?: Id<"chats"> }) {
 	const scrollContainerRef = useRef<HTMLDivElement>(null);
 	const lastPairContainerRef = useRef<HTMLDivElement>(null);
 
-	// Get model
-	const { modelId, setModelId } = useChatModel();
+	const { modelId, setModelId, modelList } = useChatModel();
 
 	// Use the custom hook for input events
 	useChatInputEvents(inputAreaRef);
@@ -176,21 +175,25 @@ export default function ChatPage({ chatId }: { chatId?: Id<"chats"> }) {
 									<SelectValue placeholder="Model" />
 								</SelectTrigger>
 								<SelectContent>
-									{models.map((model) => {
-										return (
-											<SelectItem key={model.id} value={model.id}>
-												<div className="flex items-center gap-0.75">
-													<Image
-														height={18}
-														width={18}
-														src={model.icon}
-														alt={model.name}
-													/>
-													<span className="ml-2">{model.name}</span>
-												</div>
-											</SelectItem>
-										);
-									})}
+									{modelList.length > 0 ? (
+										modelList.map((model) => {
+											return (
+												<SelectItem key={model.id} value={model.id}>
+													<div className="flex items-center gap-0.75">
+														<Image
+															height={18}
+															width={18}
+															src={model.icon}
+															alt={model.name}
+														/>
+														<span className="ml-2">{model.name}</span>
+													</div>
+												</SelectItem>
+											);
+										})
+									) : (
+										<p>You haven't set up any API keys yet!</p>
+									)}
 								</SelectContent>
 							</Select>
 

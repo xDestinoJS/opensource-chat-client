@@ -8,6 +8,11 @@ import { z } from "zod";
 import { google } from "@ai-sdk/google";
 import { mistral } from "@ai-sdk/mistral";
 import { ModelId } from "./models";
+import { createOpenRouter } from "@openrouter/ai-sdk-provider";
+
+const openrouter = createOpenRouter({
+	apiKey: process.env.OPENROUTER_API_KEY,
+});
 
 function getModel(modelId: ModelId) {
 	switch (modelId) {
@@ -17,6 +22,10 @@ function getModel(modelId: ModelId) {
 			return google("gemini-2.0-flash");
 		case "mistral-small":
 			return mistral("mistral-small-latest");
+		case "llama-4-maverick":
+			return openrouter("meta-llama/llama-4-maverick:free");
+		case "deepseek-v3":
+			return openrouter("deepseek/deepseek-v3-base:free");
 		default:
 			throw new Error(`[AI] Unsupported model: ${modelId}`);
 	}

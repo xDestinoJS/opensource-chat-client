@@ -11,6 +11,7 @@
   "dependencies": {
     "@ai-sdk/google": "^1.2.19",
     "@ai-sdk/mistral": "^1.2.8",
+    "@openrouter/ai-sdk-provider": "^0.7.1",
     "@radix-ui/react-dialog": "^1.1.14",
     "@radix-ui/react-select": "^2.2.5",
     "@radix-ui/react-separator": "^1.1.7",

@@ -7,7 +7,6 @@ import {
 } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { v } from "convex/values";
-import { z } from "zod";
 
 import { streamText } from "../src/lib/ai";
 import { Doc, Id } from "./_generated/dataModel";
@@ -137,7 +136,9 @@ export const answerMessage = internalAction({
 			isComplete: false, // Mark as incomplete before streaming
 		});
 
+		let streamWasCancelled = false; // Renamed for clarity, was `isCancelled`
 		for await (const text of response.textStream) {
+			// Always query for cancellation status in each iteration
 			const isMessagePendingCancellation = await ctx.runQuery(
 				internal.messageCancellations.isMessagePendingCancellation,
 				{
@@ -146,26 +147,26 @@ export const answerMessage = internalAction({
 			);
 
 			// Stop streaming if the message is requesting cancellation
-			if (isMessagePendingCancellation) {
+			if (isMessagePendingCancellation || streamWasCancelled) {
+				streamWasCancelled = true; // Mark that cancellation was handled
+
 				await ctx.runMutation(
 					internal.messageCancellations.removeCancellationRecord,
 					{
 						messageId: args.messageId,
 					}
 				);
-				controller.abort();
-				break;
+
+				controller.abort(); // Signal the stream source to stop
+				break; // Exit the loop immediately
 			}
 
-			// Append each text chunk directly to the message content array
 			await ctx.runMutation(internal.messages.appendMessageContent, {
 				messageId: args.messageId,
 				newChunk: text,
 			});
-			// No need for hasDelimiter check here, as we update on every chunk
 		}
 
-		// Final patch to mark as complete
 		await ctx.runMutation(internal.messages.markMessageComplete, {
 			messageId: args.messageId,
 		});

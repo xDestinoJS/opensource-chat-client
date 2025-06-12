@@ -5,7 +5,7 @@ export default defineSchema({
 	messages: defineTable({
 		chatId: v.id("chats"),
 		role: v.string(),
-		content: v.array(v.string()),
+		content: v.string(),
 		model: v.optional(v.string()),
 		isComplete: v.boolean(),
 		quote: v.optional(v.string()),

@@ -26,7 +26,7 @@ export default function AssistantMessage({
 	onQuote: (quote: string) => void;
 }) {
 	const { selectionData, contentRef } = useTextSelection();
-	const content = message?.content.join("") || "";
+	const content = message?.content;
 	const modelData = models.find((models) => models.id === message.model);
 
 	const { start, speechStatus, stop } = useSpeech({
@@ -44,7 +44,11 @@ export default function AssistantMessage({
 	return (
 		<div className="relative w-full flex flex-col group">
 			<div className="w-full" ref={contentRef}>
-				<MemoizedMarkdown content={content} />
+				{content.length > 0 ? (
+					<MemoizedMarkdown content={content} />
+				) : (
+					<p>Loading...</p>
+				)}
 			</div>
 			{selectionData.text != "" &&
 				contentRef.current &&
@@ -72,7 +76,7 @@ export default function AssistantMessage({
 			<div
 				className={cn(
 					"flex items-center mt-1 opacity-0 transition-opacity",
-					message.isComplete && "group-hover:opacity-100"
+					message.isComplete ? "group-hover:opacity-100" : "pointer-events-none"
 				)}
 			>
 				<IconButton onClick={() => copyToClipboard(content)} hasConfirmation>

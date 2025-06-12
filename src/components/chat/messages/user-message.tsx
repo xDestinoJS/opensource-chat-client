@@ -24,7 +24,7 @@ export default function UserMessage({
 	onRetry: () => void;
 }) {
 	const textAreaRef = useRef<AutosizeTextAreaRef>(null);
-	const content = message.content.join("");
+	const content = message.content;
 
 	const [newContent, setNewContent] = useState<string>(content);
 	const [isEditing, setIsEditing] = useState(false);

@@ -8,6 +8,7 @@ import {
 import { generateObject } from "../src/lib/ai";
 import { z } from "zod";
 import { internal } from "./_generated/api";
+import { ModelId } from "../src/lib/models";
 
 export const getChat = query({
 	args: {
@@ -76,20 +77,27 @@ export const generateTitle = internalAction({
 	args: {
 		chatId: v.id("chats"),
 		content: v.string(),
+		model: v.string(),
 	},
 	handler: async (ctx, args) => {
-		// Generate a title for the chat based on the provided content
-		const data = await generateObject(
-			"mistral-small",
-			"You are an AI model tasked to return a title for the chat based on the messages provided. The title should be concise and relevant to the conversation. The title must be no longer than 50 characters.",
-			[{ role: "user", content: args.content }],
-			z.object({ title: z.string() })
-		);
+		let data = { title: "Untitled Chat" };
+
+		// Attempt to generate a title for the chat based on the provided content
+		try {
+			data = await generateObject(
+				args.model as ModelId,
+				"You are an AI model tasked to return a title for the chat based on the messages provided. The title should be concise and relevant to the conversation. The title must be no longer than 50 characters.",
+				[{ role: "user", content: args.content }],
+				z.object({ title: z.string() })
+			);
+		} catch {
+			console.error("Failed to generate chat title:", args.content);
+		}
 
 		// Update the chat with the generated title
 		await ctx.runMutation(internal.chat.updateChat, {
 			chatId: args.chatId,
-			title: data.title ?? "Untitled Chat",
+			title: data.title,
 		});
 	},
 });
@@ -97,6 +105,7 @@ export const generateTitle = internalAction({
 export const createChat = internalMutation({
 	args: {
 		content: v.optional(v.string()),
+		model: v.optional(v.string()),
 		messages: v.optional(v.array(v.id("messages"))),
 	},
 	handler: async (ctx, args) => {
@@ -107,10 +116,11 @@ export const createChat = internalMutation({
 		});
 
 		// If it's a new chat, we can generate a title based on the content
-		if (args.content) {
+		if (args.content && args.model) {
 			await ctx.scheduler.runAfter(0, internal.chat.generateTitle, {
 				chatId,
 				content: args.content,
+				model: args.model,
 			});
 		}
 

@@ -4,7 +4,7 @@ import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 
 export default function useChatModel() {
-	const availableModels = useQuery(api.models.getAvailableModels, {});
+	const availableModels = useQuery(api.models.listAvailableModels, {});
 
 	const modelList = useMemo(() => {
 		// Initially, if availableModels is undefined (loading), use all models.

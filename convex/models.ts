@@ -1,9 +1,10 @@
-import models from "../src/lib/models";
-import { query } from "./_generated/server";
+import models, { ModelId } from "../src/lib/models";
+import { internal } from "./_generated/api";
+import { internalQuery, query } from "./_generated/server";
 
-export const getAvailableModels = query({
-	handler: async (ctx, args) => {
-		const availableModels = [];
+export const getAvailableModels = internalQuery({
+	handler: async (ctx) => {
+		const availableModels: ModelId[] = [];
 
 		for (const model of models) {
 			if (model.available) {
@@ -14,6 +15,15 @@ export const getAvailableModels = query({
 			}
 		}
 
+		return availableModels;
+	},
+});
+
+export const listAvailableModels = query({
+	handler: async (ctx, args) => {
+		const availableModels: ModelId[] = await ctx.runQuery(
+			internal.models.getAvailableModels
+		);
 		return availableModels;
 	},
 });

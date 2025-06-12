@@ -13,71 +13,56 @@ import { Doc, Id } from "./_generated/dataModel";
 import { ModelId, modelIds } from "../src/lib/models";
 
 /**
- * Internal mutation to update a message's content (now an array) and completion status.
- * This is a general update, typically used for initial setup or finalization.
+ * Internal mutation to update a message.
+ * Can set the entire content, append a chunk to the content, and/or update completion status.
  */
 export const updateMessage = internalMutation({
 	args: {
 		messageId: v.id("messages"),
-		content: v.array(v.string()), // Updated to array of strings
-		isComplete: v.boolean(),
+		content: v.optional(v.string()), // For setting the whole content
+		newChunk: v.optional(v.string()), // For appending a chunk
+		isComplete: v.optional(v.boolean()), // For marking complete/incomplete
 	},
 	handler: async (ctx, args) => {
 		const message = await ctx.db.get(args.messageId);
 		if (!message) {
-			throw new Error("[DB] Message not found.");
-		}
-
-		await ctx.db.patch(args.messageId, {
-			content: args.content,
-			isComplete: args.isComplete,
-		});
-	},
-});
-
-/**
- * Internal mutation to append a new chunk of text to a message's content array.
- * This is crucial for optimizing bandwidth during streaming.
- */
-export const appendMessageContent = internalMutation({
-	args: {
-		messageId: v.id("messages"),
-		newChunk: v.string(),
-	},
-	handler: async (ctx, args) => {
-		const message = await ctx.db.get(args.messageId);
-		if (!message) {
-			console.error(
-				`[DB] Message with ID ${args.messageId} not found for append.`
+			throw new Error(
+				`[DB] Message with ID ${args.messageId} not found for update.`
 			);
-			// You might want to throw an error or handle this more gracefully based on your app's needs
-			return;
 		}
 
-		// Ensure content is an array, handle potential old data or initial states
-		const currentContent = Array.isArray(message.content)
-			? message.content
-			: [];
-		const updatedContent = [...currentContent, args.newChunk];
+		const fieldsToUpdate: { content?: string; isComplete?: boolean } = {};
 
-		await ctx.db.patch(args.messageId, {
-			content: updatedContent,
-			isComplete: false, // Ensure it stays incomplete during streaming
-		});
-	},
-});
+		if (args.content !== undefined && args.newChunk !== undefined) {
+			throw new Error(
+				"[DB] Cannot provide both 'content' (for full replacement) and 'newChunk' (for appending) to updateMessage. Please provide only one."
+			);
+		}
 
-/**
- * Internal mutation to explicitly mark a message as complete.
- */
-export const markMessageComplete = internalMutation({
-	args: {
-		messageId: v.id("messages"),
-	},
-	handler: async (ctx, args) => {
-		await ctx.db.patch(args.messageId, {
-			isComplete: true,
-		});
+		// Handle content update (full replacement or append)
+		if (args.content !== undefined) {
+			fieldsToUpdate.content = args.content;
+		} else if (args.newChunk !== undefined) {
+			const currentContent =
+				typeof message.content === "string" ? message.content : "";
+			fieldsToUpdate.content = currentContent + args.newChunk;
+			// If appending a chunk, and isComplete is not explicitly set by the caller,
+			// assume the message is not yet complete (streaming in progress).
+			if (args.isComplete === undefined) {
+				fieldsToUpdate.isComplete = false;
+			}
+		}
+
+		// Handle completion status update
+		// This can be set independently or along with content/newChunk.
+		if (args.isComplete !== undefined) {
+			fieldsToUpdate.isComplete = args.isComplete;
+		}
+
+		// Only patch if there's something to update
+		if (Object.keys(fieldsToUpdate).length > 0) {
+			await ctx.db.patch(args.messageId, fieldsToUpdate);
+		}
 	},
 });
 
@@ -112,13 +97,12 @@ export const answerMessage = internalAction({
 			chatId: args.chatId,
 		});
 
-		// Prepare messages for the AI model, joining content arrays into strings
+		// Prepare messages for the AI model, content is now a string
 		const allMessages = messages
 			.slice(0, -1) // Remove the last message (which is the current assistant message placeholder)
 			.map((m) => ({
 				role: m.role as "user" | "assistant",
-				// Join the content array back into a single string for the AI context
-				content: Array.isArray(m.content) ? m.content.join("") : m.content,
+				content: m.content as string, // Content is now a string
 			}));
 
 		// Add the quote to the last user message
@@ -146,10 +130,10 @@ export const answerMessage = internalAction({
 			controller.signal
 		);
 
-		// Initialize the assistant message content as an empty array
+		// Initialize the assistant message content as an empty string
 		await ctx.runMutation(internal.messages.updateMessage, {
 			messageId: args.messageId,
-			content: [], // Initialize as an empty array
+			content: "", // Initialize as an empty string
 			isComplete: false, // Mark as incomplete before streaming
 		});
 
@@ -178,14 +162,17 @@ export const answerMessage = internalAction({
 				break; // Exit the loop immediately
 			}
 
-			await ctx.runMutation(internal.messages.appendMessageContent, {
+			await ctx.runMutation(internal.messages.updateMessage, {
+				// Changed from appendMessageContent
 				messageId: args.messageId,
 				newChunk: text,
 			});
 		}
 
-		await ctx.runMutation(internal.messages.markMessageComplete, {
+		await ctx.runMutation(internal.messages.updateMessage, {
+			// Changed from markMessageComplete
 			messageId: args.messageId,
+			isComplete: true,
 		});
 	},
 });
@@ -198,7 +185,7 @@ export const sendMessage = mutation({
 	args: {
 		quote: v.optional(v.string()), // Optional quote for the message
 		chatId: v.optional(v.id("chats")),
-		content: v.string(), // User input is still a single string here
+		content: v.string(), // User input is a single string
 		model: v.string(),
 	},
 	handler: async (ctx, args) => {
@@ -209,6 +196,7 @@ export const sendMessage = mutation({
 		if (!args.chatId) {
 			args.chatId = await ctx.runMutation(internal.chat.createChat, {
 				content: args.content,
+				model: args.model,
 			});
 
 			if (!args.chatId) {
@@ -225,11 +213,11 @@ export const sendMessage = mutation({
 			const chatId = args.chatId as Id<"chats">;
 
 			// Insert the user message into the database
-			// Content is now an array containing the single user message string
+			// Content is now a string
 			const messageId = await ctx.db.insert("messages", {
 				chatId: chatId,
 				role: "user",
-				content: [args.content], // Store as an array
+				content: args.content, // Store as a string
 				quote: args.quote,
 				model: args.model,
 				isComplete: true, // User messages are complete immediately
@@ -239,7 +227,7 @@ export const sendMessage = mutation({
 				const assistantMessageId = await ctx.db.insert("messages", {
 					chatId: chatId,
 					role: "assistant",
-					content: [], // Assistant message starts as an empty array
+					content: "", // Assistant message starts as an empty string
 					model: args.model,
 					isComplete: false,
 				});
@@ -322,7 +310,7 @@ export const editMessage = mutation({
 		// Update the edited message content
 		await ctx.runMutation(internal.messages.updateMessage, {
 			messageId: args.messageId,
-			content: [args.content], // Store edited content as an array
+			content: args.content, // Store edited content as a string
 			isComplete: true, // Edited messages are complete immediately
 		});
 

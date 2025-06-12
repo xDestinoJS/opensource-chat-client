@@ -12,17 +12,17 @@
     - [x] Pin chat
     - [x] Delete chat
   - [x] Add Openrouter support
-  - [ ] Add quoting system
+  - [x] Add quoting system
     - [x] Make quoting appear
-    - [ ] Make quoting function
-    - [ ] Change icon
-  - [ ] Add Better-auth
+    - [x] Make quoting function
+    - [x] Change icon
   - [ ] Add Convex streaming component
-  - [ ] Add Spotlight-like feature
-  - [ ] Add chat sharing
   - [ ] Make retry button allow user to retry with different model (or with shift, no modal)
-  - [ ] Add custom GPT
-  - [ ] Add settings
+  - [ ] Add Spotlight-like feature
+  - [ ] Add Chat Sharing
+  - [ ] Add Better-Auth
+  - [ ] Add Custom Agents (GPTs)
+  - [ ] Add Settings
 
 - Polishing:
   - [ ] Add dark theme

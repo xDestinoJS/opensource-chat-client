@@ -13,17 +13,10 @@ import { AutosizeTextarea, AutosizeTextAreaRef } from "../ui/autosize-textarea";
 import chunkArray from "@/utils/chunk-array";
 import { useChatInputEvents } from "@/hooks/useChatInputEvents";
 import { useChatScrollManagement } from "@/hooks/useChatScrollManagement";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
-import useChatModel from "@/hooks/useChatModel";
-import Image from "next/image";
+import useChatModels from "@/hooks/useChatModels";
 import { TextQuote } from "../text-quote";
 import useSessionId from "@/stores/use-session";
+import ModelDropdown from "./model-dropdown";
 
 export default function ChatPage({ chatId }: { chatId?: Id<"chats"> }) {
 	const { sessionId } = useSessionId();
@@ -64,7 +57,7 @@ export default function ChatPage({ chatId }: { chatId?: Id<"chats"> }) {
 	const scrollContainerRef = useRef<HTMLDivElement>(null);
 	const lastPairContainerRef = useRef<HTMLDivElement>(null);
 
-	const { modelId, setModelId, modelList } = useChatModel();
+	const { modelId, providersList, setModelId } = useChatModels();
 
 	// Use the custom hook for input events
 	useChatInputEvents(inputAreaRef);
@@ -185,32 +178,11 @@ export default function ChatPage({ chatId }: { chatId?: Id<"chats"> }) {
 						}}
 					/>
 					<div className="flex justify-between items-center mt-2 bottom-0 right-0">
-						<Select onValueChange={setModelId} value={modelId}>
-							<SelectTrigger className="w-[225px]">
-								<SelectValue placeholder="Model" />
-							</SelectTrigger>
-							<SelectContent>
-								{modelList.length > 0 ? (
-									modelList.map((model) => {
-										return (
-											<SelectItem key={model.id} value={model.id}>
-												<div className="flex items-center gap-0.75">
-													<Image
-														height={18}
-														width={18}
-														src={model.icon}
-														alt={model.name}
-													/>
-													<span className="ml-2">{model.name}</span>
-												</div>
-											</SelectItem>
-										);
-									})
-								) : (
-									<p>You haven't set up any API keys yet!</p>
-								)}
-							</SelectContent>
-						</Select>
+						<ModelDropdown
+							modelId={modelId}
+							providersList={providersList}
+							setModelId={setModelId}
+						/>
 
 						{messages?.length === 0 || !chat?.isAnswering ? (
 							<Button size="icon" type="button" onClick={handleSubmit}>

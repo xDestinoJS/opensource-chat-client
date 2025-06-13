@@ -8,7 +8,7 @@ import {
 import { generateObject } from "../src/lib/ai";
 import { z } from "zod";
 import { internal } from "./_generated/api";
-import { ModelId } from "../src/lib/models";
+import { ModelId } from "../src/lib/providers";
 
 export const getChat = query({
 	args: {

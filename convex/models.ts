@@ -1,4 +1,4 @@
-import models, { ModelId } from "../src/lib/models";
+import providers, { listAllModels, ModelId } from "../src/lib/providers";
 import { internal } from "./_generated/api";
 import { internalQuery, query } from "./_generated/server";
 
@@ -6,11 +6,12 @@ export const getAvailableModels = internalQuery({
 	handler: async (ctx) => {
 		const availableModels: ModelId[] = [];
 
-		for (const model of models) {
-			if (model.available) {
-				if (process.env[model.apiKeySource]) {
-					// Check if the API key is available for the model
-					availableModels.push(model.id);
+		for (const provider of providers) {
+			for (const model of provider.models) {
+				if (model.available) {
+					if (process.env[provider.apiKeySource]) {
+						availableModels.push(model.id);
+					}
 				}
 			}
 		}

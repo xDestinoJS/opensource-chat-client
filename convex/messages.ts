@@ -10,7 +10,7 @@ import { v } from "convex/values";
 
 import { streamText } from "../src/lib/ai";
 import { Doc, Id } from "./_generated/dataModel";
-import { ModelId, modelIds } from "../src/lib/models";
+import { ModelId, modelIds } from "../src/lib/providers";
 
 // === INTERNAL QUERIES ===
 export const getMessage = internalQuery({

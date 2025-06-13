@@ -11,7 +11,7 @@ import { useSpeech } from "react-text-to-speech";
 import IconButton from "../buttons/icon-button";
 import { cn } from "@/lib/utils";
 import stripMarkdownFromString from "@/utils/strip-markdown-from-string";
-import models from "@/lib/models";
+import providers, { getModelDataById } from "@/lib/providers";
 import { useTextSelection } from "@/hooks/useTextSelection";
 import useAssistantContent from "@/hooks/useAssistantContent";
 import WaveLoader from "../wave-loader";
@@ -31,7 +31,7 @@ export default function AssistantMessage({
 }) {
 	const { selectionData, contentRef } = useTextSelection();
 	const { content } = useAssistantContent(message);
-	const modelData = models.find((models) => models.id === message.model);
+	const modelData = getModelDataById(message.model);
 
 	const { start, speechStatus, stop } = useSpeech({
 		text: stripMarkdownFromString(content),

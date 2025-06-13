@@ -7,7 +7,7 @@ import { z } from "zod";
 
 import { google } from "@ai-sdk/google";
 import { mistral } from "@ai-sdk/mistral";
-import { ModelId } from "./models";
+import { ModelId } from "./providers";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 
 const openrouter = createOpenRouter({

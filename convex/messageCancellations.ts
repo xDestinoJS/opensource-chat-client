@@ -41,7 +41,7 @@ export const removeCancellationRecord = internalMutation({
 			.first();
 
 		if (cancellation) {
-			ctx.db.delete(cancellation._id); // Remove the cancellation record
+			await ctx.db.delete(cancellation._id); // Remove the cancellation record
 		} else {
 			throw new Error("Message is not cancelled");
 		}

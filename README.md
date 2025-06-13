@@ -16,10 +16,13 @@
     - [x] Make quoting appear
     - [x] Make quoting function
     - [x] Change icon
-  - [ ] Add Convex streaming component
-  - [ ] Make retry button allow user to retry with different model (or with shift, no modal)
-  - [ ] Add Spotlight-like feature
+  - [x] Added back streaming component
+    - [ ] Make edits work again
+    - [ ] Make retries work again
+      - [ ] Make retry button allow user to retry with different model (or with shift, no modal)
+    - [ ] Make branching work again
   - [ ] Add Chat Sharing
+  - [ ] Add Spotlight-like feature
   - [ ] Add Better-Auth
   - [ ] Add Custom Agents (GPTs)
   - [ ] Add Settings

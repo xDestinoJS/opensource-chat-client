@@ -9,6 +9,8 @@ export default defineSchema({
 		model: v.optional(v.string()),
 		isComplete: v.boolean(),
 		quote: v.optional(v.string()),
+		sessionId: v.string(),
+		isStreaming: v.boolean(),
 	}),
 	messageCancellations: defineTable({
 		messageId: v.id("messages"),

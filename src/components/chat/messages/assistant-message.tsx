@@ -13,20 +13,23 @@ import { cn } from "@/lib/utils";
 import stripMarkdownFromString from "@/utils/strip-markdown-from-string";
 import models from "@/lib/models";
 import { useTextSelection } from "@/hooks/useTextSelection";
+import useAssistantContent from "@/hooks/useAssistantContent";
 
 export default function AssistantMessage({
 	message,
+	isLastPair,
 	onBranch,
 	onRetry,
 	onQuote,
 }: {
 	message: Doc<"messages">;
+	isLastPair: boolean;
 	onBranch: () => void;
 	onRetry: () => void;
 	onQuote: (quote: string) => void;
 }) {
 	const { selectionData, contentRef } = useTextSelection();
-	const content = message?.content;
+	const { content } = useAssistantContent(message);
 	const modelData = models.find((models) => models.id === message.model);
 
 	const { start, speechStatus, stop } = useSpeech({
@@ -93,6 +96,7 @@ export default function AssistantMessage({
 				</IconButton>
 				<p className="ml-2.5 text-xs">{modelData?.name}</p>
 			</div>
+			{isLastPair && <div className="pt-4" />}
 		</div>
 	);
 }

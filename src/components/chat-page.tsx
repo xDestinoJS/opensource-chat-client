@@ -24,8 +24,11 @@ import useChatModel from "@/hooks/useChatModel";
 import Image from "next/image";
 import Head from "next/head";
 import { TextQuote } from "./text-quote";
+import useSessionId from "@/stores/use-session";
 
 export default function ChatPage({ chatId }: { chatId?: Id<"chats"> }) {
+	const { sessionId } = useSessionId();
+
 	const [quote, setQuote] = useState<string | undefined>();
 	const [mounted, setMounted] = useState(false);
 
@@ -43,6 +46,7 @@ export default function ChatPage({ chatId }: { chatId?: Id<"chats"> }) {
 		(chatId
 			? useQuery(api.messages.listMessages, {
 					chatId: chatId,
+					excludeSession: sessionId,
 				})
 			: null) ?? [];
 
@@ -57,7 +61,7 @@ export default function ChatPage({ chatId }: { chatId?: Id<"chats"> }) {
 
 	const inputAreaRef = useRef<AutosizeTextAreaRef>(null);
 
-	const blankSpaceRef = useRef<HTMLDivElement>(null);
+	const inputContainerRef = useRef<HTMLDivElement>(null);
 	const scrollContainerRef = useRef<HTMLDivElement>(null);
 	const lastPairContainerRef = useRef<HTMLDivElement>(null);
 
@@ -69,7 +73,7 @@ export default function ChatPage({ chatId }: { chatId?: Id<"chats"> }) {
 	// Use the custom hook for scroll management
 	useChatScrollManagement(
 		lastPairContainerRef,
-		blankSpaceRef,
+		inputContainerRef,
 		scrollContainerRef,
 		messages
 	);
@@ -94,6 +98,7 @@ export default function ChatPage({ chatId }: { chatId?: Id<"chats"> }) {
 				content: currentInput,
 				chatId: chatId as Id<"chats">,
 				model: modelId,
+				sessionId,
 			});
 
 			setQuote(undefined); // Clear the quote after sending
@@ -150,11 +155,13 @@ export default function ChatPage({ chatId }: { chatId?: Id<"chats"> }) {
 							/>
 						);
 					})}
-					<div ref={blankSpaceRef} />
 				</div>
 			</div>
 			<form className="w-full max-w-3xl max-lg:px-4 shrink-0">
-				<div className="bg-neutral-50 p-4 rounded-tl-2xl rounded-tr-2xl  border border-neutral-300">
+				<div
+					ref={inputContainerRef}
+					className="bg-neutral-50 p-4 rounded-tl-2xl rounded-tr-2xl  border border-neutral-300"
+				>
 					{quote && (
 						<TextQuote
 							quote={quote}

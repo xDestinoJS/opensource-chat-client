@@ -28,7 +28,7 @@ export default function MessagePair({
 	return (
 		<div
 			ref={isLastPair ? lastPairContainerRef : null}
-			className={isLastPair ? "pb-4" : undefined}
+			className={isLastPair ? "pb-4" : "min-h-auto!"}
 		>
 			{/* User Message */}
 			<div className="flex w-full">
@@ -51,6 +51,7 @@ export default function MessagePair({
 					<div className="w-full justify-start">
 						<AssistantMessage
 							message={assistantMessage}
+							isLastPair={isLastPair}
 							onBranch={async () => {
 								await onBranchMessage(assistantMessage._id);
 							}}

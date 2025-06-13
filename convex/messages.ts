@@ -1,4 +1,5 @@
 import {
+	httpAction,
 	internalAction,
 	internalMutation,
 	internalQuery,
@@ -12,6 +13,10 @@ import { streamText } from "../src/lib/ai";
 import { Doc, Id } from "./_generated/dataModel";
 import { ModelId, modelIds } from "../src/lib/models";
 
+function hasDelimiter(text: string) {
+	return text.includes(".") || text.includes(",") || text.length > 100;
+}
+
 // === INTERNAL QUERIES ===
 export const getMessage = internalQuery({
 	args: { messageId: v.id("messages") },
@@ -23,14 +28,27 @@ export const getMessage = internalQuery({
 });
 
 export const getMessageHistory = internalQuery({
-	args: { chatId: v.id("chats") },
+	args: { chatId: v.id("chats"), excludeSession: v.optional(v.string()) },
 	handler: async (ctx, args) => {
-		return await ctx.db
+		const messageHistory = await ctx.db
 			.query("messages")
 			.withIndex("by_creation_time")
 			.order("asc")
 			.filter((q) => q.eq(q.field("chatId"), args.chatId))
 			.collect();
+
+		if (args.excludeSession) {
+			messageHistory.forEach((message) => {
+				if (
+					message.role == "assistant" &&
+					message.sessionId === args.excludeSession
+				) {
+					message.content = "";
+				}
+			});
+		}
+
+		return messageHistory;
 	},
 });
 
@@ -40,6 +58,7 @@ export const updateMessage = internalMutation({
 		messageId: v.id("messages"),
 		content: v.optional(v.string()),
 		isComplete: v.optional(v.boolean()),
+		isStreaming: v.optional(v.boolean()),
 	},
 	handler: async (ctx, args) => {
 		const message = await ctx.db.get(args.messageId);
@@ -48,63 +67,136 @@ export const updateMessage = internalMutation({
 		const updates: any = {};
 		if (args.content !== undefined) updates.content = args.content;
 		if (args.isComplete !== undefined) updates.isComplete = args.isComplete;
+		if (args.isStreaming !== undefined) updates.isStreaming = args.isStreaming;
 
 		await ctx.db.patch(args.messageId, updates);
 	},
 });
 
-// === INTERNAL ACTIONS ===
-export const answerMessage = internalAction({
-	args: {
-		chatId: v.id("chats"),
-		assistantMessageId: v.id("messages"),
-	},
-	handler: async (ctx, args) => {
-		const messages = await ctx.runQuery(internal.messages.getMessageHistory, {
-			chatId: args.chatId,
-		});
-
-		const history = messages.slice(0, -1).map((m) => ({
-			role: m.role as "user" | "assistant",
-			content: m.content,
-		}));
-
-		for (let i = history.length - 1; i >= 0; i--) {
-			if (history[i].role === "user" && messages[i]?.quote) {
-				history[i].content =
-					`The user has quoted a previous message. You must keep it in mind when answering, but never mention it in the response. The quote is: "${messages[i].quote}"` +
-					history[i].content;
-				break;
-			}
+export const startStreaming = internalMutation({
+	args: { messageId: v.id("messages") },
+	handler: async (ctx, { messageId }) => {
+		const message = await ctx.db.get(messageId);
+		if (!message) {
+			throw new Error("Message not found");
 		}
 
-		const controller = new AbortController();
-		const response = await streamText(
-			(messages[messages.length - 1].model ?? "mistral-small") as ModelId,
-			history,
-			controller.signal
-		);
+		if (message.isStreaming || message.isComplete) {
+			return false;
+		}
 
-		await ctx.runMutation(internal.messages.updateMessage, {
-			messageId: args.assistantMessageId,
-			content: "",
+		// Atomically update the message to mark it as streaming
+		await ctx.db.patch(messageId, {
+			isStreaming: true,
 			isComplete: false,
+			content: "",
 		});
 
-		let content = "";
-		for await (const text of response.textStream) {
-			content += text;
-			await ctx.runMutation(internal.messages.updateMessage, {
-				messageId: args.assistantMessageId,
-				content,
-			});
-		}
-
-		await ctx.runMutation(internal.messages.updateMessage, {
-			messageId: args.assistantMessageId,
-			isComplete: true,
-		});
+		return true;
 	},
+});
+
+// === INTERNAL ACTIONS ===
+export const streamAnswer = httpAction(async (ctx, req) => {
+	const { chatId, assistantMessageId } = (await req.json()) as {
+		chatId: Id<"chats">;
+		assistantMessageId: Id<"messages">;
+	};
+
+	// Atomically attempt to claim the stream
+	const canStream = await ctx.runMutation(internal.messages.startStreaming, {
+		messageId: assistantMessageId,
+	});
+
+	if (!canStream) {
+		// Another request is already handling this message, so we can return a conflict status.
+		return new Response("Stream already in progress or message is complete.", {
+			status: 409, // Conflict
+		});
+	}
+
+	let messages = await ctx.runQuery(internal.messages.getMessageHistory, {
+		chatId: chatId,
+	});
+
+	// Remove all messages until the assistant message
+	const assistantMessageIndex = messages.findIndex(
+		(m) => m._id === assistantMessageId
+	);
+	messages = messages.slice(0, assistantMessageIndex + 1);
+
+	const history = messages.slice(0, -1).map((m) => ({
+		role: m.role as "user" | "assistant",
+		content: m.content,
+	}));
+
+	for (let i = history.length - 1; i >= 0; i--) {
+		if (history[i].role === "user" && messages[i]?.quote) {
+			history[i].content =
+				`The user has quoted a previous message. You must keep it in mind when answering, but never mention it in the response. The quote is: "${messages[i].quote}"` +
+				history[i].content;
+			break;
+		}
+	}
+
+	const controller = new AbortController();
+	const result = await streamText(
+		(messages[messages.length - 1].model ?? "mistral-small") as ModelId,
+		history,
+		controller.signal
+	);
+
+	const encoder = new TextEncoder();
+	let content = "";
+
+	const stream = new ReadableStream({
+		async start(controller) {
+			try {
+				for await (const text of result.textStream) {
+					content += text;
+					controller.enqueue(encoder.encode(text));
+
+					if (hasDelimiter(text)) {
+						(async () => {
+							await ctx.runMutation(internal.messages.updateMessage, {
+								messageId: assistantMessageId,
+								content,
+							});
+						})();
+					}
+				}
+
+				// On successful completion, mark the message as complete
+				await ctx.runMutation(internal.messages.updateMessage, {
+					messageId: assistantMessageId,
+					content,
+					isComplete: true,
+					isStreaming: false,
+				});
+			} catch (err) {
+				console.error("Streaming or DB update failed:", err);
+				// Ensure the streaming flag is reset even on failure
+				await ctx.runMutation(internal.messages.updateMessage, {
+					messageId: assistantMessageId,
+					isStreaming: false,
+					// You might want to add an error message to the content
+					content: content + "\n[Error: Stream failed]",
+				});
+			} finally {
+				controller.close();
+			}
+		},
+	});
+
+	return new Response(stream, {
+		headers: {
+			"Content-Type": "text/plain; charset=utf-8",
+			"Transfer-Encoding": "chunked",
+			"Cache-Control": "no-cache",
+			"Access-Control-Allow-Origin": "*",
+			Vary: "Origin",
+		},
+	});
 });
 
 // === SHARED UTILITY ===
@@ -138,6 +230,7 @@ export const sendMessage = mutation({
 	args: {
 		quote: v.optional(v.string()),
 		chatId: v.optional(v.id("chats")),
+		sessionId: v.string(),
 		content: v.string(),
 		model: v.string(),
 	},
@@ -163,25 +256,33 @@ export const sendMessage = mutation({
 			content: args.content,
 			quote: args.quote,
 			model: args.model,
+			sessionId: args.sessionId,
 			isComplete: true,
+			isStreaming: false,
 		});
 
-		(async () => {
-			const assistantMessageId = await ctx.db.insert("messages", {
-				chatId,
-				role: "assistant",
-				content: "",
-				model: args.model,
-				isComplete: false,
-			});
+		const assistantMessageId = await ctx.db.insert("messages", {
+			chatId,
+			role: "assistant",
+			content: "",
+			model: args.model,
+			isComplete: false,
+			sessionId: args.sessionId,
+			isStreaming: false,
+		});
 
+		/* (async () => {
 			await ctx.scheduler.runAfter(0, internal.messages.answerMessage, {
 				chatId,
 				assistantMessageId,
 			});
 		})();
-
-		return { chatId, messageId };
+ */
+		return {
+			chatId,
+			messageId,
+			assistantMessageId,
+		};
 	},
 });
 
@@ -203,10 +304,10 @@ export const editMessage = mutation({
 			chatId,
 		});
 
-		await ctx.scheduler.runAfter(0, internal.messages.answerMessage, {
+		/* await ctx.scheduler.runAfter(0, internal.messages.answerMessage, {
 			chatId,
 			assistantMessageId: messages[messages.length - 1]._id,
-		});
+		}); */
 	},
 });
 
@@ -218,11 +319,11 @@ export const retryMessage = mutation({
 		const messages = await ctx.runQuery(internal.messages.getMessageHistory, {
 			chatId,
 		});
-
+		/* 
 		await ctx.scheduler.runAfter(0, internal.messages.answerMessage, {
 			chatId,
 			assistantMessageId: messages[messages.length - 1]._id,
-		});
+		}); */
 	},
 });
 
@@ -259,12 +360,14 @@ export const branchMessage = mutation({
 export const listMessages = query({
 	args: {
 		chatId: v.id("chats"),
+		excludeSession: v.optional(v.string()),
 	},
 	handler: async (ctx, args) => {
 		const messages: Doc<"messages">[] = await ctx.runQuery(
 			internal.messages.getMessageHistory,
 			{
 				chatId: args.chatId,
+				excludeSession: args.excludeSession,
 			}
 		);
 

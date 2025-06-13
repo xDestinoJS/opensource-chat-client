@@ -165,6 +165,8 @@ export const branchChat = internalMutation({
 				content: message.content,
 				model: message.model,
 				isComplete: message.isComplete,
+				sessionId: message.sessionId,
+				isStreaming: false,
 			});
 		}
 

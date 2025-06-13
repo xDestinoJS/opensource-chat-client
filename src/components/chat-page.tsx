@@ -7,7 +7,7 @@ import MessagePair from "@/components/chat/message-pair";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
 import { redirect } from "next/navigation";
-import { ArrowUp, CornerDownRight, Square, X } from "lucide-react";
+import { ArrowUp, Square } from "lucide-react";
 import { Button } from "./ui/button";
 import { AutosizeTextarea, AutosizeTextAreaRef } from "./ui/autosize-textarea";
 import chunkArray from "@/utils/chunk-array";
@@ -57,7 +57,7 @@ export default function ChatPage({ chatId }: { chatId?: Id<"chats"> }) {
 	const branchMessage = useMutation(api.messages.branchMessage);
 	const editMessage = useMutation(api.messages.editMessage);
 	const retryMessage = useMutation(api.messages.retryMessage);
-	const cancelMessage = useMutation(api.messageCancellations.cancelMessage);
+	const cancelMessage = useMutation(api.messages.cancelMessage);
 
 	const inputAreaRef = useRef<AutosizeTextAreaRef>(null);
 
@@ -136,12 +136,14 @@ export default function ChatPage({ chatId }: { chatId?: Id<"chats"> }) {
 								lastPairContainerRef={lastPairContainerRef}
 								onEditMessage={(messageId, content) => {
 									editMessage({
+										sessionId,
 										messageId,
 										content,
 									});
 								}}
 								onRetryMessage={(messageId) => {
 									retryMessage({
+										sessionId,
 										messageId,
 									});
 								}}

@@ -14,6 +14,7 @@ import stripMarkdownFromString from "@/utils/strip-markdown-from-string";
 import models from "@/lib/models";
 import { useTextSelection } from "@/hooks/useTextSelection";
 import useAssistantContent from "@/hooks/useAssistantContent";
+import WaveLoader from "../wave-loader";
 
 export default function AssistantMessage({
 	message,
@@ -50,7 +51,7 @@ export default function AssistantMessage({
 				{content.length > 0 ? (
 					<MemoizedMarkdown content={content} />
 				) : (
-					<p>Loading...</p>
+					<WaveLoader />
 				)}
 			</div>
 			{selectionData.text != "" &&

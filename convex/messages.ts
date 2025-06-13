@@ -13,10 +13,6 @@ import { streamText } from "../src/lib/ai";
 import { Doc, Id } from "./_generated/dataModel";
 import { ModelId, modelIds } from "../src/lib/models";
 
-function hasDelimiter(text: string) {
-	return text.includes(".") || text.includes(",") || text.length > 100;
-}
-
 // === INTERNAL QUERIES ===
 export const getMessage = internalQuery({
 	args: { messageId: v.id("messages") },
@@ -59,6 +55,8 @@ export const updateMessage = internalMutation({
 		content: v.optional(v.string()),
 		isComplete: v.optional(v.boolean()),
 		isStreaming: v.optional(v.boolean()),
+		sessionId: v.optional(v.string()),
+		cancelReason: v.optional(v.string()),
 	},
 	handler: async (ctx, args) => {
 		const message = await ctx.db.get(args.messageId);
@@ -68,6 +66,9 @@ export const updateMessage = internalMutation({
 		if (args.content !== undefined) updates.content = args.content;
 		if (args.isComplete !== undefined) updates.isComplete = args.isComplete;
 		if (args.isStreaming !== undefined) updates.isStreaming = args.isStreaming;
+		if (args.sessionId !== undefined) updates.sessionId = args.sessionId;
+		if (args.cancelReason !== undefined)
+			updates.cancelReason = args.cancelReason;
 
 		await ctx.db.patch(args.messageId, updates);
 	},
@@ -103,27 +104,22 @@ export const streamAnswer = httpAction(async (ctx, req) => {
 		assistantMessageId: Id<"messages">;
 	};
 
-	// Atomically attempt to claim the stream
-	const canStream = await ctx.runMutation(internal.messages.startStreaming, {
-		messageId: assistantMessageId,
-	});
-
-	if (!canStream) {
-		// Another request is already handling this message, so we can return a conflict status.
+	if (
+		!(await ctx.runMutation(internal.messages.startStreaming, {
+			messageId: assistantMessageId,
+		}))
+	) {
 		return new Response("Stream already in progress or message is complete.", {
-			status: 409, // Conflict
+			status: 409,
 		});
 	}
 
 	let messages = await ctx.runQuery(internal.messages.getMessageHistory, {
-		chatId: chatId,
+		chatId,
 	});
 
-	// Remove all messages until the assistant message
-	const assistantMessageIndex = messages.findIndex(
-		(m) => m._id === assistantMessageId
-	);
-	messages = messages.slice(0, assistantMessageIndex + 1);
+	const assistantIdx = messages.findIndex((m) => m._id === assistantMessageId);
+	messages = messages.slice(0, assistantIdx + 1);
 
 	const history = messages.slice(0, -1).map((m) => ({
 		role: m.role as "user" | "assistant",
@@ -139,34 +135,51 @@ export const streamAnswer = httpAction(async (ctx, req) => {
 		}
 	}
 
-	const controller = new AbortController();
+	// one controller for the LLM…
+	const llmCtrl = new AbortController();
 	const result = await streamText(
 		(messages[messages.length - 1].model ?? "mistral-small") as ModelId,
 		history,
-		controller.signal
+		llmCtrl.signal
 	);
 
+	// …and one for the client connection
 	const encoder = new TextEncoder();
 	let content = "";
+	let lastSaved = 0;
 
 	const stream = new ReadableStream({
-		async start(controller) {
+		async start(push) {
 			try {
-				for await (const text of result.textStream) {
-					content += text;
-					controller.enqueue(encoder.encode(text));
+				for await (const chunk of result.textStream) {
+					// was the message cancelled?
+					const { cancelReason } = await ctx.runQuery(
+						internal.messages.getMessage,
+						{ messageId: assistantMessageId }
+					);
 
-					if (hasDelimiter(text)) {
-						(async () => {
-							await ctx.runMutation(internal.messages.updateMessage, {
-								messageId: assistantMessageId,
-								content,
-							});
-						})();
+					if (cancelReason) {
+						llmCtrl.abort(); // stop the LLM
+						push.close(); // stop sending chunks
+						await ctx.runMutation(internal.messages.updateMessage, {
+							messageId: assistantMessageId,
+							isStreaming: false,
+						});
+						return;
+					}
+
+					content += chunk;
+					push.enqueue(encoder.encode(chunk));
+
+					if (content.length - lastSaved >= 75) {
+						lastSaved = content.length;
+						void ctx.runMutation(internal.messages.updateMessage, {
+							messageId: assistantMessageId,
+							content,
+						});
 					}
 				}
 
-				// On successful completion, mark the message as complete
 				await ctx.runMutation(internal.messages.updateMessage, {
 					messageId: assistantMessageId,
 					content,
@@ -174,16 +187,8 @@ export const streamAnswer = httpAction(async (ctx, req) => {
 					isStreaming: false,
 				});
 			} catch (err) {
-				console.error("Streaming or DB update failed:", err);
-				// Ensure the streaming flag is reset even on failure
-				await ctx.runMutation(internal.messages.updateMessage, {
-					messageId: assistantMessageId,
-					isStreaming: false,
-					// You might want to add an error message to the content
-					content: content + "\n[Error: Stream failed]",
-				});
-			} finally {
-				controller.close();
+				// Ignore abort errors; re‑throw the rest
+				if (!llmCtrl.signal.aborted) push.error(err);
 			}
 		},
 	});
@@ -222,7 +227,10 @@ const _handleMessageUpdate = async (ctx: any, messageId: Id<"messages">) => {
 		if (!keep.includes(msg)) await ctx.db.delete(msg._id);
 	}
 
-	return message.chatId;
+	return {
+		chatId: message.chatId,
+		assistantMessageId: keep[keep.length - 1]._id,
+	};
 };
 
 // === PUBLIC MUTATIONS ===
@@ -290,40 +298,93 @@ export const editMessage = mutation({
 	args: {
 		messageId: v.id("messages"),
 		content: v.string(),
+		sessionId: v.string(),
 	},
 	handler: async (ctx, args) => {
-		const chatId = await _handleMessageUpdate(ctx, args.messageId);
+		const { assistantMessageId } = await _handleMessageUpdate(
+			ctx,
+			args.messageId
+		);
 
+		// Update the user's message
 		await ctx.runMutation(internal.messages.updateMessage, {
 			messageId: args.messageId,
 			content: args.content,
 			isComplete: true,
 		});
 
-		const messages = await ctx.runQuery(internal.messages.getMessageHistory, {
-			chatId,
+		// Update the assistant's message
+		await ctx.runMutation(internal.messages.updateMessage, {
+			messageId: assistantMessageId,
+			content: "",
+			isComplete: false,
+			isStreaming: false,
+			sessionId: args.sessionId,
 		});
+	},
+});
 
-		/* await ctx.scheduler.runAfter(0, internal.messages.answerMessage, {
-			chatId,
-			assistantMessageId: messages[messages.length - 1]._id,
-		}); */
+export const cancelMessage = mutation({
+	args: {
+		chatId: v.id("chats"),
+		reason: v.optional(
+			v.union(v.literal("user_request"), v.literal("system_error"), v.string())
+		),
+	},
+	handler: async (ctx, args) => {
+		const chat = await ctx.db.get(args.chatId);
+		if (!chat) {
+			throw new Error("[DB] Chat not found.");
+		}
+
+		const messages = await ctx.runQuery(internal.messages.getMessageHistory, {
+			chatId: chat._id,
+		});
+		const message = messages[messages.length - 1]; // Get the last message
+
+		// Ensure the last message (the message being streamed) is from the assistant
+		if (message.role !== "assistant") {
+			return console.log(
+				"[DB] The last message must be an assistant message to cancel."
+			);
+		}
+
+		if (message.isComplete) {
+			return console.log(
+				"[DB] The message is already complete and cannot be cancelled."
+			);
+		}
+
+		// Check if the message is already
+		if (!message.cancelReason) {
+			await ctx.runMutation(internal.messages.updateMessage, {
+				messageId: message._id,
+				isComplete: true,
+				cancelReason: args.reason,
+			});
+		}
 	},
 });
 
 export const retryMessage = mutation({
-	args: { messageId: v.id("messages") },
+	args: {
+		messageId: v.id("messages"),
+		sessionId: v.string(),
+	},
 	handler: async (ctx, args) => {
-		const chatId = await _handleMessageUpdate(ctx, args.messageId);
+		const { assistantMessageId } = await _handleMessageUpdate(
+			ctx,
+			args.messageId
+		);
 
-		const messages = await ctx.runQuery(internal.messages.getMessageHistory, {
-			chatId,
+		// Update the assistant's message
+		await ctx.runMutation(internal.messages.updateMessage, {
+			messageId: assistantMessageId,
+			content: "",
+			isComplete: false,
+			isStreaming: false,
+			sessionId: args.sessionId,
 		});
-		/* 
-		await ctx.scheduler.runAfter(0, internal.messages.answerMessage, {
-			chatId,
-			assistantMessageId: messages[messages.length - 1]._id,
-		}); */
 	},
 });
 

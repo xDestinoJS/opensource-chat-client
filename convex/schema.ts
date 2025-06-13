@@ -11,10 +11,7 @@ export default defineSchema({
 		quote: v.optional(v.string()),
 		sessionId: v.string(),
 		isStreaming: v.boolean(),
-	}),
-	messageCancellations: defineTable({
-		messageId: v.id("messages"),
-		reason: v.string(),
+		cancelReason: v.optional(v.string()),
 	}),
 	chats: defineTable({
 		title: v.string(),

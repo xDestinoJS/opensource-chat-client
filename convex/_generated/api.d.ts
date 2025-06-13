@@ -15,7 +15,6 @@ import type {
 } from "convex/server";
 import type * as chat from "../chat.js";
 import type * as http from "../http.js";
-import type * as messageCancellations from "../messageCancellations.js";
 import type * as messages from "../messages.js";
 import type * as models from "../models.js";
 
@@ -30,7 +29,6 @@ import type * as models from "../models.js";
 declare const fullApi: ApiFromModules<{
   chat: typeof chat;
   http: typeof http;
-  messageCancellations: typeof messageCancellations;
   messages: typeof messages;
   models: typeof models;
 }>;

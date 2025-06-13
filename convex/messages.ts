@@ -1,6 +1,5 @@
 import {
 	httpAction,
-	internalAction,
 	internalMutation,
 	internalQuery,
 	mutation,
@@ -56,7 +55,7 @@ export const updateMessage = internalMutation({
 		isComplete: v.optional(v.boolean()),
 		isStreaming: v.optional(v.boolean()),
 		sessionId: v.optional(v.string()),
-		cancelReason: v.optional(v.string()),
+		cancelReason: v.optional(v.union(v.string(), v.null())),
 	},
 	handler: async (ctx, args) => {
 		const message = await ctx.db.get(args.messageId);
@@ -68,7 +67,8 @@ export const updateMessage = internalMutation({
 		if (args.isStreaming !== undefined) updates.isStreaming = args.isStreaming;
 		if (args.sessionId !== undefined) updates.sessionId = args.sessionId;
 		if (args.cancelReason !== undefined)
-			updates.cancelReason = args.cancelReason;
+			updates.cancelReason =
+				args.cancelReason != null ? args.cancelReason : undefined;
 
 		await ctx.db.patch(args.messageId, updates);
 	},
@@ -160,6 +160,7 @@ export const streamAnswer = httpAction(async (ctx, req) => {
 
 					if (cancelReason) {
 						llmCtrl.abort(); // stop the LLM
+						push.enqueue(encoder.encode("[[CANCEL:USER_REQUEST]]"));
 						push.close(); // stop sending chunks
 						await ctx.runMutation(internal.messages.updateMessage, {
 							messageId: assistantMessageId,
@@ -320,6 +321,7 @@ export const editMessage = mutation({
 			isComplete: false,
 			isStreaming: false,
 			sessionId: args.sessionId,
+			cancelReason: null,
 		});
 	},
 });
@@ -360,7 +362,7 @@ export const cancelMessage = mutation({
 			await ctx.runMutation(internal.messages.updateMessage, {
 				messageId: message._id,
 				isComplete: true,
-				cancelReason: args.reason,
+				cancelReason: args.reason ?? "user_request",
 			});
 		}
 	},
@@ -384,6 +386,7 @@ export const retryMessage = mutation({
 			isComplete: false,
 			isStreaming: false,
 			sessionId: args.sessionId,
+			cancelReason: null,
 		});
 	},
 });

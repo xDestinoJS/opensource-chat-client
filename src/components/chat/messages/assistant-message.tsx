@@ -30,7 +30,7 @@ export default function AssistantMessage({
 	onQuote: (quote: string) => void;
 }) {
 	const { selectionData, contentRef } = useTextSelection();
-	const { content } = useAssistantContent(message);
+	const { content, cancelReason } = useAssistantContent(message);
 	const modelData = models.find((models) => models.id === message.model);
 
 	const { start, speechStatus, stop } = useSpeech({
@@ -77,6 +77,13 @@ export default function AssistantMessage({
 						<RiDoubleQuotesR />
 					</button>
 				)}
+
+			{cancelReason && (
+				<div className="w-full rounded-lg bg-destructive/7.5 py-3 px-4.5 text-sm text-destructive">
+					{cancelReason == "user_request" && "Stopped by user"}
+				</div>
+			)}
+
 			<div
 				className={cn(
 					"flex items-center mt-1 opacity-0 transition-opacity",

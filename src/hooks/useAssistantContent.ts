@@ -6,6 +6,9 @@ import { getConvexSiteUrl } from "@/lib/utils";
 export default function useAssistantContent(message: Doc<"messages">) {
 	const { sessionId } = useSessionId();
 	const [content, setContent] = useState<string>(message.content ?? "");
+	const [cancelReason, setCancelReason] = useState<
+		"user_request" | undefined
+	>();
 	const controllerRef = useRef<AbortController | null>(null);
 
 	useEffect(() => {
@@ -16,11 +19,15 @@ export default function useAssistantContent(message: Doc<"messages">) {
 		// Handle "reset to empty" when streaming hasn’t started yet
 		if (shouldStream && message.content === "" && content !== "") {
 			setContent(""); // clear local state
+			setCancelReason(undefined);
 		}
 
 		// If it shouldn't stream, just show whatever we have
 		if (!shouldStream) {
-			if (message.content) setContent(message.content);
+			if (message.content) {
+				setContent(message.content);
+				setCancelReason(undefined);
+			}
 			return;
 		}
 
@@ -47,8 +54,17 @@ export default function useAssistantContent(message: Doc<"messages">) {
 				while (reader && !controller.signal.aborted) {
 					const { done, value } = await reader.read();
 					if (done) break;
-					result += decoder.decode(value, { stream: true });
-					setContent(result);
+
+					if (value) {
+						const chunk = decoder.decode(value, { stream: true });
+						if (chunk.includes("[[CANCEL:USER_REQUEST]]")) {
+							setCancelReason("user_request");
+							break; // stop reading further
+						}
+
+						result += chunk;
+						setContent(result);
+					}
 				}
 			} catch (err: any) {
 				if (err.name !== "AbortError") {
@@ -66,5 +82,5 @@ export default function useAssistantContent(message: Doc<"messages">) {
 		sessionId,
 	]);
 
-	return { content };
+	return { content, cancelReason };
 }

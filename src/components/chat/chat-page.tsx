@@ -16,7 +16,7 @@ import { useChatScrollManagement } from "@/hooks/useChatScrollManagement";
 import useChatModels from "@/hooks/useChatModels";
 import { TextQuote } from "../text-quote";
 import useSessionId from "@/stores/use-session";
-import ModelDropdown from "./model-dropdown";
+import ModelDropdown from "./model-dropdown/main";
 
 export default function ChatPage({ chatId }: { chatId?: Id<"chats"> }) {
 	const { sessionId } = useSessionId();

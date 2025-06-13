@@ -2,6 +2,7 @@ import { z } from "zod";
 
 export const modelIds = z.enum([
 	"gemini-2.5-pro",
+	"gpt-4o",
 	"gemini-2.0-flash",
 	"mistral-small",
 	"llama-4-maverick",
@@ -10,7 +11,8 @@ export const modelIds = z.enum([
 export type ModelId = z.infer<typeof modelIds>;
 
 export type ModelConfig = {
-	name: string;
+	brand: string;
+	version: string;
 	id: ModelId;
 	description: string;
 	maxTokens: number;
@@ -36,10 +38,22 @@ const providers: Provider[] = [
 		models: [
 			{
 				id: "gemini-2.0-flash",
-				name: "Gemini 2.0 Flash",
-				description: "A fast and efficient model for quick responses.",
+				brand: "Gemini",
+				version: "2.0 Flash",
+				description: "A fast and efficient model for quick responses",
 				maxTokens: 8192,
 				temperature: 0.2,
+				available: true,
+				icon: "/assets/icons/models/gemini.svg",
+			},
+			// Assuming gemini-2.5-pro also belongs to Google
+			{
+				id: "gemini-2.5-pro",
+				brand: "Gemini",
+				version: "2.5 Pro",
+				description: "Google's most capable and versatile model.",
+				maxTokens: 32768, // Example value, adjust as needed
+				temperature: 0.7, // Example value, adjust as needed
 				available: true,
 				icon: "/assets/icons/models/gemini.svg",
 			},
@@ -53,8 +67,9 @@ const providers: Provider[] = [
 		models: [
 			{
 				id: "mistral-small",
-				name: "Mistral Small",
-				description: "A compact model designed for small tasks.",
+				brand: "Mistral",
+				version: "Small",
+				description: "A compact model designed for small tasks",
 				maxTokens: 4096,
 				temperature: 0.5,
 				available: true,
@@ -67,18 +82,30 @@ const providers: Provider[] = [
 		id: "openai",
 		icon: "/assets/icons/providers/openai.svg",
 		apiKeySource: "OPENAI_API_KEY",
-		models: [],
+		models: [
+			{
+				id: "gpt-4o",
+				brand: "GPT",
+				version: "4o",
+				description: "OpenAI's most advanced model",
+				maxTokens: 128000,
+				temperature: 0.5,
+				available: true,
+				icon: "/assets/icons/providers/openai.svg",
+			},
+		],
 	},
 	{
-		name: "Openrouter",
+		name: "OpenRouter",
 		id: "openrouter",
 		icon: "/assets/icons/providers/openrouter.svg",
 		apiKeySource: "OPENROUTER_API_KEY",
 		models: [
 			{
 				id: "deepseek-v3",
-				name: "DeepSeek V3",
-				description: "A powerful model for complex tasks.",
+				brand: "DeepSeek",
+				version: "V3",
+				description: "A powerful model for complex tasks",
 				maxTokens: 16384,
 				temperature: 0.6,
 				available: true,
@@ -86,8 +113,9 @@ const providers: Provider[] = [
 			},
 			{
 				id: "llama-4-maverick",
-				name: "Llama 4 Maverick",
-				description: "An advanced model with high performance.",
+				brand: "Llama",
+				version: "4 Maverick",
+				description: "An advanced model with high performance",
 				maxTokens: 32768,
 				temperature: 0.7,
 				available: true,
@@ -111,6 +139,12 @@ export function getModelDataById(modelId: string | undefined) {
 export function getProviderDataById(providerId: string) {
 	const provider = providers.find((p) => p.id == providerId);
 	return provider;
+}
+
+export function getFullModelName(modelId: string | undefined) {
+	const model = getModelDataById(modelId);
+	if (!model) return "";
+	return `${model.brand} ${model.version}`;
 }
 
 export function listAllModels(providerList?: Provider[]) {

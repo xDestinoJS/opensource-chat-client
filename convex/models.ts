@@ -1,6 +1,7 @@
-import providers, { listAllModels, ModelId } from "../src/lib/providers";
+import { v } from "convex/values";
+import providers, { ModelId } from "../src/lib/providers";
 import { internal } from "./_generated/api";
-import { internalQuery, query } from "./_generated/server";
+import { internalQuery, mutation, query } from "./_generated/server";
 
 export const getAvailableModels = internalQuery({
 	handler: async (ctx) => {

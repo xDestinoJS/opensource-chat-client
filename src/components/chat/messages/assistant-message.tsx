@@ -11,7 +11,7 @@ import { useSpeech } from "react-text-to-speech";
 import IconButton from "../buttons/icon-button";
 import { cn } from "@/lib/utils";
 import stripMarkdownFromString from "@/utils/strip-markdown-from-string";
-import providers, { getModelDataById } from "@/lib/providers";
+import providers, { getFullModelName, getModelDataById } from "@/lib/providers";
 import { useTextSelection } from "@/hooks/useTextSelection";
 import useAssistantContent from "@/hooks/useAssistantContent";
 import WaveLoader from "../wave-loader";
@@ -102,7 +102,7 @@ export default function AssistantMessage({
 				<IconButton onClick={onRetry}>
 					<RefreshCcw />
 				</IconButton>
-				<p className="ml-2.5 text-xs">{modelData?.name}</p>
+				<p className="ml-2.5 text-xs">{getFullModelName(message.model)}</p>
 			</div>
 			{isLastPair && <div className="pt-4" />}
 		</div>

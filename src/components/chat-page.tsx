@@ -229,7 +229,7 @@ export default function ChatPage({ chatId }: { chatId?: Id<"chats"> }) {
 									return;
 								}}
 							>
-								<Square />
+								<Square className="fill-secondary" />
 							</Button>
 						)}
 					</div>

@@ -161,11 +161,11 @@ export const streamAnswer = httpAction(async (ctx, req) => {
 					if (cancelReason) {
 						llmCtrl.abort(); // stop the LLM
 						push.enqueue(encoder.encode("[[CANCEL:USER_REQUEST]]"));
-						push.close(); // stop sending chunks
 						await ctx.runMutation(internal.messages.updateMessage, {
 							messageId: assistantMessageId,
 							isStreaming: false,
 						});
+						push.close(); // stop sending chunks
 						return;
 					}
 

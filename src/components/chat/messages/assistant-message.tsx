@@ -48,7 +48,7 @@ export default function AssistantMessage({
 	return (
 		<div className="relative w-full flex flex-col group">
 			<div className="w-full" ref={contentRef}>
-				{content.length > 0 ? (
+				{content.length > 0 || message.isComplete ? (
 					<MemoizedMarkdown content={content} />
 				) : (
 					<WaveLoader />
@@ -79,7 +79,7 @@ export default function AssistantMessage({
 				)}
 
 			{cancelReason && (
-				<div className="w-full rounded-lg bg-destructive/7.5 py-3 px-4.5 text-sm text-destructive">
+				<div className="w-full rounded-lg bg-destructive/7.5 my-2 py-3 px-4.5 text-sm text-destructive">
 					{cancelReason == "user_request" && "Stopped by user"}
 				</div>
 			)}

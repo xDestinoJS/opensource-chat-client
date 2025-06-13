@@ -57,6 +57,7 @@ export default function useAssistantContent(message: Doc<"messages">) {
 
 					if (value) {
 						const chunk = decoder.decode(value, { stream: true });
+
 						if (chunk.includes("[[CANCEL:USER_REQUEST]]")) {
 							setCancelReason("user_request");
 							break; // stop reading further

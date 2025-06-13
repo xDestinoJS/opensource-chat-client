@@ -18,8 +18,8 @@
     - [x] Change icon
   - [x] Added back streaming component
     - [x] Make branching work again
-    - [ ] Make edits work again
-    - [ ] Make retries work again
+    - [x] Make edits work again
+    - [x] Make retries work again
       - [ ] Make retry button allow user to retry with different model (or with shift, no modal)
   - [ ] Add Chat Sharing
   - [ ] Add Spotlight-like feature

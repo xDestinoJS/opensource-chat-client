@@ -1,5 +1,5 @@
 import { SidebarProvider } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/app-sidebar";
+import { AppSidebar } from "@/components/sidebar/main";
 import DeleteChatModal from "@/components/modals/delete-chat-modal";
 
 export default function Layout({ children }: { children: React.ReactNode }) {

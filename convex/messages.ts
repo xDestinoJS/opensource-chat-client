@@ -104,20 +104,20 @@ export const streamAnswer = httpAction(async (ctx, req) => {
 		assistantMessageId: Id<"messages">;
 	};
 
-	if (
-		!(await ctx.runMutation(internal.messages.startStreaming, {
-			messageId: assistantMessageId,
-		}))
-	) {
+	// Avoid two streams for the same message
+	const canStream = await ctx.runMutation(internal.messages.startStreaming, {
+		messageId: assistantMessageId,
+	});
+	if (!canStream) {
 		return new Response("Stream already in progress or message is complete.", {
 			status: 409,
 		});
 	}
 
+	// Clean message history
 	let messages = await ctx.runQuery(internal.messages.getMessageHistory, {
 		chatId,
 	});
-
 	const assistantIdx = messages.findIndex((m) => m._id === assistantMessageId);
 	messages = messages.slice(0, assistantIdx + 1);
 
@@ -126,6 +126,7 @@ export const streamAnswer = httpAction(async (ctx, req) => {
 		content: m.content,
 	}));
 
+	// If the user's last message has a quote, include it
 	for (let i = history.length - 1; i >= 0; i--) {
 		if (history[i].role === "user" && messages[i]?.quote) {
 			history[i].content =
@@ -135,62 +136,85 @@ export const streamAnswer = httpAction(async (ctx, req) => {
 		}
 	}
 
-	// one controller for the LLM…
 	const llmCtrl = new AbortController();
 	const result = await streamText(
-		(messages[messages.length - 1].model ?? "mistral-small") as ModelId,
+		(messages.at(-1)?.model ?? "mistral-small") as ModelId,
 		history,
 		llmCtrl.signal
 	);
 
-	// …and one for the client connection
 	const encoder = new TextEncoder();
 	let content = "";
 	let lastSaved = 0;
 
-	const stream = new ReadableStream({
-		async start(push) {
+	const savePartial = async () => {
+		await ctx.runMutation(internal.messages.updateMessage, {
+			messageId: assistantMessageId,
+			content,
+		});
+	};
+
+	const finish = async (finalContent: string) => {
+		await ctx.runMutation(internal.messages.updateMessage, {
+			messageId: assistantMessageId,
+			content: finalContent,
+			isComplete: true,
+			isStreaming: false,
+		});
+	};
+
+	// Runs no matter what
+	const cleanup = async () => {
+		await ctx.runMutation(internal.chat.updateChat, {
+			chatId,
+			isAnswering: false,
+		});
+		await ctx.runMutation(internal.messages.updateMessage, {
+			messageId: assistantMessageId,
+			isStreaming: false,
+		});
+	};
+
+	const stream = new ReadableStream<Uint8Array>({
+		async start(controller) {
 			try {
 				for await (const chunk of result.textStream) {
-					// was the message cancelled?
 					const { cancelReason } = await ctx.runQuery(
 						internal.messages.getMessage,
-						{ messageId: assistantMessageId }
-					);
-
-					if (cancelReason) {
-						llmCtrl.abort(); // stop the LLM
-						push.enqueue(encoder.encode("[[CANCEL:USER_REQUEST]]"));
-						await ctx.runMutation(internal.messages.updateMessage, {
+						{
 							messageId: assistantMessageId,
-							isStreaming: false,
-						});
-						push.close(); // stop sending chunks
-						return;
+						}
+					);
+					if (cancelReason) {
+						llmCtrl.abort();
+						await finish(content);
+						await cleanup();
+						controller.close();
+						break;
 					}
 
 					content += chunk;
-					push.enqueue(encoder.encode(chunk));
+					controller.enqueue(encoder.encode(chunk));
 
 					if (content.length - lastSaved >= 75) {
 						lastSaved = content.length;
-						void ctx.runMutation(internal.messages.updateMessage, {
-							messageId: assistantMessageId,
-							content,
-						});
+						void savePartial();
 					}
 				}
 
-				await ctx.runMutation(internal.messages.updateMessage, {
-					messageId: assistantMessageId,
-					content,
-					isComplete: true,
-					isStreaming: false,
-				});
+				await finish(content);
 			} catch (err) {
-				// Ignore abort errors; re‑throw the rest
-				if (!llmCtrl.signal.aborted) push.error(err);
+				if (!llmCtrl.signal.aborted) controller.error(err);
+			} finally {
+				await cleanup();
 			}
+		},
+
+		// Called when the stream disconnects from the client
+		async cancel() {
+			llmCtrl.abort();
+			await finish(content);
+			await cleanup();
 		},
 	});
 
@@ -246,18 +270,32 @@ export const sendMessage = mutation({
 	handler: async (ctx, args) => {
 		args.model = modelIds.parse(args.model ?? "mistral-small");
 
+		let chat: Doc<"chats"> | null;
+
 		if (!args.chatId) {
 			args.chatId = await ctx.runMutation(internal.chat.createChat, {
 				content: args.content,
 				model: args.model,
 			});
-			if (!args.chatId) throw new Error("Chat could not be created");
+			if (!args.chatId) {
+				throw new Error("Chat could not be created");
+			}
+			chat = await ctx.db.get(args.chatId);
 		} else {
-			const chat = await ctx.db.get(args.chatId);
-			if (!chat) throw new Error("Chat not found");
+			chat = await ctx.db.get(args.chatId);
+			if (chat?.isAnswering) {
+				throw new Error("Answer is already being generated for chat.");
+			}
 		}
 
+		if (!chat) throw new Error("Chat not found");
 		const chatId = args.chatId as Id<"chats">;
+
+		// Set the chat to answering
+		await ctx.runMutation(internal.chat.updateChat, {
+			chatId,
+			isAnswering: true,
+		});
 
 		const messageId = await ctx.db.insert("messages", {
 			chatId,
@@ -280,13 +318,6 @@ export const sendMessage = mutation({
 			isStreaming: false,
 		});
 
-		/* (async () => {
-			await ctx.scheduler.runAfter(0, internal.messages.answerMessage, {
-				chatId,
-				assistantMessageId,
-			});
-		})();
- */
 		return {
 			chatId,
 			messageId,

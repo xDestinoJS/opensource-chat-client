@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import Link from "next/link";
-import { Pin, PinOff, Split, X } from "lucide-react";
+import { Loader2, Pin, PinOff, Split, X } from "lucide-react";
 import { SidebarMenuItem } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import {
@@ -95,7 +95,7 @@ export const ChatListItem = React.memo(function ChatListItem({
 					{!isEditing ? (
 						<div
 							className={cn(
-								"absolute bg-gradient-to-r pointer-events-none from-secondary/0 via-secondary w-1/2 to-secondary h-full top-0 right-0 flex p-1 items-center justify-end transition-transform ease-in-out duration-150",
+								"absolute bg-gradient-to-r pointer-events-none from-secondary/0 z-5 via-secondary w-1/2 to-secondary h-full top-0 right-0 flex p-1 items-center justify-end transition-transform ease-in-out duration-150",
 								isHovering ? "translate-x-0" : "translate-x-full"
 							)}
 						>
@@ -155,6 +155,8 @@ export const ChatListItem = React.memo(function ChatListItem({
 						) : (
 							<ChatTitleDisplay chat={chat} animateOnAppear={animateOnAppear} />
 						)}
+
+						{chat.isAnswering && <Loader2 className="animate-spin" />}
 					</div>
 				</Link>
 			</Button>

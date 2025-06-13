@@ -30,7 +30,7 @@ export default function AssistantMessage({
 	onQuote: (quote: string) => void;
 }) {
 	const { selectionData, contentRef } = useTextSelection();
-	const { content, cancelReason } = useAssistantContent(message);
+	const { content } = useAssistantContent(message);
 	const modelData = models.find((models) => models.id === message.model);
 
 	const { start, speechStatus, stop } = useSpeech({
@@ -78,9 +78,9 @@ export default function AssistantMessage({
 					</button>
 				)}
 
-			{cancelReason && (
+			{message.cancelReason && (
 				<div className="w-full rounded-lg bg-destructive/7.5 my-2 py-3 px-4.5 text-sm text-destructive">
-					{cancelReason == "user_request" && "Stopped by user"}
+					{message.cancelReason == "user_request" && "Stopped by user"}
 				</div>
 			)}
 

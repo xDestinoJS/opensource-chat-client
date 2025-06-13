@@ -4,12 +4,12 @@ import { useMutation, useQuery } from "convex/react";
 import { useMemo, useEffect, useRef, useState } from "react";
 
 import MessagePair from "@/components/chat/message-pair";
-import { api } from "../../convex/_generated/api";
-import { Id } from "../../convex/_generated/dataModel";
+import { api } from "../../../convex/_generated/api";
+import { Id } from "../../../convex/_generated/dataModel";
 import { redirect } from "next/navigation";
 import { ArrowUp, Square } from "lucide-react";
-import { Button } from "./ui/button";
-import { AutosizeTextarea, AutosizeTextAreaRef } from "./ui/autosize-textarea";
+import { Button } from "../ui/button";
+import { AutosizeTextarea, AutosizeTextAreaRef } from "../ui/autosize-textarea";
 import chunkArray from "@/utils/chunk-array";
 import { useChatInputEvents } from "@/hooks/useChatInputEvents";
 import { useChatScrollManagement } from "@/hooks/useChatScrollManagement";
@@ -23,7 +23,7 @@ import {
 import useChatModel from "@/hooks/useChatModel";
 import Image from "next/image";
 import Head from "next/head";
-import { TextQuote } from "./text-quote";
+import { TextQuote } from "../text-quote";
 import useSessionId from "@/stores/use-session";
 
 export default function ChatPage({ chatId }: { chatId?: Id<"chats"> }) {

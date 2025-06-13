@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import ChatPage from "../../../components/chat-page";
+import ChatPage from "../../../components/chat/chat-page";
 import { Id } from "../../../../convex/_generated/dataModel";
 
 export default function Page() {

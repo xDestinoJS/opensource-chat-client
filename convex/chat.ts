@@ -38,7 +38,8 @@ export const listChats = query({
 export const updateChat = internalMutation({
 	args: {
 		chatId: v.id("chats"),
-		title: v.string(),
+		title: v.optional(v.string()),
+		isAnswering: v.optional(v.boolean()),
 	},
 	handler: async (ctx, args) => {
 		const chat = await ctx.db.get(args.chatId);
@@ -46,8 +47,15 @@ export const updateChat = internalMutation({
 			throw new Error("[DB] Chat not found.");
 		}
 
+		const updates: any = {};
+		if (args.title !== undefined)
+			updates.title = args.title != null ? args.title : undefined;
+		if (args.isAnswering !== undefined)
+			updates.isAnswering =
+				args.isAnswering != null ? args.isAnswering : undefined;
+
 		// Update the chat with the new title
-		await ctx.db.patch(args.chatId, { title: args.title });
+		await ctx.db.patch(args.chatId, updates);
 	},
 });
 
@@ -113,6 +121,7 @@ export const createChat = internalMutation({
 		const chatId = await ctx.db.insert("chats", {
 			title: "",
 			isPinned: false,
+			isAnswering: true,
 		});
 
 		// If it's a new chat, we can generate a title based on the content
@@ -155,6 +164,7 @@ export const branchChat = internalMutation({
 			title: args.title,
 			branchOf: chat._id,
 			isPinned: false,
+			isAnswering: false,
 		});
 
 		// Insert the messages into the new chat

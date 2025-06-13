@@ -17,5 +17,6 @@ export default defineSchema({
 		title: v.string(),
 		branchOf: v.optional(v.id("chats")),
 		isPinned: v.boolean(),
+		isAnswering: v.boolean(),
 	}),
 });

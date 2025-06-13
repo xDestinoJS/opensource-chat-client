@@ -9,12 +9,12 @@ import {
 	SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { useQuery, useMutation } from "convex/react";
-import { api } from "../../convex/_generated/api";
-import { Doc, Id } from "../../convex/_generated/dataModel";
+import { api } from "../../../convex/_generated/api";
+import { Doc, Id } from "../../../convex/_generated/dataModel";
 import Link from "next/link";
-import { Button } from "./ui/button";
+import { Button } from "../ui/button";
 import { Pin, Plus } from "lucide-react";
-import { ChatGroupSection } from "./chat/chat-group-section";
+import { ChatGroupSection } from "./chat-group-section";
 
 interface ChatGroup {
 	label: string;

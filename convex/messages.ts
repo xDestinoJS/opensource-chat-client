@@ -121,10 +121,13 @@ export const streamAnswer = httpAction(async (ctx, req) => {
 	const assistantIdx = messages.findIndex((m) => m._id === assistantMessageId);
 	messages = messages.slice(0, assistantIdx + 1);
 
-	const history = messages.slice(0, -1).map((m) => ({
-		role: m.role as "user" | "assistant",
-		content: m.content,
-	}));
+	const history = messages
+		.slice(0, -1)
+		.map((m) => ({
+			role: m.role as "user" | "assistant",
+			content: m.content,
+		}))
+		.filter((m) => m.content.length > 0);
 
 	// If the user's last message has a quote, include it
 	for (let i = history.length - 1; i >= 0; i--) {
@@ -291,7 +294,7 @@ export const sendMessage = mutation({
 		if (!chat) throw new Error("Chat not found");
 		const chatId = args.chatId as Id<"chats">;
 
-		// Set the chat to answering
+		// Set chat to answering state
 		await ctx.runMutation(internal.chat.updateChat, {
 			chatId,
 			isAnswering: true,
@@ -333,7 +336,7 @@ export const editMessage = mutation({
 		sessionId: v.string(),
 	},
 	handler: async (ctx, args) => {
-		const { assistantMessageId } = await _handleMessageUpdate(
+		const { chatId, assistantMessageId } = await _handleMessageUpdate(
 			ctx,
 			args.messageId
 		);
@@ -343,6 +346,12 @@ export const editMessage = mutation({
 			messageId: args.messageId,
 			content: args.content,
 			isComplete: true,
+		});
+
+		// Set chat to answering state
+		await ctx.runMutation(internal.chat.updateChat, {
+			chatId,
+			isAnswering: true,
 		});
 
 		// Update the assistant's message
@@ -382,11 +391,10 @@ export const cancelMessage = mutation({
 			);
 		}
 
-		if (message.isComplete) {
-			return console.log(
-				"[DB] The message is already complete and cannot be cancelled."
-			);
-		}
+		await ctx.runMutation(internal.chat.updateChat, {
+			chatId: chat._id,
+			isAnswering: false,
+		});
 
 		// Check if the message is already
 		if (!message.cancelReason) {
@@ -405,10 +413,16 @@ export const retryMessage = mutation({
 		sessionId: v.string(),
 	},
 	handler: async (ctx, args) => {
-		const { assistantMessageId } = await _handleMessageUpdate(
+		const { chatId, assistantMessageId } = await _handleMessageUpdate(
 			ctx,
 			args.messageId
 		);
+
+		// Set chat to answering state
+		await ctx.runMutation(internal.chat.updateChat, {
+			chatId,
+			isAnswering: true,
+		});
 
 		// Update the assistant's message
 		await ctx.runMutation(internal.messages.updateMessage, {

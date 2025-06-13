@@ -194,6 +194,15 @@ export const deleteChat = mutation({
 			throw new Error("[DB] Chat not found.");
 		}
 
+		const messages = await ctx.runQuery(internal.messages.getMessageHistory, {
+			chatId: args.id,
+		});
+
+		// Delete all associated messages
+		for (const message of messages) {
+			await ctx.db.delete(message._id);
+		}
+
 		await ctx.db.delete(args.id);
 	},
 });

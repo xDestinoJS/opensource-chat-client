@@ -22,7 +22,6 @@ import {
 } from "@/components/ui/select";
 import useChatModel from "@/hooks/useChatModel";
 import Image from "next/image";
-import Head from "next/head";
 import { TextQuote } from "../text-quote";
 import useSessionId from "@/stores/use-session";
 
@@ -89,7 +88,7 @@ export default function ChatPage({ chatId }: { chatId?: Id<"chats"> }) {
 
 	async function handleSubmit() {
 		const currentInput = inputAreaRef.current?.textArea.value.trim();
-		if (!currentInput) return;
+		if (!currentInput || chat?.isAnswering) return;
 
 		// Send message to the server
 		(async () => {
@@ -213,8 +212,7 @@ export default function ChatPage({ chatId }: { chatId?: Id<"chats"> }) {
 							</SelectContent>
 						</Select>
 
-						{messages?.length === 0 ||
-						(messages && messages[messages.length - 1]?.isComplete) ? (
+						{messages?.length === 0 || !chat?.isAnswering ? (
 							<Button size="icon" type="button" onClick={handleSubmit}>
 								<ArrowUp />
 							</Button>

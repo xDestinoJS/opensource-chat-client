@@ -4,14 +4,16 @@ import { Fragment } from "react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../../ui/tooltip";
 import { Button } from "../../ui/button";
 import Image from "next/image";
-import { Pin, Star } from "lucide-react";
+import { Pin, PinOff, Star } from "lucide-react";
 
 export default function ExpandedGrid({
 	providers,
 	onSelect,
+	onToggleFavorite,
 }: {
 	providers: Provider[];
 	onSelect: (id: ModelId) => void;
+	onToggleFavorite: (id: ModelId) => void;
 }) {
 	return (
 		<motion.div
@@ -59,8 +61,9 @@ export default function ExpandedGrid({
 										className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100"
 										size="icon"
 										variant="outline"
+										onClick={() => onToggleFavorite(model.id)}
 									>
-										<Pin />
+										{model.isFavorited ? <PinOff /> : <Pin />}
 									</Button>
 								</div>
 							</TooltipTrigger>

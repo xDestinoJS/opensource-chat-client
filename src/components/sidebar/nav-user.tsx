@@ -32,10 +32,12 @@ export function NavUser({
 	user: {
 		name: string;
 		email: string;
-		image: string;
+		image?: string | undefined | null;
 	};
 }) {
 	const { isMobile } = useSidebar();
+
+	user.image = user.image ?? "";
 
 	return (
 		<SidebarMenu>

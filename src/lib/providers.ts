@@ -19,6 +19,7 @@ export type ModelConfig = {
 	temperature: number;
 	available: boolean;
 	icon: string;
+	isFavorited?: boolean;
 };
 
 export type Provider = {

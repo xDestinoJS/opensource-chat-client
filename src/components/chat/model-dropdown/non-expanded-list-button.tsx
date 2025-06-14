@@ -11,10 +11,12 @@ export default function NonExpandedModelButton({
 	provider,
 	model,
 	onSelect,
+	hideProvider,
 }: {
 	provider: Provider;
 	model: Provider["models"][number];
 	onSelect: (id: ModelId) => void;
+	hideProvider?: boolean;
 }) {
 	return (
 		<DropdownMenuItem key={model.id} asChild>
@@ -24,19 +26,21 @@ export default function NonExpandedModelButton({
 				variant="ghost"
 				onClick={() => onSelect(model.id)}
 			>
-				<div className="flex justify-center items-center border-r border-r-accent-foreground/10 h-full pr-3">
-					<Tooltip>
-						<TooltipTrigger asChild>
-							<Image
-								src={provider.icon}
-								alt={provider.id}
-								width={20}
-								height={20}
-							/>
-						</TooltipTrigger>
-						<TooltipContent>With {provider.name}</TooltipContent>
-					</Tooltip>
-				</div>
+				{!hideProvider && (
+					<div className="flex justify-center items-center border-r border-r-accent-foreground/10 h-full pr-3">
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<Image
+									src={provider.icon}
+									alt={provider.id}
+									width={20}
+									height={20}
+								/>
+							</TooltipTrigger>
+							<TooltipContent>With {provider.name}</TooltipContent>
+						</Tooltip>
+					</div>
+				)}
 				<Image src={model.icon} alt={model.id} width={20} height={20} />
 				<div className="flex items-center">
 					{getFullModelName(model.id)}

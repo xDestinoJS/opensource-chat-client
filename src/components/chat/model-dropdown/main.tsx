@@ -9,12 +9,21 @@ import {
 import { getFullModelName, ModelId, Provider } from "@/lib/providers";
 import { Button } from "../../ui/button";
 import { Input } from "../../ui/input";
-import { ChevronLeft, ChevronUp, Filter, Search } from "lucide-react";
-import { useMemo, useState, useEffect } from "react";
+import {
+	ChevronDown,
+	ChevronLeft,
+	ChevronUp,
+	Filter,
+	Search,
+} from "lucide-react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import ExpandedGrid from "./expanded-grid";
 import NonExpandedList from "./non-expanded-list";
+import { api } from "../../../../convex/_generated/api";
+import { useMutation, useQuery } from "convex/react";
+import { useSession } from "@/lib/auth-client";
 
 export default function ModelDropdown({
 	modelId,
@@ -29,36 +38,88 @@ export default function ModelDropdown({
 	const [isOpen, setIsOpen] = useState(false);
 	const [searchQuery, setSearchQuery] = useState("");
 	const [isExpanded, setIsExpanded] = useState(false);
+	const inputRef = useRef<HTMLInputElement | null>(null);
+
+	const { data: session } = useSession();
+
+	const userPreferences = useQuery(api.userPreferences.getUserPreferences, {
+		sessionToken: session?.session.token,
+	});
+	const toggleFavoriteModel = useMutation(
+		api.userPreferences.toggleFavoriteModel
+	);
 
 	useEffect(() => setIsClient(true), []);
 
 	const filtered = useMemo(() => {
+		const favoriteModels = userPreferences?.favoriteModels || [];
 		const q = searchQuery.trim().toLowerCase();
+
+		console.log(userPreferences);
+
 		return providersList
 			.map((p) => ({
 				...p,
-				models: p.models.filter(
-					(m) => !q || getFullModelName(m.id).toLowerCase().includes(q)
-				),
+				models: p.models
+					.filter(
+						(m) =>
+							!q ||
+							`${getFullModelName(m.id)} ${p.name}`.toLowerCase().includes(q)
+					)
+					.map((m) => ({
+						...m,
+						isFavorited: favoriteModels.includes(m.id),
+					})),
 			}))
 			.filter((p) => p.models.length);
-	}, [providersList, searchQuery]);
+	}, [providersList, userPreferences, searchQuery, session]); // Add session to the dependency array
+
+	const favorited = useMemo(() => {
+		const favoriteModels = userPreferences?.favoriteModels || [];
+
+		return providersList
+			.map((p) => ({
+				...p,
+				models: p.models.filter((m) => favoriteModels.includes(m.id)),
+			}))
+			.filter((p) => p.models.length);
+	}, [userPreferences, filtered]);
+
+	useEffect(() => {
+		if (isOpen) {
+			setTimeout(() => {
+				inputRef.current?.focus();
+			}, 250);
+		}
+	}, [isOpen]);
 
 	const select = (id: ModelId) => {
 		setModelId(id);
 		setIsOpen(false);
 	};
 
-	if (!isClient) return null;
+	const onToggleFavorite = async (id: ModelId) => {
+		if (session) {
+			await toggleFavoriteModel({
+				sessionToken: session?.session.token,
+				modelId: id,
+			});
+		}
+	};
 
-	return (
+	return isClient ? (
 		<DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
-			<DropdownMenuTrigger>{modelId}</DropdownMenuTrigger>
+			<DropdownMenuTrigger asChild>
+				<Button variant="ghost" size="sm">
+					{getFullModelName(modelId)} <ChevronDown />{" "}
+				</Button>
+			</DropdownMenuTrigger>
 			<DropdownMenuContent align="start" sideOffset={10}>
 				{/* Search */}
 				<div className="flex gap-1 w-full items-center">
 					<Search className="ml-2.25" size={18} />
 					<Input
+						ref={inputRef}
 						className="grow border-none focus-visible:ring-0 shadow-none"
 						placeholder="Search models..."
 						value={searchQuery}
@@ -80,9 +141,13 @@ export default function ModelDropdown({
 				>
 					<AnimatePresence mode="sync">
 						{isExpanded ? (
-							<ExpandedGrid providers={filtered} onSelect={select} />
+							<ExpandedGrid
+								providers={filtered}
+								onSelect={select}
+								onToggleFavorite={onToggleFavorite}
+							/>
 						) : (
-							<NonExpandedList providers={filtered} onSelect={select} />
+							<NonExpandedList providers={favorited} onSelect={select} />
 						)}
 					</AnimatePresence>
 				</div>
@@ -112,5 +177,7 @@ export default function ModelDropdown({
 				</div>
 			</DropdownMenuContent>
 		</DropdownMenu>
+	) : (
+		<div></div>
 	);
 }

@@ -2,6 +2,28 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
 export default defineSchema({
+	user: defineTable({
+		name: v.string(),
+		email: v.string(),
+		emailVerified: v.boolean(),
+		image: v.optional(v.string()),
+		updatedAt: v.string(),
+		isAnonymous: v.optional(v.boolean()),
+	}).index("byEmail", ["email"]),
+	session: defineTable({
+		expiresAt: v.string(),
+		token: v.string(),
+		updatedAt: v.string(),
+		ipAddress: v.optional(v.string()),
+		userAgent: v.optional(v.string()),
+		userId: v.id("user"),
+	})
+		.index("byToken", ["token"])
+		.index("byUserId", ["userId"]),
+	userPreferences: defineTable({
+		userId: v.string(),
+		favoriteModels: v.array(v.string()),
+	}).index("byUserId", ["userId"]),
 	messages: defineTable({
 		chatId: v.id("chats"),
 		role: v.string(),

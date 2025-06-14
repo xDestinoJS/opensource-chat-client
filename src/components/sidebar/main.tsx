@@ -15,6 +15,8 @@ import Link from "next/link";
 import { Button } from "../ui/button";
 import { Pin, Plus } from "lucide-react";
 import { ChatGroupSection } from "./chat-group-section";
+import { useSession } from "@/lib/auth-client";
+import { NavUser } from "./nav-user";
 
 interface ChatGroup {
 	label: string;
@@ -27,6 +29,7 @@ interface GroupedChatsResult {
 }
 
 export function AppSidebar() {
+	const { data: session } = useSession();
 	const [editingChatId, setEditingChatId] = useState<Id<"chats"> | null>(null);
 
 	const editInputAreaRef = useRef<HTMLInputElement>(null);
@@ -163,7 +166,11 @@ export function AppSidebar() {
 					/>
 				))}
 			</SidebarContent>
-			<SidebarFooter />
+			{session?.user && (
+				<SidebarFooter>
+					<NavUser user={session.user} />
+				</SidebarFooter>
+			)}
 		</Sidebar>
 	);
 }

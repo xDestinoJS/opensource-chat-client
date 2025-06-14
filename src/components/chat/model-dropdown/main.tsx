@@ -24,6 +24,7 @@ import NonExpandedList from "./non-expanded-list";
 import { api } from "../../../../convex/_generated/api";
 import { useMutation, useQuery } from "convex/react";
 import { useSession } from "@/lib/auth-client";
+import FilterDropdown from "./filter-dropdown";
 
 export default function ModelDropdown({
 	modelId,
@@ -171,9 +172,7 @@ export default function ModelDropdown({
 							</>
 						)}
 					</Button>
-					<Button size="icon" variant="ghost">
-						<Filter />
-					</Button>
+					<FilterDropdown />
 				</div>
 			</DropdownMenuContent>
 		</DropdownMenu>

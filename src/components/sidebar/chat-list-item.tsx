@@ -17,6 +17,7 @@ import { useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import useHover from "@/hooks/useHover";
 import { useDeleteChatModal } from "@/stores/use-delete-chat-modal";
+import useSessionId from "@/stores/use-session";
 
 type ChatDoc = Doc<"chats">;
 
@@ -47,6 +48,7 @@ export const ChatListItem = React.memo(function ChatListItem({
 }: ChatListItemProps) {
 	const [ref, isHovering] = useHover();
 
+	const { reset } = useSessionId();
 	const { open, setChat } = useDeleteChatModal();
 	const updateChatData = useMutation(api.chat.updateChatData);
 
@@ -87,6 +89,9 @@ export const ChatListItem = React.memo(function ChatListItem({
 				<Link
 					href={`/chat/${chat._id}`}
 					className="flex justify-start items-center w-full group"
+					onClick={() => {
+						reset();
+					}}
 					onDoubleClick={(e) => {
 						e.preventDefault();
 						onStartEdit(chat._id, chat.title || "");

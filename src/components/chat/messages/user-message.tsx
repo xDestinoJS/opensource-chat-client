@@ -13,6 +13,8 @@ import {
 	AutosizeTextAreaRef,
 } from "@/components/ui/autosize-textarea";
 import { TextQuote } from "@/components/text-quote";
+import { ModelId } from "@/lib/providers";
+import RetryDropdown from "../retry-dropdown";
 
 export default function UserMessage({
 	message,
@@ -21,8 +23,9 @@ export default function UserMessage({
 }: {
 	message: Doc<"messages">;
 	onEdit: (content: string) => void;
-	onRetry: () => void;
+	onRetry: (modelId?: ModelId) => void;
 }) {
+	const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 	const textAreaRef = useRef<AutosizeTextAreaRef>(null);
 	const content = message.content;
 
@@ -93,9 +96,15 @@ export default function UserMessage({
 				)}
 			</div>
 			<div className="flex justify-end items-center mt-1 group-hover:opacity-100 opacity-0 transition-opacity w-full">
-				<IconButton onClick={onRetry}>
-					<RefreshCcw />
-				</IconButton>
+				<RetryDropdown
+					isDropdownOpen={isDropdownOpen}
+					setIsDropdownOpen={setIsDropdownOpen}
+					onRetry={onRetry}
+				>
+					<IconButton>
+						<RefreshCcw />
+					</IconButton>
+				</RetryDropdown>
 				<IconButton onClick={toggleEditing}>
 					<EditIcon />
 				</IconButton>

@@ -3,6 +3,7 @@
 import { Doc, Id } from "../../../convex/_generated/dataModel";
 import UserMessage from "./messages/user-message";
 import AssistantMessage from "./messages/assistant-message";
+import { ModelId } from "@/lib/providers";
 
 interface MessagePairProps {
 	userMessage: Doc<"messages">;
@@ -10,7 +11,7 @@ interface MessagePairProps {
 	isLastPair: boolean;
 	lastPairContainerRef?: React.RefObject<HTMLDivElement | null>;
 	onEditMessage: (messageId: Id<"messages">, content: string) => void;
-	onRetryMessage: (messageId: Id<"messages">) => void;
+	onRetryMessage: (messageId: Id<"messages">, modelId?: ModelId) => void;
 	onBranchMessage: (messageId: Id<"messages">) => Promise<void>;
 	onQuote: (quote: string) => void;
 }
@@ -38,8 +39,8 @@ export default function MessagePair({
 						onEdit={(content) => {
 							onEditMessage(userMessage._id, content);
 						}}
-						onRetry={() => {
-							onRetryMessage(userMessage._id);
+						onRetry={(modelId?: ModelId) => {
+							onRetryMessage(userMessage._id, modelId);
 						}}
 					/>
 				</div>
@@ -55,8 +56,8 @@ export default function MessagePair({
 							onBranch={async () => {
 								await onBranchMessage(assistantMessage._id);
 							}}
-							onRetry={() => {
-								onRetryMessage(assistantMessage._id);
+							onRetry={(modelId?: ModelId) => {
+								onRetryMessage(assistantMessage._id, modelId);
 							}}
 							onQuote={onQuote}
 						/>

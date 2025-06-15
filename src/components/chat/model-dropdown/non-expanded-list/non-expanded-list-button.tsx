@@ -11,12 +11,13 @@ import {
 } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import FeatureIcon from "../../feature-icon";
+import { getFeatureById } from "@/lib/features";
 
 export default function NonExpandedModelButton({
 	provider,
 	model,
 	onSelect,
-	hideProvider,
+	hideProvider = true,
 }: {
 	provider: Provider;
 	model: Provider["models"][number];
@@ -69,9 +70,22 @@ export default function NonExpandedModelButton({
 				</div>
 
 				<div className="flex gap-1">
-					{model.features.map((featureId) => (
-						<FeatureIcon featureId={featureId} />
-					))}
+					{model.features.map((featureId) => {
+						const feature = getFeatureById(featureId);
+						if (feature?.hidden) return;
+						return (
+							<Tooltip key={featureId}>
+								<TooltipTrigger asChild>
+									<div className="cursor-default">
+										<FeatureIcon featureId={featureId} />
+									</div>
+								</TooltipTrigger>
+								<TooltipContent className="mb-1">
+									{feature?.description}
+								</TooltipContent>
+							</Tooltip>
+						);
+					})}
 				</div>
 			</Button>
 		</DropdownMenuItem>

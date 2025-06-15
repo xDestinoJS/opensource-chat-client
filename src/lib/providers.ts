@@ -34,9 +34,9 @@ export type Provider = {
 
 const providers: Provider[] = [
 	{
-		name: "Google",
-		id: "google",
-		icon: "/assets/icons/providers/google.svg",
+		name: "Gemini",
+		id: "gemini",
+		icon: "/assets/icons/providers/gemini.svg",
 		apiKeySource: "GOOGLE_GENERATIVE_AI_API_KEY",
 		models: [
 			{
@@ -47,7 +47,7 @@ const providers: Provider[] = [
 				maxTokens: 8192,
 				temperature: 0.2,
 				available: true,
-				icon: "/assets/icons/models/gemini.svg",
+				icon: "/assets/icons/providers/gemini.svg",
 				features: ["fast", "files", "vision"],
 			},
 		],
@@ -91,9 +91,28 @@ const providers: Provider[] = [
 		],
 	},
 	{
-		name: "OpenRouter",
-		id: "openrouter",
-		icon: "/assets/icons/providers/openrouter.svg",
+		name: "Llama",
+		id: "llama",
+		icon: "/assets/icons/providers/meta.svg",
+		apiKeySource: "OPENROUTER_API_KEY",
+		models: [
+			{
+				id: "llama-4-maverick",
+				brand: "Llama",
+				version: "4 Maverick",
+				description: "An advanced model with high performance",
+				maxTokens: 32768,
+				temperature: 0.7,
+				available: true,
+				icon: "/assets/icons/providers/meta.svg",
+				features: ["vision"],
+			},
+		],
+	},
+	{
+		name: "DeepSeek",
+		id: "deepseek",
+		icon: "/assets/icons/providers/deepseek.svg",
 		apiKeySource: "OPENROUTER_API_KEY",
 		models: [
 			{
@@ -104,19 +123,8 @@ const providers: Provider[] = [
 				maxTokens: 16384,
 				temperature: 0.6,
 				available: true,
-				icon: "/assets/icons/models/deepseek.svg",
+				icon: "/assets/icons/providers/deepseek.svg",
 				features: [],
-			},
-			{
-				id: "llama-4-maverick",
-				brand: "Llama",
-				version: "4 Maverick",
-				description: "An advanced model with high performance",
-				maxTokens: 32768,
-				temperature: 0.7,
-				available: true,
-				icon: "/assets/icons/models/meta.svg",
-				features: ["vision"],
 			},
 		],
 	},

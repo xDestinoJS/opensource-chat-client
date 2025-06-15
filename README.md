@@ -16,11 +16,12 @@
     - [x] Make quoting appear
     - [x] Make quoting function
     - [x] Change icon
+  - [x] Remake model selector
   - [x] Added back streaming component
     - [x] Make branching work again
     - [x] Make edits work again
     - [x] Make retries work again
-      - [ ] Make retry button allow user to retry with different model (or with shift, no modal)
+  - [x] Make retry button allow user to retry with different model (or with shift, no modal)
   - [ ] Add Chat Sharing
   - [ ] Add Spotlight-like feature
   - [ ] Add Better-Auth

@@ -67,16 +67,6 @@ export function ExpandedGridButton({
 								);
 							})}
 						</div>
-
-						<div className="absolute top-2.5 right-2.5">
-							<Image
-								src={provider.icon}
-								alt={model.id}
-								className="size-[13.5px]"
-								width={13.5}
-								height={13.5}
-							/>
-						</div>
 					</Button>
 					<Button
 						className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100"

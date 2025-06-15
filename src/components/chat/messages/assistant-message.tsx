@@ -1,7 +1,7 @@
 "use client";
 
 import { Doc } from "@/../convex/_generated/dataModel";
-import { Copy, Split, RefreshCcw, Volume2, Square } from "lucide-react";
+import { Copy, Split, Volume2, Square, RefreshCcw } from "lucide-react";
 import { RiDoubleQuotesR } from "react-icons/ri";
 
 import copyToClipboard from "@/utils/copy-to-clipboard";
@@ -11,10 +11,12 @@ import { useSpeech } from "react-text-to-speech";
 import IconButton from "../buttons/icon-button";
 import { cn } from "@/lib/utils";
 import stripMarkdownFromString from "@/utils/strip-markdown-from-string";
-import providers, { getFullModelName, getModelDataById } from "@/lib/providers";
+import { getFullModelName, ModelId } from "@/lib/providers";
 import { useTextSelection } from "@/hooks/useTextSelection";
 import useAssistantContent from "@/hooks/useAssistantContent";
 import WaveLoader from "../wave-loader";
+import { useState } from "react";
+import RetryDropdown from "../retry-dropdown";
 
 export default function AssistantMessage({
 	message,
@@ -26,12 +28,12 @@ export default function AssistantMessage({
 	message: Doc<"messages">;
 	isLastPair: boolean;
 	onBranch: () => void;
-	onRetry: () => void;
+	onRetry: (modelId?: ModelId) => void;
 	onQuote: (quote: string) => void;
 }) {
+	const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 	const { selectionData, contentRef } = useTextSelection();
 	const { content } = useAssistantContent(message);
-	const modelData = getModelDataById(message.model);
 
 	const { start, speechStatus, stop } = useSpeech({
 		text: stripMarkdownFromString(content),
@@ -87,7 +89,10 @@ export default function AssistantMessage({
 			<div
 				className={cn(
 					"flex items-center mt-1 opacity-0 transition-opacity",
-					message.isComplete ? "group-hover:opacity-100" : "pointer-events-none"
+					message.isComplete
+						? "group-hover:opacity-100"
+						: "pointer-events-none",
+					isDropdownOpen && "opacity-100!"
 				)}
 			>
 				<IconButton onClick={() => copyToClipboard(content)} hasConfirmation>
@@ -99,9 +104,16 @@ export default function AssistantMessage({
 				<IconButton onClick={onPlayAudio}>
 					{speechStatus != "started" ? <Volume2 /> : <Square />}
 				</IconButton>
-				<IconButton onClick={onRetry}>
-					<RefreshCcw />
-				</IconButton>
+				<RetryDropdown
+					isDropdownOpen={isDropdownOpen}
+					setIsDropdownOpen={setIsDropdownOpen}
+					onRetry={onRetry}
+				>
+					<IconButton>
+						<RefreshCcw />
+					</IconButton>
+				</RetryDropdown>
+
 				<p className="ml-2.5 text-xs">{getFullModelName(message.model)}</p>
 			</div>
 			{isLastPair && <div className="pt-4" />}

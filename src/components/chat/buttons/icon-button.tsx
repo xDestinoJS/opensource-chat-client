@@ -11,7 +11,7 @@ export default function IconButton({
 }: {
 	children: React.ReactNode;
 	hasConfirmation?: boolean;
-	onClick: () => void;
+	onClick?: () => void;
 }) {
 	const [confirmed, setConfirmed] = useState(false);
 
@@ -23,12 +23,12 @@ export default function IconButton({
 			onClick={() => {
 				if (hasConfirmation) {
 					if (!confirmed) {
-						onClick();
+						if (onClick) onClick();
 						setConfirmed(true);
 						setTimeout(() => setConfirmed(false), 2000); // Reset confirmation after 2 seconds
 					}
 				} else {
-					onClick();
+					if (onClick) onClick();
 				}
 			}}
 		>

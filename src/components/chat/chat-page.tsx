@@ -17,6 +17,7 @@ import useChatModels from "@/hooks/useChatModels";
 import { TextQuote } from "../text-quote";
 import useSessionId from "@/stores/use-session";
 import ModelDropdown from "./model-dropdown/main";
+import { ModelId } from "@/lib/providers";
 
 export default function ChatPage({ chatId }: { chatId?: Id<"chats"> }) {
 	const { sessionId } = useSessionId();
@@ -133,10 +134,11 @@ export default function ChatPage({ chatId }: { chatId?: Id<"chats"> }) {
 										content,
 									});
 								}}
-								onRetryMessage={(messageId) => {
+								onRetryMessage={(messageId, modelId?: ModelId) => {
 									retryMessage({
 										sessionId,
 										messageId,
+										modelId,
 									});
 								}}
 								onBranchMessage={async (messageId) => {

@@ -56,6 +56,7 @@ export const updateMessage = internalMutation({
 		isStreaming: v.optional(v.boolean()),
 		sessionId: v.optional(v.string()),
 		cancelReason: v.optional(v.union(v.string(), v.null())),
+		model: v.optional(v.string()),
 	},
 	handler: async (ctx, args) => {
 		const message = await ctx.db.get(args.messageId);
@@ -69,6 +70,7 @@ export const updateMessage = internalMutation({
 		if (args.cancelReason !== undefined)
 			updates.cancelReason =
 				args.cancelReason != null ? args.cancelReason : undefined;
+		if (args.model !== undefined) updates.model = args.model;
 
 		await ctx.db.patch(args.messageId, updates);
 	},
@@ -411,12 +413,15 @@ export const retryMessage = mutation({
 	args: {
 		messageId: v.id("messages"),
 		sessionId: v.string(),
+		modelId: v.optional(v.string()),
 	},
 	handler: async (ctx, args) => {
 		const { chatId, assistantMessageId } = await _handleMessageUpdate(
 			ctx,
 			args.messageId
 		);
+
+		if (args.modelId) modelIds.parse(args.modelId); // Validate that the modelId is real
 
 		// Set chat to answering state
 		await ctx.runMutation(internal.chat.updateChat, {
@@ -428,6 +433,7 @@ export const retryMessage = mutation({
 		await ctx.runMutation(internal.messages.updateMessage, {
 			messageId: assistantMessageId,
 			content: "",
+			model: args.modelId,
 			isComplete: false,
 			isStreaming: false,
 			sessionId: args.sessionId,

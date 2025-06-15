@@ -7,7 +7,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import features from "@/lib/features";
 import { Check, Filter } from "lucide-react";
-import FeatureIcon from "./feature-icon";
+import FeatureIcon from "../feature-icon";
 import { useModelFilters } from "@/stores/use-model-filters";
 
 export default function FilterDropdown() {

@@ -19,8 +19,8 @@ import {
 import { useMemo, useState, useEffect, useRef } from "react";
 import { AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import ExpandedGrid from "./expanded-grid";
-import NonExpandedList from "./non-expanded-list";
+import ExpandedGrid from "./expanded-grid/expanded-grid";
+import NonExpandedList from "./non-expanded-list/non-expanded-list";
 import { api } from "../../../../convex/_generated/api";
 import { useMutation, useQuery } from "convex/react";
 import { useSession } from "@/lib/auth-client";
@@ -151,7 +151,7 @@ export default function ModelDropdown({
 				<div
 					className={cn(
 						"transition-all duration-300 overflow-y-scroll overflow-x-hidden -m-1 max-h-screen max-w-screen",
-						!isExpanded ? "w-80 h-50" : "w-160 h-90"
+						!isExpanded ? "w-95 h-50" : "w-160 h-90"
 					)}
 				>
 					<AnimatePresence mode="sync">

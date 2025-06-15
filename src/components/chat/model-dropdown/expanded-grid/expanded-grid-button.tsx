@@ -1,14 +1,14 @@
 import { ModelConfig, ModelId, Provider } from "@/lib/providers";
-import { Button } from "../../ui/button";
 import Image from "next/image";
 import { Pin, PinOff } from "lucide-react";
-import FeatureIcon from "./feature-icon";
 import {
 	Tooltip,
 	TooltipContent,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { getFeatureById } from "@/lib/features";
+import { Button } from "@/components/ui/button";
+import FeatureIcon from "../../feature-icon";
 
 interface ExpandedGridButtonProps {
 	model: ModelConfig;

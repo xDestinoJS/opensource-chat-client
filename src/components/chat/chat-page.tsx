@@ -7,17 +7,15 @@ import MessagePair from "@/components/chat/message-pair";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
 import { redirect } from "next/navigation";
-import { ArrowUp, Square } from "lucide-react";
-import { Button } from "../ui/button";
-import { AutosizeTextarea, AutosizeTextAreaRef } from "../ui/autosize-textarea";
+import { AutosizeTextAreaRef } from "../ui/autosize-textarea";
 import chunkArray from "@/utils/chunk-array";
 import { useChatInputEvents } from "@/hooks/useChatInputEvents";
 import { useChatScrollManagement } from "@/hooks/useChatScrollManagement";
 import useChatModels from "@/hooks/useChatModels";
-import { TextQuote } from "../text-quote";
 import useSessionId from "@/stores/use-session";
-import ModelDropdown from "./model-dropdown/main";
 import { ModelId } from "@/lib/providers";
+import ChatInputForm from "./chat-input-form";
+import { GenericFileData } from "@/lib/files";
 
 export default function ChatPage({ chatId }: { chatId?: Id<"chats"> }) {
 	const { sessionId } = useSessionId();
@@ -80,18 +78,20 @@ export default function ChatPage({ chatId }: { chatId?: Id<"chats"> }) {
 			document.title = chat?.title ? `${chat.title} - ChatApp` : "ChatApp";
 	}, [chat, mounted]);
 
-	async function handleSubmit() {
-		const currentInput = inputAreaRef.current?.textArea.value.trim();
-		if (!currentInput || chat?.isAnswering) return;
-
-		// Send message to the server
+	async function handleSubmit(
+		currentInput: string,
+		fileDataList: GenericFileData[]
+	) {
 		(async () => {
+			if (!modelId) return;
+
 			const response = await sendMessage({
 				quote: quote,
 				content: currentInput,
 				chatId: chatId as Id<"chats">,
 				model: modelId,
 				sessionId,
+				fileDataList,
 			});
 
 			setQuote(undefined); // Clear the quote after sending
@@ -154,60 +154,21 @@ export default function ChatPage({ chatId }: { chatId?: Id<"chats"> }) {
 					})}
 				</div>
 			</div>
-			<form className="w-full max-w-3xl max-lg:px-4 shrink-0">
-				<div
-					ref={inputContainerRef}
-					className="bg-neutral-50 p-4 rounded-tl-2xl rounded-tr-2xl  border border-neutral-300"
-				>
-					{quote && (
-						<TextQuote
-							quote={quote}
-							variant="foreground"
-							onRemove={() => setQuote(undefined)}
-						/>
-					)}
-					<AutosizeTextarea
-						ref={inputAreaRef}
-						name="prompt"
-						type="transparent"
-						maxHeight={170}
-						className="w-full focus:outline-none resize-none bg-transparent"
-						onKeyDown={(e) => {
-							if (e.key === "Enter" && !e.shiftKey) {
-								e.preventDefault();
-								handleSubmit();
-								return;
-							}
-						}}
-					/>
-					<div className="flex justify-between items-center mt-2 bottom-0 right-0">
-						<ModelDropdown
-							modelId={modelId}
-							providersList={providersList}
-							setModelId={setModelId}
-						/>
 
-						{messages?.length === 0 || !chat?.isAnswering ? (
-							<Button size="icon" type="button" onClick={handleSubmit}>
-								<ArrowUp />
-							</Button>
-						) : (
-							<Button
-								size="icon"
-								type="button"
-								onClick={async () => {
-									await cancelMessage({
-										chatId: chatId as Id<"chats">,
-									});
-									return;
-								}}
-							>
-								<Square className="fill-secondary" />
-							</Button>
-						)}
-					</div>
-				</div>
-			</form>
+			<ChatInputForm
+				quote={quote}
+				setQuote={setQuote}
+				modelId={modelId}
+				providersList={providersList}
+				setModelId={setModelId}
+				isAnswering={!!chat?.isAnswering}
+				messagesLength={messages.length}
+				inputContainerRef={inputContainerRef}
+				onSubmit={handleSubmit}
+				onCancel={async () => {
+					await cancelMessage({ chatId: chatId as Id<"chats"> });
+				}}
+			/>
 		</main>
 	);
 }

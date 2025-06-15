@@ -170,12 +170,8 @@ export const branchChat = internalMutation({
 		// Insert the messages into the new chat
 		for (const message of messagesToKeep) {
 			await ctx.db.insert("messages", {
+				...message,
 				chatId: newChatId,
-				role: message.role,
-				content: message.content,
-				model: message.model,
-				isComplete: message.isComplete,
-				sessionId: message.sessionId,
 				isStreaming: false,
 			});
 		}

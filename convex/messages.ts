@@ -11,6 +11,7 @@ import { v } from "convex/values";
 import { streamText } from "../src/lib/ai";
 import { Doc, Id } from "./_generated/dataModel";
 import { ModelId, modelIds } from "../src/lib/providers";
+import { CoreMessage, FilePart, ImagePart, TextPart } from "ai";
 
 // === INTERNAL QUERIES ===
 export const getMessage = internalQuery({
@@ -101,12 +102,8 @@ export const startStreaming = internalMutation({
 
 // === INTERNAL ACTIONS ===
 export const streamAnswer = httpAction(async (ctx, req) => {
-	const { chatId, assistantMessageId } = (await req.json()) as {
-		chatId: Id<"chats">;
-		assistantMessageId: Id<"messages">;
-	};
+	const { chatId, assistantMessageId } = await req.json();
 
-	// Avoid two streams for the same message
 	const canStream = await ctx.runMutation(internal.messages.startStreaming, {
 		messageId: assistantMessageId,
 	});
@@ -116,22 +113,64 @@ export const streamAnswer = httpAction(async (ctx, req) => {
 		});
 	}
 
-	// Clean message history
 	let messages = await ctx.runQuery(internal.messages.getMessageHistory, {
 		chatId,
 	});
 	const assistantIdx = messages.findIndex((m) => m._id === assistantMessageId);
 	messages = messages.slice(0, assistantIdx + 1);
 
-	const history = messages
-		.slice(0, -1)
-		.map((m) => ({
-			role: m.role as "user" | "assistant",
-			content: m.content,
-		}))
-		.filter((m) => m.content.length > 0);
+	const history: CoreMessage[] = [];
 
-	// If the user's last message has a quote, include it
+	const toContentParts = (m: Doc<"messages">) => {
+		const parts: (TextPart | ImagePart | FilePart)[] = [];
+
+		if (m.content) parts.push({ type: "text", text: m.content });
+
+		const addUrlParts = (
+			list: string[] | undefined,
+			type: "image" | "file",
+			mimeType?: string
+		) => {
+			list?.forEach((url) => {
+				try {
+					const obj = new URL(url);
+					parts.push(
+						type === "image"
+							? ({ type: "image", image: obj } as ImagePart)
+							: ({ type: "file", data: obj, mimeType } as FilePart)
+					);
+				} catch (e) {
+					console.error(`Invalid ${type} URL: ${url}`, e);
+				}
+			});
+		};
+
+		addUrlParts(
+			m.images?.map((i) => i.url),
+			"image"
+		);
+		addUrlParts(
+			m.documents?.map((i) => i.url),
+			"file",
+			"application/pdf"
+		);
+
+		return parts;
+	};
+
+	// Add all messages to the history
+	for (const m of messages.slice(0, -1)) {
+		const parts = toContentParts(m);
+		if (!parts.length) continue;
+
+		if (m.role === "user") {
+			history.push({ role: "user", content: parts });
+		} else if (m.role === "assistant") {
+			history.push({ role: "assistant", content: m.content });
+		}
+	}
+
+	// Add quote if exists
 	for (let i = history.length - 1; i >= 0; i--) {
 		if (history[i].role === "user" && messages[i]?.quote) {
 			history[i].content =
@@ -142,11 +181,8 @@ export const streamAnswer = httpAction(async (ctx, req) => {
 	}
 
 	const llmCtrl = new AbortController();
-	const result = await streamText(
-		(messages.at(-1)?.model ?? "mistral-small") as ModelId,
-		history,
-		llmCtrl.signal
-	);
+	const model = messages.at(-1)?.model ?? "mistral-small";
+	const result = await streamText(model as ModelId, history, llmCtrl.signal);
 
 	const encoder = new TextEncoder();
 	let content = "";
@@ -168,7 +204,6 @@ export const streamAnswer = httpAction(async (ctx, req) => {
 		});
 	};
 
-	// Runs no matter what
 	const cleanup = async () => {
 		await ctx.runMutation(internal.chat.updateChat, {
 			chatId,
@@ -215,7 +250,6 @@ export const streamAnswer = httpAction(async (ctx, req) => {
 			}
 		},
 
-		// Called when the stream disconnects from the client
 		async cancel() {
 			llmCtrl.abort();
 			await finish(content);
@@ -271,6 +305,14 @@ export const sendMessage = mutation({
 		sessionId: v.string(),
 		content: v.string(),
 		model: v.string(),
+		fileDataList: v.array(
+			v.object({
+				name: v.string(),
+				fileId: v.string(),
+				uploadUrl: v.string(),
+				mimeType: v.string(),
+			})
+		),
 	},
 	handler: async (ctx, args) => {
 		args.model = modelIds.parse(args.model ?? "mistral-small");
@@ -296,6 +338,31 @@ export const sendMessage = mutation({
 		if (!chat) throw new Error("Chat not found");
 		const chatId = args.chatId as Id<"chats">;
 
+		const images: {
+			name: string;
+			id: string;
+			url: string;
+		}[] = [];
+		const documents: {
+			name: string;
+			id: string;
+			url: string;
+		}[] = [];
+		args.fileDataList.forEach((data) => {
+			if (data.mimeType.startsWith("image/"))
+				images.push({
+					name: data.name.substring(0, 50),
+					id: data.fileId,
+					url: data.uploadUrl,
+				});
+			if (data.mimeType.startsWith("application/pdf"))
+				documents.push({
+					name: data.name.substring(0, 50),
+					id: data.fileId,
+					url: data.uploadUrl,
+				});
+		});
+
 		// Set chat to answering state
 		await ctx.runMutation(internal.chat.updateChat, {
 			chatId,
@@ -309,6 +376,8 @@ export const sendMessage = mutation({
 			quote: args.quote,
 			model: args.model,
 			sessionId: args.sessionId,
+			images,
+			documents,
 			isComplete: true,
 			isStreaming: false,
 		});
@@ -318,8 +387,10 @@ export const sendMessage = mutation({
 			role: "assistant",
 			content: "",
 			model: args.model,
-			isComplete: false,
 			sessionId: args.sessionId,
+			images,
+			documents,
+			isComplete: false,
 			isStreaming: false,
 		});
 

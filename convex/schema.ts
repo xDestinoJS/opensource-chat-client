@@ -31,6 +31,20 @@ export default defineSchema({
 		model: v.optional(v.string()),
 		isComplete: v.boolean(),
 		quote: v.optional(v.string()),
+		images: v.array(
+			v.object({
+				name: v.string(),
+				id: v.string(),
+				url: v.string(),
+			})
+		),
+		documents: v.array(
+			v.object({
+				name: v.string(),
+				id: v.string(),
+				url: v.string(),
+			})
+		),
 		sessionId: v.string(),
 		isStreaming: v.boolean(),
 		cancelReason: v.optional(v.string()),

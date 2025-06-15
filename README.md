@@ -24,15 +24,17 @@
   - [x] Make retry button allow user to retry with different model (or with shift, no modal)
   - [x] Add Better-Auth
   - [ ] Add features
-    - [ ] Add vision
-    - [ ] Add PDF reading
-    - [ ] Add reasoning & effort control?
-    - [ ] Add Image Generation -> Imagen/OpenAI?
+    - [x] Add vision
+      - [x] Add Tigris File Uploads
+    - [x] Add PDF reading
     - [ ] Add web search (include sources)
+    - [ ] Add Image Generation -> Imagen/OpenAI?
+    - [ ] Add reasoning & effort control?
   - [ ] Add Chat Sharing
   - [ ] Add Spotlight-like feature
   - [ ] Add Custom Agents (GPTs)
   - [ ] Add Settings
+  - [ ] Do UI
 
 - Polishing:
   - [ ] Add dark theme

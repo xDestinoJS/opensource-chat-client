@@ -32,7 +32,7 @@ export default function ModelDropdown({
 	setModelId,
 	providersList,
 }: {
-	modelId: string;
+	modelId: string | null;
 	setModelId: (modelId: ModelId) => void;
 	providersList: Provider[];
 }) {
@@ -122,7 +122,7 @@ export default function ModelDropdown({
 
 	if (filteredProviders.length === 0) return null;
 
-	return isClient ? (
+	return isClient && modelId ? (
 		<DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
 			<DropdownMenuTrigger asChild>
 				<Button variant="ghost" size="sm">

@@ -15,6 +15,9 @@ import {
 import { TextQuote } from "@/components/text-quote";
 import { ModelId } from "@/lib/providers";
 import RetryDropdown from "../retry-dropdown";
+import Image from "next/image";
+import ImagePreview from "../previews/image-preview";
+import PDFPreview from "../previews/pdf-preview";
 
 export default function UserMessage({
 	message,
@@ -69,6 +72,16 @@ export default function UserMessage({
 
 	return (
 		<div className="flex flex-col justify-end items-end group">
+			{(message.images.length > 0 || message.documents.length > 0) && (
+				<div className="flex justify-end h-17 gap-2 w-full overflow-x-scroll no-scrollbar mb-2">
+					{message.images.map((data) => (
+						<ImagePreview key={data.id} imageUrl={data.url} />
+					))}
+					{message.documents.map((data) => (
+						<PDFPreview key={data.id} name={data.name} />
+					))}
+				</div>
+			)}
 			{message.quote && (
 				<TextQuote
 					quote={message.quote}

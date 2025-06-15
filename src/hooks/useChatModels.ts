@@ -31,13 +31,13 @@ export default function useChatModels() {
 		[providersList]
 	);
 
-	const getInitial = (): ModelId | "" => {
-		if (typeof window === "undefined") return "";
+	const getInitial = (): ModelId | null => {
+		if (typeof window === "undefined") return null;
 		const stored = localStorage.getItem("modelId") as ModelId | null;
-		return stored && allModels.some((m) => m.id === stored) ? stored : "";
+		return stored && allModels.some((m) => m.id === stored) ? stored : null;
 	};
 
-	const [modelId, setModelIdState] = useState<ModelId | "">(getInitial);
+	const [modelId, setModelIdState] = useState<ModelId | null>(getInitial);
 
 	useEffect(() => {
 		if (typeof window === "undefined" || availableIds === undefined) return;
@@ -45,20 +45,20 @@ export default function useChatModels() {
 		const currentIsAvailable = allModels.some(
 			(m) => m.id === modelId && m.available
 		);
-		const fallback = allModels.find((m) => m.available)?.id ?? "";
+		const fallback = allModels.find((m) => m.available)?.id ?? null;
 
 		const selected = currentIsAvailable ? modelId : fallback;
 
 		if (modelId !== selected) setModelIdState(selected);
-		localStorage.setItem("modelId", selected);
+		if (selected) localStorage.setItem("modelId", selected);
 	}, [allModels, availableIds, modelId]);
 
 	const modelData = allModels.find((m) => m.id === modelId);
 
-	const setModelId = (id: ModelId | "") => {
+	const setModelId = (id: ModelId | null) => {
 		if (typeof window === "undefined") return;
 		setModelIdState(id);
-		localStorage.setItem("modelId", id);
+		if (id) localStorage.setItem("modelId", id);
 	};
 
 	return {

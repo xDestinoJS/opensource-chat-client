@@ -15,6 +15,7 @@ import type {
 } from "convex/server";
 import type * as betterAuth from "../betterAuth.js";
 import type * as chat from "../chat.js";
+import type * as files from "../files.js";
 import type * as http from "../http.js";
 import type * as messages from "../messages.js";
 import type * as models from "../models.js";
@@ -31,6 +32,7 @@ import type * as userPreferences from "../userPreferences.js";
 declare const fullApi: ApiFromModules<{
   betterAuth: typeof betterAuth;
   chat: typeof chat;
+  files: typeof files;
   http: typeof http;
   messages: typeof messages;
   models: typeof models;

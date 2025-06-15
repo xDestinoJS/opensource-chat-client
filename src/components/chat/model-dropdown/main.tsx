@@ -25,6 +25,7 @@ import { api } from "../../../../convex/_generated/api";
 import { useMutation, useQuery } from "convex/react";
 import { useSession } from "@/lib/auth-client";
 import FilterDropdown from "./filter-dropdown";
+import { useModelFilters } from "@/stores/use-model-filters";
 
 export default function ModelDropdown({
 	modelId,
@@ -35,6 +36,7 @@ export default function ModelDropdown({
 	setModelId: (modelId: ModelId) => void;
 	providersList: Provider[];
 }) {
+	const { enabledFilters: featureFilters } = useModelFilters();
 	const [isClient, setIsClient] = useState(false);
 	const [isOpen, setIsOpen] = useState(false);
 	const [searchQuery, setSearchQuery] = useState("");
@@ -52,39 +54,49 @@ export default function ModelDropdown({
 
 	useEffect(() => setIsClient(true), []);
 
-	const filtered = useMemo(() => {
-		const favoriteModels = userPreferences?.favoriteModels || [];
-		const q = searchQuery.trim().toLowerCase();
+	const { filteredProviders, favoriteProviders } = useMemo(() => {
+		const favorites = userPreferences?.favoriteModels || [];
+		const search = searchQuery.trim().toLowerCase();
 
-		console.log(userPreferences);
+		const passesSearch = (model: any, providerName: string) =>
+			!search ||
+			`${getFullModelName(model.id)} ${providerName}`
+				.toLowerCase()
+				.includes(search);
 
-		return providersList
-			.map((p) => ({
-				...p,
-				models: p.models
-					.filter(
-						(m) =>
-							!q ||
-							`${getFullModelName(m.id)} ${p.name}`.toLowerCase().includes(q)
-					)
-					.map((m) => ({
-						...m,
-						isFavorited: favoriteModels.includes(m.id),
-					})),
+		const passesFeatureFilters = (model: any) =>
+			featureFilters.length === 0 ||
+			featureFilters.every((f) => model.features.includes(f));
+
+		const withFilteredModels = (models: any[], provider: Provider) =>
+			models
+				.filter(
+					(model) =>
+						passesSearch(model, provider.name) && passesFeatureFilters(model)
+				)
+				.map((model) => ({
+					...model,
+					isFavorited: favorites.includes(model.id),
+				}));
+
+		const filteredProviders = providersList
+			.map((provider) => ({
+				...provider,
+				models: withFilteredModels(provider.models, provider),
 			}))
-			.filter((p) => p.models.length);
-	}, [providersList, userPreferences, searchQuery, session]); // Add session to the dependency array
+			.filter((provider) => provider.models.length);
 
-	const favorited = useMemo(() => {
-		const favoriteModels = userPreferences?.favoriteModels || [];
-
-		return providersList
-			.map((p) => ({
-				...p,
-				models: p.models.filter((m) => favoriteModels.includes(m.id)),
+		const favoriteProviders = providersList
+			.map((provider) => ({
+				...provider,
+				models: provider.models.filter(
+					(model) => favorites.includes(model.id) && passesFeatureFilters(model)
+				),
 			}))
-			.filter((p) => p.models.length);
-	}, [userPreferences, filtered]);
+			.filter((provider) => provider.models.length);
+
+		return { filteredProviders, favoriteProviders };
+	}, [providersList, userPreferences, searchQuery, featureFilters]);
 
 	useEffect(() => {
 		if (isOpen) {
@@ -102,17 +114,19 @@ export default function ModelDropdown({
 	const onToggleFavorite = async (id: ModelId) => {
 		if (session) {
 			await toggleFavoriteModel({
-				sessionToken: session?.session.token,
+				sessionToken: session.session.token,
 				modelId: id,
 			});
 		}
 	};
 
+	if (filteredProviders.length === 0) return null;
+
 	return isClient ? (
 		<DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
 			<DropdownMenuTrigger asChild>
 				<Button variant="ghost" size="sm">
-					{getFullModelName(modelId)} <ChevronDown />{" "}
+					{getFullModelName(modelId)} <ChevronDown />
 				</Button>
 			</DropdownMenuTrigger>
 			<DropdownMenuContent align="start" sideOffset={10}>
@@ -136,19 +150,22 @@ export default function ModelDropdown({
 				{/* List and Grid */}
 				<div
 					className={cn(
-						"transition-all duration-300 overflow-y-scroll overflow-x-hidden max-h-screen max-w-screen",
+						"transition-all duration-300 overflow-y-scroll overflow-x-hidden -m-1 max-h-screen max-w-screen",
 						!isExpanded ? "w-80 h-50" : "w-160 h-90"
 					)}
 				>
 					<AnimatePresence mode="sync">
 						{isExpanded ? (
 							<ExpandedGrid
-								providers={filtered}
+								providers={filteredProviders}
 								onSelect={select}
 								onToggleFavorite={onToggleFavorite}
 							/>
 						) : (
-							<NonExpandedList providers={favorited} onSelect={select} />
+							<NonExpandedList
+								providers={favoriteProviders}
+								onSelect={select}
+							/>
 						)}
 					</AnimatePresence>
 				</div>

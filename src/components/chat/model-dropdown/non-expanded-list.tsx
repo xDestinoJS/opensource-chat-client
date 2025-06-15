@@ -19,6 +19,7 @@ export default function NonExpandedList({
 			animate={{ opacity: 1 }}
 			exit={{ opacity: 0 }}
 			transition={{ duration: 0.3 }}
+			className="p-1"
 		>
 			{providers.map((provider) => (
 				<Fragment key={provider.name}>

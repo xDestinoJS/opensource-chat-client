@@ -25,23 +25,27 @@ export default function ExpandedGrid({
 			animate={{ opacity: 1 }}
 			exit={{ opacity: 0 }}
 			transition={{ duration: 0.3 }}
-			className="flex flex-col gap-4 p-3 overflow-x-hidden max-h-120 -m-[3.475px]"
+			className="flex flex-col gap-4 p-3 overflow-x-hidden max-h-120"
 		>
-			<ModelGrid
-				models={favoritedModels}
-				providers={providers}
-				onSelect={onSelect}
-				onToggleFavorite={onToggleFavorite}
-				isFavorited={true}
-			/>
+			{favoritedModels.length > 0 && (
+				<ModelGrid
+					models={favoritedModels}
+					providers={providers}
+					onSelect={onSelect}
+					onToggleFavorite={onToggleFavorite}
+					isFavoriteGrid={true}
+				/>
+			)}
 
-			<ModelGrid
-				models={nonFavoritedModels}
-				providers={providers}
-				onSelect={onSelect}
-				onToggleFavorite={onToggleFavorite}
-				isFavorited={false}
-			/>
+			{nonFavoritedModels.length > 0 && (
+				<ModelGrid
+					models={nonFavoritedModels}
+					providers={providers}
+					onSelect={onSelect}
+					onToggleFavorite={onToggleFavorite}
+					isFavoriteGrid={false}
+				/>
+			)}
 		</motion.div>
 	);
 }

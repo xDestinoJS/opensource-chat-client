@@ -1,20 +1,24 @@
 import { Eye, File, Zap } from "lucide-react";
 
-export type ModelFilterId = "fast" | "files" | "vision";
+export type ModelFeatureId = "fast" | "files" | "vision";
 
-export const filters: {
+export type Feature = {
 	name: string;
-	id: ModelFilterId;
+	id: ModelFeatureId;
+	hidden: boolean;
 	icon: any;
 	description: string;
 	colors: {
 		background: string;
 		icon: string;
 	};
-}[] = [
+};
+
+export const features: Feature[] = [
 	{
 		name: "Fast",
 		id: "fast",
+		hidden: true,
 		icon: Zap,
 		description: "A fast and efficient model for quick responses",
 		colors: {
@@ -25,8 +29,9 @@ export const filters: {
 	{
 		name: "PDFs",
 		id: "files",
+		hidden: false,
 		icon: File,
-		description: "A fast and efficient model for quick responses",
+		description: "Support PDF uploads and analysis",
 		colors: {
 			background: "bg-blue-500/20",
 			icon: "text-blue-500",
@@ -35,8 +40,9 @@ export const filters: {
 	{
 		name: "Vision",
 		id: "vision",
+		hidden: false,
 		icon: Eye,
-		description: "A fast and efficient model for quick responses",
+		description: "Supports image uploads and analysis",
 		colors: {
 			background: "bg-green-500/20",
 			icon: "text-green-500",
@@ -44,4 +50,8 @@ export const filters: {
 	},
 ];
 
-export default filters;
+export const getFeatureById = (id: ModelFeatureId) => {
+	return features.find((f) => f.id === id);
+};
+
+export default features;

@@ -5,10 +5,10 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import useModelFilters from "@/hooks/useModelFilters";
-import filters from "@/lib/filters";
-import { cn } from "@/lib/utils";
+import features from "@/lib/features";
 import { Check, Filter } from "lucide-react";
+import FeatureIcon from "./feature-icon";
+import { useModelFilters } from "@/stores/use-model-filters";
 
 export default function FilterDropdown() {
 	const { enabledFilters, toggleFilter, clearFilters } = useModelFilters();
@@ -16,9 +16,14 @@ export default function FilterDropdown() {
 	return (
 		<DropdownMenu>
 			<DropdownMenuTrigger asChild>
-				<Button size="icon" variant="ghost">
-					<Filter />
-				</Button>
+				<div className="relative">
+					{enabledFilters.length > 0 && (
+						<div className="absolute bg-blue-500 top-0.5 right-0.5 size-[7.5px] rounded-full" />
+					)}
+					<Button size="icon" variant="ghost">
+						<Filter />
+					</Button>
+				</div>
 			</DropdownMenuTrigger>
 			<DropdownMenuContent
 				align="end"
@@ -42,27 +47,19 @@ export default function FilterDropdown() {
 					</>
 				)}
 
-				{filters.map((filter) => {
-					const isEnabledFilter = enabledFilters.includes(filter.id);
-					const Icon = filter.icon;
+				{features.map((feature) => {
+					const isEnabledFilter = enabledFilters.includes(feature.id);
 
 					return (
 						<Button
-							key={filter.id}
+							key={feature.id}
 							className="justify-between p-1 w-45 cursor-default focus-visible:ring-0"
 							variant="ghost"
-							onClick={() => toggleFilter(filter.id)}
+							onClick={() => toggleFilter(feature.id)}
 						>
 							<div className="flex items-center gap-1.5 h-full">
-								<div
-									className={cn(
-										"flex justify-center items-center h-full aspect-square rounded-sm",
-										filter.colors.background
-									)}
-								>
-									<Icon className={filter.colors.icon} />
-								</div>
-								{filter.name}
+								<FeatureIcon featureId={feature.id} />
+								{feature.name}
 							</div>
 
 							{isEnabledFilter && (

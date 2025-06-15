@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { ModelFeatureId } from "./features";
 
 export const modelIds = z.enum([
 	"gemini-2.5-pro",
@@ -20,6 +21,7 @@ export type ModelConfig = {
 	available: boolean;
 	icon: string;
 	isFavorited?: boolean;
+	features: ModelFeatureId[];
 };
 
 export type Provider = {
@@ -46,17 +48,7 @@ const providers: Provider[] = [
 				temperature: 0.2,
 				available: true,
 				icon: "/assets/icons/models/gemini.svg",
-			},
-			// Assuming gemini-2.5-pro also belongs to Google
-			{
-				id: "gemini-2.5-pro",
-				brand: "Gemini",
-				version: "2.5 Pro",
-				description: "Google's most capable and versatile model.",
-				maxTokens: 32768, // Example value, adjust as needed
-				temperature: 0.7, // Example value, adjust as needed
-				available: true,
-				icon: "/assets/icons/models/gemini.svg",
+				features: ["fast", "files", "vision"],
 			},
 		],
 	},
@@ -75,6 +67,7 @@ const providers: Provider[] = [
 				temperature: 0.5,
 				available: true,
 				icon: "/assets/icons/providers/mistral.svg",
+				features: ["files", "vision"],
 			},
 		],
 	},
@@ -93,6 +86,7 @@ const providers: Provider[] = [
 				temperature: 0.5,
 				available: true,
 				icon: "/assets/icons/providers/openai.svg",
+				features: ["vision"],
 			},
 		],
 	},
@@ -111,6 +105,7 @@ const providers: Provider[] = [
 				temperature: 0.6,
 				available: true,
 				icon: "/assets/icons/models/deepseek.svg",
+				features: [],
 			},
 			{
 				id: "llama-4-maverick",
@@ -121,6 +116,7 @@ const providers: Provider[] = [
 				temperature: 0.7,
 				available: true,
 				icon: "/assets/icons/models/meta.svg",
+				features: ["vision"],
 			},
 		],
 	},

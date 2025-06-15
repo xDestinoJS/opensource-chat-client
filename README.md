@@ -22,9 +22,15 @@
     - [x] Make edits work again
     - [x] Make retries work again
   - [x] Make retry button allow user to retry with different model (or with shift, no modal)
+  - [x] Add Better-Auth
+  - [ ] Add features
+    - [ ] Add vision
+    - [ ] Add PDF reading
+    - [ ] Add reasoning & effort control?
+    - [ ] Add Image Generation -> Imagen/OpenAI?
+    - [ ] Add web search (include sources)
   - [ ] Add Chat Sharing
   - [ ] Add Spotlight-like feature
-  - [ ] Add Better-Auth
   - [ ] Add Custom Agents (GPTs)
   - [ ] Add Settings
 

@@ -135,6 +135,7 @@ export default function ChatPage({ chatId }: { chatId?: Id<"chats"> }) {
 									});
 								}}
 								onRetryMessage={(messageId, modelId?: ModelId) => {
+									if (modelId) setModelId(modelId);
 									retryMessage({
 										sessionId,
 										messageId,

@@ -95,7 +95,12 @@ export default function UserMessage({
 					/>
 				)}
 			</div>
-			<div className="flex justify-end items-center mt-1 group-hover:opacity-100 opacity-0 transition-opacity w-full">
+			<div
+				className={cn(
+					"flex justify-end items-center mt-1 group-hover:opacity-100 opacity-0 transition-opacity w-full",
+					isDropdownOpen && "opacity-100!"
+				)}
+			>
 				<RetryDropdown
 					isDropdownOpen={isDropdownOpen}
 					setIsDropdownOpen={setIsDropdownOpen}

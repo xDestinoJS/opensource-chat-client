@@ -92,6 +92,7 @@ export default function ChatPage({ chatId }: { chatId?: Id<"chats"> }) {
 				model: modelId,
 				sessionId,
 				fileDataList,
+				isSearchGrounded: true,
 			});
 
 			setQuote(undefined); // Clear the quote after sending

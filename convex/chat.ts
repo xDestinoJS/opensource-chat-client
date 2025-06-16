@@ -8,7 +8,7 @@ import {
 import { generateObject } from "../src/lib/ai";
 import { z } from "zod";
 import { internal } from "./_generated/api";
-import { ModelId } from "../src/lib/providers";
+import { getModelDataById, ModelId } from "../src/lib/providers";
 
 export const getChat = query({
 	args: {
@@ -90,16 +90,26 @@ export const generateTitle = internalAction({
 	handler: async (ctx, args) => {
 		let data = { title: "Untitled Chat" };
 
+		const modelData = getModelDataById(args.model);
+
+		const availableTextModels = (
+			await ctx.runQuery(internal.models.getAvailableModels)
+		).filter((modelId) => getModelDataById(modelId)?.type == "text");
+
 		// Attempt to generate a title for the chat based on the provided content
-		try {
-			data = await generateObject(
-				args.model as ModelId,
-				"You are an AI model tasked to return a title for the chat based on the messages provided. The title should be concise and relevant to the conversation. The title must be no longer than 50 characters.",
-				[{ role: "user", content: args.content }],
-				z.object({ title: z.string() })
-			);
-		} catch {
-			console.error("Failed to generate chat title:", args.content);
+		if (availableTextModels.length > 0) {
+			try {
+				data = await generateObject(
+					(modelData?.type == "image"
+						? availableTextModels[0]
+						: args.model) as ModelId,
+					"You are an AI model tasked to return a title for the chat based on the messages provided. The title should be concise and relevant to the conversation. The title must be no longer than 50 characters.",
+					[{ role: "user", content: args.content }],
+					z.object({ title: z.string() })
+				);
+			} catch {
+				console.error("Failed to generate chat title:", args.content);
+			}
 		}
 
 		// Update the chat with the generated title

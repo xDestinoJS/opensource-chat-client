@@ -20,17 +20,17 @@ import ImagePreview from "../previews/image-preview";
 import PDFPreview from "../previews/pdf-preview";
 
 export default function UserMessage({
-	message,
+	userMessage,
 	onEdit,
 	onRetry,
 }: {
-	message: Doc<"messages">;
+	userMessage: Doc<"messages">;
 	onEdit: (content: string) => void;
 	onRetry: (modelId?: ModelId) => void;
 }) {
 	const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 	const textAreaRef = useRef<AutosizeTextAreaRef>(null);
-	const content = message.content;
+	const content = userMessage.content;
 
 	const [newContent, setNewContent] = useState<string>(content);
 	const [isEditing, setIsEditing] = useState(false);
@@ -72,19 +72,19 @@ export default function UserMessage({
 
 	return (
 		<div className="flex flex-col justify-end items-end group">
-			{(message.images.length > 0 || message.documents.length > 0) && (
+			{(userMessage.images.length > 0 || userMessage.documents.length > 0) && (
 				<div className="flex justify-end h-17 gap-2 w-full overflow-x-scroll no-scrollbar mb-2">
-					{message.images.map((data) => (
-						<ImagePreview key={data.id} imageUrl={data.url} />
+					{userMessage.images.map((fileData) => (
+						<ImagePreview key={fileData.fileId} fileData={fileData} />
 					))}
-					{message.documents.map((data) => (
-						<PDFPreview key={data.id} name={data.name} />
+					{userMessage.documents.map((fileData) => (
+						<PDFPreview key={fileData.fileId} fileData={fileData} />
 					))}
 				</div>
 			)}
-			{message.quote && (
+			{userMessage.quote && (
 				<TextQuote
-					quote={message.quote}
+					quote={userMessage.quote}
 					variant="background"
 					className="mb-2 w-max max-w-full"
 				/>

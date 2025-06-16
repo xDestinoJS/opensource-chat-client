@@ -8,6 +8,7 @@ export const modelIds = z.enum([
 	"mistral-small",
 	"llama-4-maverick",
 	"deepseek-v3",
+	"flux1-schnell",
 ]);
 export type ModelId = z.infer<typeof modelIds>;
 
@@ -22,6 +23,7 @@ export type ModelConfig = {
 	icon: string;
 	isFavorited?: boolean;
 	features: ModelFeatureId[];
+	type: "text" | "image";
 };
 
 export type Provider = {
@@ -48,7 +50,8 @@ const providers: Provider[] = [
 				temperature: 0.2,
 				available: true,
 				icon: "/assets/icons/providers/gemini.svg",
-				features: ["fast", "files", "vision"],
+				type: "text",
+				features: ["fast", "files", "vision", "search"],
 			},
 		],
 	},
@@ -67,6 +70,7 @@ const providers: Provider[] = [
 				temperature: 0.5,
 				available: true,
 				icon: "/assets/icons/providers/mistral.svg",
+				type: "text",
 				features: ["files", "vision"],
 			},
 		],
@@ -86,6 +90,7 @@ const providers: Provider[] = [
 				temperature: 0.5,
 				available: true,
 				icon: "/assets/icons/providers/openai.svg",
+				type: "text",
 				features: ["vision"],
 			},
 		],
@@ -105,6 +110,7 @@ const providers: Provider[] = [
 				temperature: 0.7,
 				available: true,
 				icon: "/assets/icons/providers/meta.svg",
+				type: "text",
 				features: ["vision"],
 			},
 		],
@@ -124,7 +130,28 @@ const providers: Provider[] = [
 				temperature: 0.6,
 				available: true,
 				icon: "/assets/icons/providers/deepseek.svg",
+				type: "text",
 				features: [],
+			},
+		],
+	},
+	{
+		name: "Black Forest Labs",
+		id: "black-forest-labs",
+		icon: "/assets/icons/providers/bfl.svg",
+		apiKeySource: "TOGETHER_AI_API_KEY",
+		models: [
+			{
+				id: "flux1-schnell",
+				brand: "Flux.1",
+				version: "Schnell",
+				description: "A powerful model for complex tasks",
+				maxTokens: 16384,
+				temperature: 0.6,
+				available: true,
+				icon: "/assets/icons/providers/bfl.svg",
+				type: "image",
+				features: ["image-generation"],
 			},
 		],
 	},

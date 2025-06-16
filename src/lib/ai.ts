@@ -1,12 +1,14 @@
 import {
 	generateObject as generateO,
 	CoreMessage,
+	experimental_generateImage as generateI,
 	streamText as streamT,
 } from "ai";
 import { z } from "zod";
 
 import { google } from "@ai-sdk/google";
 import { mistral } from "@ai-sdk/mistral";
+import { togetherai } from "@ai-sdk/togetherai";
 import { ModelId } from "./providers";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 
@@ -14,11 +16,15 @@ const openrouter = createOpenRouter({
 	apiKey: process.env.OPENROUTER_API_KEY,
 });
 
-function getModel(modelId: ModelId) {
+function getModel(modelId: ModelId, useSearch?: boolean) {
 	switch (modelId) {
 		case "gemini-2.5-pro":
 			return google("gemini-2.5-pro-exp-03-25");
 		case "gemini-2.0-flash":
+			if (useSearch)
+				return google("gemini-2.0-flash", {
+					useSearchGrounding: true,
+				});
 			return google("gemini-2.0-flash");
 		case "mistral-small":
 			return mistral("mistral-small-latest");
@@ -31,15 +37,42 @@ function getModel(modelId: ModelId) {
 	}
 }
 
+function getImageModel(modelId: ModelId) {
+	switch (modelId) {
+		case "flux1-schnell":
+			return togetherai.image("black-forest-labs/FLUX.1-schnell-Free");
+		default:
+			throw new Error(`[AI] Unsupported model: ${modelId}`);
+	}
+}
+
+/**
+ * Generate an image using the specified AI model.
+ */
+export async function generateImage(modelId: ModelId, prompt: string) {
+	let model = getImageModel(modelId);
+
+	if (!prompt) throw new Error("No prompt was provided!");
+
+	const { image } = await generateI({
+		model,
+		prompt,
+		n: 1,
+	});
+
+	return image;
+}
+
 /**
  * Stream a chat completion using the specified AI model.
  */
 export async function streamText(
 	modelId: ModelId,
 	messages: CoreMessage[],
-	abortSignal?: AbortSignal
+	abortSignal?: AbortSignal,
+	useSearch?: boolean
 ) {
-	let model = getModel(modelId);
+	let model = getModel(modelId, useSearch);
 
 	if (messages.length === 0) {
 		throw new Error("[AI] No messages provided for chat completion.");
@@ -66,9 +99,10 @@ export async function generateObject(
 	modelId: ModelId,
 	systemPrompt: string,
 	messages: CoreMessage[],
-	schema: z.ZodSchema
+	schema: z.ZodSchema,
+	useSearch?: boolean
 ) {
-	let model = getModel(modelId);
+	let model = getModel(modelId, useSearch);
 
 	const { object } = await generateO({
 		model,

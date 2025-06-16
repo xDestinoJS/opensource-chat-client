@@ -60,7 +60,7 @@ export default function RetryDropdown({
 								width={16}
 								height={16}
 							/>
-							<span>{provider.name}</span>
+							<span className="line-clamp-1">{provider.name}</span>
 						</DropdownMenuSubTrigger>
 						<DropdownMenuPortal>
 							<DropdownMenuSubContent className="w-70" sideOffset={10}>

@@ -1,24 +1,19 @@
 "use client";
 
-import { useCallback, useRef, useState, useEffect } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useDropzone } from "react-dropzone";
-import { ArrowUp, Square } from "lucide-react";
+import { ArrowUp, Paperclip, Search, Square } from "lucide-react";
+
 import { Button } from "../ui/button";
 import { AutosizeTextarea, AutosizeTextAreaRef } from "../ui/autosize-textarea";
 import { TextQuote } from "../text-quote";
 import ModelDropdown from "./model-dropdown/main";
+
+import { getModelDataById, ModelId } from "@/lib/providers";
+import uploadFile from "@/utils/upload-file";
+import { GenericFileData, UploadItem } from "@/lib/files";
 import ImagePreview from "./previews/image-preview";
 import PDFPreview from "./previews/pdf-preview";
-import { ModelId } from "@/lib/providers";
-import uploadFile from "@/utils/upload-file";
-import { GenericFileData } from "@/lib/files";
-
-export interface FileData {
-	file: File;
-	isUploaded: boolean;
-	uploadUrl: string;
-	fileId: string;
-}
 
 type Props = {
 	quote?: string;
@@ -28,7 +23,7 @@ type Props = {
 	setModelId: (id: ModelId) => void;
 	isAnswering: boolean;
 	messagesLength: number;
-	onSubmit: (input: string, fileDataList: GenericFileData[]) => void;
+	onSubmit: (text: string, files: GenericFileData[]) => void;
 	onCancel: () => void;
 	inputContainerRef: React.RefObject<HTMLDivElement | null>;
 };
@@ -45,45 +40,55 @@ export default function ChatInputForm({
 	onCancel,
 	inputContainerRef,
 }: Props) {
-	const inputAreaRef = useRef<AutosizeTextAreaRef>(null);
-	const [files, setFiles] = useState<FileData[]>([]);
+	const textAreaRef = useRef<AutosizeTextAreaRef>(null);
+	const hiddenInputRef = useRef<HTMLInputElement>(null);
 
-	const onDrop = useCallback((acceptedFiles: File[]) => {
-		processFiles(acceptedFiles);
-	}, []);
+	const [files, setFiles] = useState<UploadItem[]>([]);
 
-	const processFiles = async (acceptedFiles: File[]) => {
-		const newFiles: FileData[] = acceptedFiles.map((file) => ({
-			file,
-			isUploaded: false,
-			fileId: "",
-			uploadUrl: "",
-		}));
-		setFiles((prev) => [...prev, ...newFiles]);
+	const modelData = useMemo(
+		() => (modelId ? getModelDataById(modelId) : undefined),
+		[modelId]
+	);
 
-		// Process uploads for each new file
-		for (const newFileItem of newFiles) {
-			const result = await uploadFile(newFileItem.file);
-			console.log(result);
-			if (result) {
-				setFiles((prev) =>
-					prev.map((item) =>
-						item.file === newFileItem.file
-							? {
-									...item,
-									isUploaded: true,
-									uploadUrl: result.uploadUrl,
-									fileId: result.fileId,
-								}
-							: item
-					)
-				);
-			}
-		}
+	// File handling
+	const startUpload = async (file: File, itemRef: UploadItem) => {
+		const res = await uploadFile(file);
+		if (!res) return;
+
+		setFiles((prev) =>
+			prev.map((f) =>
+				f === itemRef
+					? {
+							...f,
+							fileId: res.fileId,
+							uploadUrl: res.uploadUrl,
+							isUploaded: true,
+						}
+					: f
+			)
+		);
 	};
 
+	const addFiles = (incoming: File[]) => {
+		incoming.forEach((file) => {
+			const newItem: UploadItem = {
+				name: file.name,
+				mimeType: file.type,
+				fileId: "",
+				uploadUrl: file.type.startsWith("image/") // generate a local URL image
+					? URL.createObjectURL(file)
+					: "",
+				isUploaded: false,
+			};
+
+			setFiles((prev) => [...prev, newItem]);
+			startUpload(file, newItem);
+		});
+	};
+
+	/* Drag and Drop */
 	const { getRootProps, isDragActive } = useDropzone({
-		onDrop,
+		onDrop: addFiles,
 		noClick: true,
 		noKeyboard: true,
 		accept: {
@@ -92,71 +97,53 @@ export default function ChatInputForm({
 		},
 	});
 
-	// Handle paste event
+	/* Upload from Clipboard */
 	useEffect(() => {
-		const handlePaste = async (event: ClipboardEvent) => {
+		const handler = (e: ClipboardEvent) => {
 			if (
-				document.activeElement === inputAreaRef.current?.textArea &&
-				event.clipboardData
+				document.activeElement === textAreaRef.current?.textArea &&
+				e.clipboardData
 			) {
-				const items = Array.from(event.clipboardData.items);
-
-				const filesToProcess: File[] = [];
-
-				for (const item of items) {
-					if (item.kind === "file") {
-						const file = item.getAsFile();
-						if (file) {
-							// Check if the file type is accepted
-							const acceptedTypes = [
+				const items = Array.from(e.clipboardData.items)
+					.filter((i) => i.kind === "file")
+					.map((i) => i.getAsFile())
+					.filter(
+						(f): f is File =>
+							!!f &&
+							[
 								"image/png",
 								"image/jpg",
 								"image/jpeg",
 								"application/pdf",
-							];
-							if (acceptedTypes.includes(file.type)) {
-								filesToProcess.push(file);
-							}
-						}
-					}
-				}
-
-				if (filesToProcess.length > 0) {
-					event.preventDefault(); // Prevent default paste behavior
-					await processFiles(filesToProcess);
+							].includes(f.type)
+					);
+				if (items.length) {
+					e.preventDefault();
+					addFiles(items);
 				}
 			}
 		};
-
-		document.addEventListener("paste", handlePaste);
-
-		return () => {
-			document.removeEventListener("paste", handlePaste);
-		};
+		document.addEventListener("paste", handler);
+		return () => document.removeEventListener("paste", handler);
 	}, []);
 
+	/* UI helpers */
+	const pickFiles = () => hiddenInputRef.current?.click();
+	const removeFile = (target: UploadItem) =>
+		setFiles((prev) => prev.filter((f) => f !== target));
+
 	const handleSend = () => {
-		const input = inputAreaRef.current?.textArea.value.trim();
-		if (!input || isAnswering || !inputAreaRef.current) return;
+		const text = textAreaRef.current?.textArea.value.trim();
+		if (!text || isAnswering) return;
+		if (files.some((f) => !f.isUploaded)) return; // wait for files to upload
 
-		const areFilesUploading = files.some((file) => !file.isUploaded);
-		if (areFilesUploading) return;
+		const ready: GenericFileData[] = files.map(
+			({ isUploaded, ...data }) => data
+		);
 
-		const fileDataList: GenericFileData[] = files.map((fileData) => ({
-			name: fileData.file.name,
-			fileId: fileData.fileId,
-			uploadUrl: fileData.uploadUrl,
-			mimeType: fileData.file.type,
-		}));
-
-		inputAreaRef.current.textArea.value = "";
+		textAreaRef.current!.textArea.value = "";
 		setFiles([]);
-
-		onSubmit(input, fileDataList);
-	};
-
-	const onRemove = (fileToRemove: File) => {
-		setFiles((prev) => prev.filter((item) => item.file !== fileToRemove));
+		onSubmit(text, ready);
 	};
 
 	return (
@@ -164,19 +151,28 @@ export default function ChatInputForm({
 			className="relative w-full max-w-3xl max-lg:px-4 shrink-0"
 			{...getRootProps()}
 		>
+			<input
+				ref={hiddenInputRef}
+				type="file"
+				multiple
+				accept="image/png,image/jpg,image/jpeg,application/pdf"
+				className="hidden"
+				onChange={(e) => {
+					if (e.target.files) addFiles(Array.from(e.target.files));
+				}}
+			/>
+
 			{isDragActive && (
-				<div
-					className="absolute inset-0 flex items-center rounded-tl-2xl rounded-tr-2xl justify-center bg-blue-500/20 text-blue-800 text-lg font-semibold border-2 border-blue-500 border-dashed z-10 pointer-events-none"
-					style={{ backdropFilter: "blur(2px)" }}
-				>
-					Drop files here!
+				<div className="absolute inset-0 z-10 flex items-center justify-center rounded-tl-2xl rounded-tr-2xl border-2 border-dashed border-blue-500 bg-blue-500/20 text-lg font-semibold text-blue-800 backdrop-blur-sm">
+					Drop your files here!
 				</div>
 			)}
 
 			<div
 				ref={inputContainerRef}
-				className="bg-neutral-50 p-4 rounded-tl-2xl rounded-tr-2xl border border-neutral-300 relative z-0"
+				className="relative z-0 rounded-tl-2xl rounded-tr-2xl border border-neutral-300 bg-neutral-50 p-4"
 			>
+				{/* Quote */}
 				{quote && (
 					<div className="mb-2">
 						<TextQuote
@@ -187,31 +183,33 @@ export default function ChatInputForm({
 					</div>
 				)}
 
+				{/* File Previews */}
 				{files.length > 0 && (
-					<div className="w-full h-16 flex items-center gap-2 mb-2 overflow-x-scroll no-scrollbar">
-						{files.map((fileData, index) =>
-							fileData.file.type.startsWith("image/") ? (
+					<div className="mb-2 flex h-16 w-full items-center gap-2 overflow-x-auto no-scrollbar">
+						{files.map((f, i) =>
+							f?.mimeType?.startsWith("image/") ? (
 								<ImagePreview
-									key={index}
-									fileData={fileData}
-									onRemove={() => onRemove(fileData.file)}
+									key={i}
+									fileData={f}
+									onRemove={() => removeFile(f)}
 								/>
 							) : (
 								<PDFPreview
-									key={index}
-									fileData={fileData}
-									onRemove={() => onRemove(fileData.file)}
+									key={i}
+									fileData={f}
+									onRemove={() => removeFile(f)}
 								/>
 							)
 						)}
 					</div>
 				)}
 
+				{/* Text area */}
 				<AutosizeTextarea
-					ref={inputAreaRef}
+					ref={textAreaRef}
 					type="transparent"
 					maxHeight={170}
-					className="w-full focus:outline-none resize-none bg-transparent px-0.75"
+					className="w-full resize-none bg-transparent px-0.75 focus:outline-none"
 					onKeyDown={(e) => {
 						if (e.key === "Enter" && !e.shiftKey) {
 							e.preventDefault();
@@ -220,12 +218,41 @@ export default function ChatInputForm({
 					}}
 				/>
 
-				<div className="flex justify-between items-center mt-2 -mx-1.25">
-					<ModelDropdown
-						modelId={modelId}
-						providersList={providersList}
-						setModelId={setModelId}
-					/>
+				{/* Buttons */}
+				<div className="mt-2 flex items-center justify-between -mx-1.25">
+					<div className="flex items-center gap-1">
+						<ModelDropdown
+							modelId={modelId}
+							providersList={providersList}
+							setModelId={setModelId}
+						/>
+
+						{modelData?.features.some((f) =>
+							["vision", "files"].includes(f)
+						) && (
+							<Button
+								size="sm"
+								variant="outline"
+								type="button"
+								className="rounded-full shadow-none"
+								onClick={pickFiles}
+							>
+								<Paperclip />
+							</Button>
+						)}
+
+						{modelData?.features.includes("search") && (
+							<Button
+								size="sm"
+								variant="outline"
+								type="button"
+								className="rounded-full shadow-none"
+							>
+								<Search /> Buscar
+							</Button>
+						)}
+					</div>
+
 					{messagesLength === 0 || !isAnswering ? (
 						<Button size="icon" type="button" onClick={handleSend}>
 							<ArrowUp />

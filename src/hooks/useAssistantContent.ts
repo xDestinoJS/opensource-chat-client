@@ -2,26 +2,37 @@ import { useEffect, useRef, useState } from "react";
 import { Doc } from "../../convex/_generated/dataModel";
 import useSessionId from "@/stores/use-session";
 import { getConvexSiteUrl } from "@/lib/utils";
+import { getModelDataById } from "@/lib/providers";
 
-export default function useAssistantContent(message: Doc<"messages">) {
+export default function useAssistantContent(
+	userMessage: Doc<"messages">,
+	assistantMessage: Doc<"messages">
+) {
 	const { sessionId } = useSessionId();
-	const [content, setContent] = useState<string>(message.content ?? "");
+	const [content, setContent] = useState<string>(
+		assistantMessage.content ?? ""
+	);
 	const controllerRef = useRef<AbortController | null>(null);
 
+	const modelData = getModelDataById(assistantMessage.model);
+
 	useEffect(() => {
+		if (modelData?.type != "text") return;
+
 		controllerRef.current?.abort();
 
-		const shouldStream = !message.isComplete && message.sessionId === sessionId;
+		const shouldStream =
+			!assistantMessage.isComplete && assistantMessage.sessionId === sessionId;
 
 		// Handle "reset to empty" when streaming hasn’t started yet
-		if (shouldStream && message.content === "" && content !== "") {
+		if (shouldStream && assistantMessage.content === "" && content !== "") {
 			setContent(""); // clear local state
 		}
 
 		// If it shouldn't stream, just show whatever we have
 		if (!shouldStream) {
-			if (message.content) {
-				setContent(message.content);
+			if (assistantMessage.content) {
+				setContent(assistantMessage.content);
 			}
 			return;
 		}
@@ -32,12 +43,12 @@ export default function useAssistantContent(message: Doc<"messages">) {
 
 		(async () => {
 			try {
-				const res = await fetch(`${getConvexSiteUrl()}/chat`, {
+				const res = await fetch(`${getConvexSiteUrl()}/generate/text`, {
 					method: "POST",
 					headers: { "Content-Type": "application/json" },
 					body: JSON.stringify({
-						chatId: message.chatId,
-						assistantMessageId: message._id,
+						chatId: assistantMessage.chatId,
+						assistantMessageId: assistantMessage._id,
 					}),
 					signal: controller.signal,
 				});
@@ -63,14 +74,37 @@ export default function useAssistantContent(message: Doc<"messages">) {
 			}
 		})();
 
-		return () => controller.abort("");
+		return () => controller?.abort("");
 	}, [
-		message._id,
-		message.isComplete,
-		message.content,
-		message.sessionId,
+		assistantMessage._id,
+		assistantMessage.isComplete,
+		assistantMessage.content,
+		assistantMessage.sessionId,
 		sessionId,
 	]);
+
+	useEffect(() => {
+		if (modelData?.type != "image") return;
+
+		(async () => {
+			try {
+				const res = await fetch(`${getConvexSiteUrl()}/generate/image`, {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({
+						chatId: assistantMessage.chatId,
+						assistantMessageId: assistantMessage._id,
+					}),
+				});
+				if (!res.ok) return;
+
+				const data = await res.json();
+				if (data?.success) console.log("Generating image...");
+			} catch (err: any) {
+				console.log("[STREAM] An error occured when generating image.");
+			}
+		})();
+	}, [assistantMessage.images]);
 
 	return { content };
 }

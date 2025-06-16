@@ -35,7 +35,7 @@ export default function MessagePair({
 			<div className="flex w-full">
 				<div className="w-full justify-end">
 					<UserMessage
-						message={userMessage}
+						userMessage={userMessage}
 						onEdit={(content) => {
 							onEditMessage(userMessage._id, content);
 						}}
@@ -51,7 +51,8 @@ export default function MessagePair({
 				<div className="flex w-full">
 					<div className="w-full justify-start">
 						<AssistantMessage
-							message={assistantMessage}
+							userMessage={userMessage}
+							assistantMessage={assistantMessage}
 							isLastPair={isLastPair}
 							onBranch={async () => {
 								await onBranchMessage(assistantMessage._id);

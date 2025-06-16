@@ -3,6 +3,8 @@
 import { Doc } from "@/../convex/_generated/dataModel";
 import { Copy, Split, Volume2, Square, RefreshCcw } from "lucide-react";
 import { RiDoubleQuotesR } from "react-icons/ri";
+import Zoom from "react-medium-image-zoom";
+import "react-medium-image-zoom/dist/styles.css";
 
 import copyToClipboard from "@/utils/copy-to-clipboard";
 
@@ -19,13 +21,15 @@ import { useState } from "react";
 import RetryDropdown from "../retry-dropdown";
 
 export default function AssistantMessage({
-	message,
+	userMessage,
+	assistantMessage,
 	isLastPair,
 	onBranch,
 	onRetry,
 	onQuote,
 }: {
-	message: Doc<"messages">;
+	userMessage: Doc<"messages">;
+	assistantMessage: Doc<"messages">;
 	isLastPair: boolean;
 	onBranch: () => void;
 	onRetry: (modelId?: ModelId) => void;
@@ -33,7 +37,7 @@ export default function AssistantMessage({
 }) {
 	const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 	const { selectionData, contentRef } = useTextSelection();
-	const { content } = useAssistantContent(message);
+	const { content } = useAssistantContent(userMessage, assistantMessage);
 
 	const { start, speechStatus, stop } = useSpeech({
 		text: stripMarkdownFromString(content),
@@ -50,12 +54,25 @@ export default function AssistantMessage({
 	return (
 		<div className="relative w-full flex flex-col group">
 			<div className="w-full" ref={contentRef}>
-				{content.length > 0 || message.isComplete ? (
+				{content.length > 0 || assistantMessage.isComplete ? (
 					<MemoizedMarkdown content={content} />
 				) : (
 					<WaveLoader />
 				)}
 			</div>
+
+			<div className="max-w-1/2">
+				{assistantMessage.images.map((image) => {
+					return (
+						image.url.length > 0 && (
+							<Zoom key={image.id} zoomMargin={10}>
+								<img className="rounded-xl" src={image.url} alt={image.name} />
+							</Zoom>
+						)
+					);
+				})}
+			</div>
+
 			{selectionData.text != "" &&
 				contentRef.current &&
 				selectionData.position && (
@@ -80,16 +97,16 @@ export default function AssistantMessage({
 					</button>
 				)}
 
-			{message.cancelReason && (
+			{assistantMessage.cancelReason && (
 				<div className="w-full rounded-lg bg-destructive/7.5 my-2 py-3 px-4.5 text-sm text-destructive">
-					{message.cancelReason == "user_request" && "Stopped by user"}
+					{assistantMessage.cancelReason == "user_request" && "Stopped by user"}
 				</div>
 			)}
 
 			<div
 				className={cn(
 					"flex items-center mt-1 opacity-0 transition-opacity",
-					message.isComplete
+					assistantMessage.isComplete
 						? "group-hover:opacity-100"
 						: "pointer-events-none",
 					isDropdownOpen && "opacity-100!"
@@ -114,7 +131,9 @@ export default function AssistantMessage({
 					</IconButton>
 				</RetryDropdown>
 
-				<p className="ml-2.5 text-xs">{getFullModelName(message.model)}</p>
+				<p className="ml-2.5 text-xs">
+					{getFullModelName(assistantMessage.model)}
+				</p>
 			</div>
 			{isLastPair && <div className="pt-4" />}
 		</div>

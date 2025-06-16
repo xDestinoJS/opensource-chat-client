@@ -34,20 +34,21 @@ export default defineSchema({
 		images: v.array(
 			v.object({
 				name: v.string(),
-				id: v.string(),
-				url: v.string(),
+				fileId: v.string(),
+				uploadUrl: v.string(),
 			})
 		),
 		documents: v.array(
 			v.object({
 				name: v.string(),
-				id: v.string(),
-				url: v.string(),
+				fileId: v.string(),
+				uploadUrl: v.string(),
 			})
 		),
 		sessionId: v.string(),
 		isStreaming: v.boolean(),
 		cancelReason: v.optional(v.string()),
+		isSearchGrounded: v.boolean(),
 	}),
 	chats: defineTable({
 		title: v.string(),

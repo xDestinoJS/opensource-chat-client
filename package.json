@@ -11,6 +11,7 @@
   "dependencies": {
     "@ai-sdk/google": "^1.2.19",
     "@ai-sdk/mistral": "^1.2.8",
+    "@ai-sdk/togetherai": "^0.2.14",
     "@aws-sdk/client-s3": "^3.828.0",
     "@aws-sdk/lib-storage": "^3.828.0",
     "@better-auth-kit/convex": "^1.2.2",
@@ -31,6 +32,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "convex": "^1.24.8",
+    "formdata-node": "^6.0.3",
     "framer-motion": "^12.16.0",
     "lucide-react": "^0.513.0",
     "marked": "^15.0.12",

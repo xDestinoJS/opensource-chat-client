@@ -17,8 +17,10 @@ export type GenericFileData = {
 	name: string;
 	fileId: string;
 	uploadUrl: string;
-	mimeType: string;
+	mimeType?: string;
 };
+
+export type UploadItem = GenericFileData & { isUploaded?: boolean };
 
 export async function uploadFileToBucket(file: File, filename: string) {
 	const Key = filename;
@@ -47,6 +49,36 @@ export async function uploadFileToBucket(file: File, filename: string) {
 	}
 
 	return res;
+}
+
+export async function uploadUint8ArrayToBucket(
+	data: Uint8Array,
+	filename: string,
+	mimeType: string
+) {
+	const Bucket = process.env.AWS_BUCKET_NAME as string;
+	const Key = filename;
+
+	try {
+		const parallelUploads = new Upload({
+			client: s3Client,
+			params: {
+				Bucket,
+				Key,
+				Body: data,
+				ACL: "public-read", // change if needed
+				ContentType: mimeType,
+			},
+			queueSize: 4,
+			leavePartsOnError: false,
+		});
+
+		const res = await parallelUploads.done();
+		return res; // returns upload metadata
+	} catch (error) {
+		console.error("Upload failed:", error);
+		throw error;
+	}
 }
 
 export async function getFileById(

@@ -1,38 +1,33 @@
 import { CircularProgressbar, buildStyles } from "react-circular-progressbar";
 import "react-circular-progressbar/dist/styles.css";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import RemoveButton from "./remove-button";
-import { FileData } from "../chat-input-form";
 import useProgress from "@/hooks/useProgress";
 import { Controlled as ControlledZoom } from "react-medium-image-zoom";
 import "react-medium-image-zoom/dist/styles.css";
 import { cn } from "@/lib/utils";
+import { GenericFileData, UploadItem } from "@/lib/files";
+
+interface ImagePreviewProps {
+	fileData?: GenericFileData | UploadItem;
+	onRemove?: () => void;
+}
 
 export default function ImagePreview({
-	imageUrl,
 	fileData,
 	onRemove,
-}: {
-	imageUrl?: string;
-	fileData?: FileData;
-	onRemove?: () => void;
-}) {
-	const [imageSrc, setImageSrc] = useState<string | null>(null);
+}: ImagePreviewProps) {
+	const imageSrc = fileData?.uploadUrl || "";
 	const [isZoomed, setIsZoomed] = useState(false);
 	const { progress } = useProgress();
 
-	useEffect(() => {
-		// Create an object URL for the file when the component mounts
-		const objectUrl = fileData ? URL.createObjectURL(fileData?.file) : imageUrl;
-		setImageSrc(objectUrl ?? "");
-
-		return () => {
-			if (objectUrl) {
-				URL.revokeObjectURL(objectUrl);
-			}
-		};
-	}, [imageUrl, fileData?.file]);
+	// Define a type guard to check if fileData is an UploadItem
+	function isUploadItem(
+		fileData: GenericFileData | UploadItem | undefined
+	): fileData is UploadItem {
+		return (fileData as UploadItem)?.isUploaded !== undefined;
+	}
 
 	return imageSrc ? (
 		<div className="relative h-full select-none bg-muted border border-muted-foreground/20 rounded-xl aspect-square shrink-0 overflow-hidden">
@@ -40,7 +35,7 @@ export default function ImagePreview({
 				src={imageSrc}
 				className="absolute w-full h-full object-cover cursor-zoom-in"
 				unoptimized
-				alt={fileData ? `Preview of ${fileData.file.name}` : "Preview Image"}
+				alt="Preview Image"
 				width={75}
 				height={75}
 				onClick={() => setIsZoomed(true)}
@@ -76,7 +71,8 @@ export default function ImagePreview({
 				/>
 			)}
 
-			{!imageUrl && !fileData?.isUploaded && (
+			{/* Use the type guard to safely access isUploaded */}
+			{fileData && isUploadItem(fileData) && !fileData.isUploaded && (
 				<div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 size-5">
 					<CircularProgressbar
 						value={progress}

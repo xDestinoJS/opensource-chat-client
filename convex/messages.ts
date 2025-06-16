@@ -1,5 +1,4 @@
 import {
-	httpAction,
 	internalMutation,
 	internalQuery,
 	mutation,
@@ -8,10 +7,9 @@ import {
 import { internal } from "./_generated/api";
 import { v } from "convex/values";
 
-import { streamText } from "../src/lib/ai";
 import { Doc, Id } from "./_generated/dataModel";
-import { ModelId, modelIds } from "../src/lib/providers";
-import { CoreMessage, FilePart, ImagePart, TextPart } from "ai";
+import { modelIds } from "../src/lib/providers";
+import { GenericFileData } from "../src/lib/files";
 
 // === INTERNAL QUERIES ===
 export const getMessage = internalQuery({
@@ -57,6 +55,15 @@ export const updateMessage = internalMutation({
 		isStreaming: v.optional(v.boolean()),
 		sessionId: v.optional(v.string()),
 		cancelReason: v.optional(v.union(v.string(), v.null())),
+		images: v.optional(
+			v.array(
+				v.object({
+					name: v.string(),
+					id: v.string(),
+					url: v.string(),
+				})
+			)
+		),
 		model: v.optional(v.string()),
 	},
 	handler: async (ctx, args) => {
@@ -72,6 +79,7 @@ export const updateMessage = internalMutation({
 			updates.cancelReason =
 				args.cancelReason != null ? args.cancelReason : undefined;
 		if (args.model !== undefined) updates.model = args.model;
+		if (args.images !== undefined) updates.images = args.images;
 
 		await ctx.db.patch(args.messageId, updates);
 	},
@@ -98,174 +106,6 @@ export const startStreaming = internalMutation({
 
 		return true;
 	},
-});
-
-// === INTERNAL ACTIONS ===
-export const streamAnswer = httpAction(async (ctx, req) => {
-	const { chatId, assistantMessageId } = await req.json();
-
-	const canStream = await ctx.runMutation(internal.messages.startStreaming, {
-		messageId: assistantMessageId,
-	});
-	if (!canStream) {
-		return new Response("Stream already in progress or message is complete.", {
-			status: 409,
-		});
-	}
-
-	let messages = await ctx.runQuery(internal.messages.getMessageHistory, {
-		chatId,
-	});
-	const assistantIdx = messages.findIndex((m) => m._id === assistantMessageId);
-	messages = messages.slice(0, assistantIdx + 1);
-
-	const history: CoreMessage[] = [];
-
-	const toContentParts = (m: Doc<"messages">) => {
-		const parts: (TextPart | ImagePart | FilePart)[] = [];
-
-		if (m.content) parts.push({ type: "text", text: m.content });
-
-		const addUrlParts = (
-			list: string[] | undefined,
-			type: "image" | "file",
-			mimeType?: string
-		) => {
-			list?.forEach((url) => {
-				try {
-					const obj = new URL(url);
-					parts.push(
-						type === "image"
-							? ({ type: "image", image: obj } as ImagePart)
-							: ({ type: "file", data: obj, mimeType } as FilePart)
-					);
-				} catch (e) {
-					console.error(`Invalid ${type} URL: ${url}`, e);
-				}
-			});
-		};
-
-		addUrlParts(
-			m.images?.map((i) => i.url),
-			"image"
-		);
-		addUrlParts(
-			m.documents?.map((i) => i.url),
-			"file",
-			"application/pdf"
-		);
-
-		return parts;
-	};
-
-	// Add all messages to the history
-	for (const m of messages.slice(0, -1)) {
-		const parts = toContentParts(m);
-		if (!parts.length) continue;
-
-		if (m.role === "user") {
-			history.push({ role: "user", content: parts });
-		} else if (m.role === "assistant") {
-			history.push({ role: "assistant", content: m.content });
-		}
-	}
-
-	// Add quote if exists
-	for (let i = history.length - 1; i >= 0; i--) {
-		if (history[i].role === "user" && messages[i]?.quote) {
-			history[i].content =
-				`The user has quoted a previous message. You must keep it in mind when answering, but never mention it in the response. The quote is: "${messages[i].quote}"` +
-				history[i].content;
-			break;
-		}
-	}
-
-	const llmCtrl = new AbortController();
-	const model = messages.at(-1)?.model ?? "mistral-small";
-	const result = await streamText(model as ModelId, history, llmCtrl.signal);
-
-	const encoder = new TextEncoder();
-	let content = "";
-	let lastSaved = 0;
-
-	const savePartial = async () => {
-		await ctx.runMutation(internal.messages.updateMessage, {
-			messageId: assistantMessageId,
-			content,
-		});
-	};
-
-	const finish = async (finalContent: string) => {
-		await ctx.runMutation(internal.messages.updateMessage, {
-			messageId: assistantMessageId,
-			content: finalContent,
-			isComplete: true,
-			isStreaming: false,
-		});
-	};
-
-	const cleanup = async () => {
-		await ctx.runMutation(internal.chat.updateChat, {
-			chatId,
-			isAnswering: false,
-		});
-		await ctx.runMutation(internal.messages.updateMessage, {
-			messageId: assistantMessageId,
-			isStreaming: false,
-		});
-	};
-
-	const stream = new ReadableStream<Uint8Array>({
-		async start(controller) {
-			try {
-				for await (const chunk of result.textStream) {
-					const { cancelReason } = await ctx.runQuery(
-						internal.messages.getMessage,
-						{
-							messageId: assistantMessageId,
-						}
-					);
-					if (cancelReason) {
-						llmCtrl.abort();
-						await finish(content);
-						await cleanup();
-						controller.close();
-						break;
-					}
-
-					content += chunk;
-					controller.enqueue(encoder.encode(chunk));
-
-					if (content.length - lastSaved >= 75) {
-						lastSaved = content.length;
-						void savePartial();
-					}
-				}
-
-				await finish(content);
-			} catch (err) {
-				if (!llmCtrl.signal.aborted) controller.error(err);
-			} finally {
-				await cleanup();
-			}
-		},
-
-		async cancel() {
-			llmCtrl.abort();
-			await finish(content);
-			await cleanup();
-		},
-	});
-
-	return new Response(stream, {
-		headers: {
-			"Content-Type": "text/plain; charset=utf-8",
-			"Transfer-Encoding": "chunked",
-			"Cache-Control": "no-cache",
-			"Access-Control-Allow-Origin": "*",
-			Vary: "Origin",
-		},
-	});
 });
 
 // === SHARED UTILITY ===
@@ -305,6 +145,7 @@ export const sendMessage = mutation({
 		sessionId: v.string(),
 		content: v.string(),
 		model: v.string(),
+		isSearchGrounded: v.boolean(),
 		fileDataList: v.array(
 			v.object({
 				name: v.string(),
@@ -338,29 +179,14 @@ export const sendMessage = mutation({
 		if (!chat) throw new Error("Chat not found");
 		const chatId = args.chatId as Id<"chats">;
 
-		const images: {
-			name: string;
-			id: string;
-			url: string;
-		}[] = [];
-		const documents: {
-			name: string;
-			id: string;
-			url: string;
-		}[] = [];
+		const images: GenericFileData[] = [];
+		const documents: GenericFileData[] = [];
 		args.fileDataList.forEach((data) => {
-			if (data.mimeType.startsWith("image/"))
-				images.push({
-					name: data.name.substring(0, 50),
-					id: data.fileId,
-					url: data.uploadUrl,
-				});
-			if (data.mimeType.startsWith("application/pdf"))
-				documents.push({
-					name: data.name.substring(0, 50),
-					id: data.fileId,
-					url: data.uploadUrl,
-				});
+			(data.mimeType.startsWith("image/") ? images : documents).push({
+				name: data.name.substring(0, 50),
+				fileId: data.fileId,
+				uploadUrl: data.uploadUrl,
+			});
 		});
 
 		// Set chat to answering state
@@ -380,6 +206,7 @@ export const sendMessage = mutation({
 			documents,
 			isComplete: true,
 			isStreaming: false,
+			isSearchGrounded: args.isSearchGrounded,
 		});
 
 		const assistantMessageId = await ctx.db.insert("messages", {
@@ -392,6 +219,7 @@ export const sendMessage = mutation({
 			documents,
 			isComplete: false,
 			isStreaming: false,
+			isSearchGrounded: args.isSearchGrounded,
 		});
 
 		return {

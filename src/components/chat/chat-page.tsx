@@ -80,7 +80,8 @@ export default function ChatPage({ chatId }: { chatId?: Id<"chats"> }) {
 
 	async function handleSubmit(
 		currentInput: string,
-		fileDataList: GenericFileData[]
+		fileDataList: GenericFileData[],
+		isSearchEnabled: boolean
 	) {
 		(async () => {
 			if (!modelId) return;
@@ -92,7 +93,7 @@ export default function ChatPage({ chatId }: { chatId?: Id<"chats"> }) {
 				model: modelId,
 				sessionId,
 				fileDataList,
-				isSearchGrounded: true,
+				isSearchEnabled: isSearchEnabled,
 			});
 
 			setQuote(undefined); // Clear the quote after sending

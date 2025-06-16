@@ -59,12 +59,20 @@ export const updateMessage = internalMutation({
 			v.array(
 				v.object({
 					name: v.string(),
-					id: v.string(),
-					url: v.string(),
+					fileId: v.string(),
+					uploadUrl: v.string(),
 				})
 			)
 		),
 		model: v.optional(v.string()),
+		sources: v.optional(
+			v.array(
+				v.object({
+					title: v.optional(v.string()),
+					url: v.string(),
+				})
+			)
+		),
 	},
 	handler: async (ctx, args) => {
 		const message = await ctx.db.get(args.messageId);
@@ -80,6 +88,7 @@ export const updateMessage = internalMutation({
 				args.cancelReason != null ? args.cancelReason : undefined;
 		if (args.model !== undefined) updates.model = args.model;
 		if (args.images !== undefined) updates.images = args.images;
+		if (args.sources !== undefined) updates.sources = args.sources;
 
 		await ctx.db.patch(args.messageId, updates);
 	},
@@ -145,13 +154,13 @@ export const sendMessage = mutation({
 		sessionId: v.string(),
 		content: v.string(),
 		model: v.string(),
-		isSearchGrounded: v.boolean(),
+		isSearchEnabled: v.boolean(),
 		fileDataList: v.array(
 			v.object({
 				name: v.string(),
 				fileId: v.string(),
 				uploadUrl: v.string(),
-				mimeType: v.string(),
+				mimeType: v.optional(v.string()),
 			})
 		),
 	},
@@ -164,6 +173,7 @@ export const sendMessage = mutation({
 			args.chatId = await ctx.runMutation(internal.chat.createChat, {
 				content: args.content,
 				model: args.model,
+				isSearchEnabled: args.isSearchEnabled,
 			});
 			if (!args.chatId) {
 				throw new Error("Chat could not be created");
@@ -182,7 +192,7 @@ export const sendMessage = mutation({
 		const images: GenericFileData[] = [];
 		const documents: GenericFileData[] = [];
 		args.fileDataList.forEach((data) => {
-			(data.mimeType.startsWith("image/") ? images : documents).push({
+			(data?.mimeType?.startsWith("image/") ? images : documents).push({
 				name: data.name.substring(0, 50),
 				fileId: data.fileId,
 				uploadUrl: data.uploadUrl,
@@ -206,7 +216,7 @@ export const sendMessage = mutation({
 			documents,
 			isComplete: true,
 			isStreaming: false,
-			isSearchGrounded: args.isSearchGrounded,
+			isSearchEnabled: args.isSearchEnabled,
 		});
 
 		const assistantMessageId = await ctx.db.insert("messages", {
@@ -219,7 +229,7 @@ export const sendMessage = mutation({
 			documents: [],
 			isComplete: false,
 			isStreaming: false,
-			isSearchGrounded: args.isSearchGrounded,
+			isSearchEnabled: args.isSearchEnabled,
 		});
 
 		return {

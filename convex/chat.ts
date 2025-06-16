@@ -86,6 +86,7 @@ export const generateTitle = internalAction({
 		chatId: v.id("chats"),
 		content: v.string(),
 		model: v.string(),
+		isSearchEnabled: v.boolean(),
 	},
 	handler: async (ctx, args) => {
 		let data = { title: "Untitled Chat" };
@@ -105,7 +106,8 @@ export const generateTitle = internalAction({
 						: args.model) as ModelId,
 					"You are an AI model tasked to return a title for the chat based on the messages provided. The title should be concise and relevant to the conversation. The title must be no longer than 50 characters.",
 					[{ role: "user", content: args.content }],
-					z.object({ title: z.string() })
+					z.object({ title: z.string() }),
+					args.isSearchEnabled
 				);
 			} catch {
 				console.error("Failed to generate chat title:", args.content);
@@ -125,6 +127,7 @@ export const createChat = internalMutation({
 		content: v.optional(v.string()),
 		model: v.optional(v.string()),
 		messages: v.optional(v.array(v.id("messages"))),
+		isSearchEnabled: v.boolean(),
 	},
 	handler: async (ctx, args) => {
 		// Create a new chat and generate a title based on the provided content
@@ -140,6 +143,7 @@ export const createChat = internalMutation({
 				chatId,
 				content: args.content,
 				model: args.model,
+				isSearchEnabled: args.isSearchEnabled,
 			});
 		}
 

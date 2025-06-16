@@ -16,12 +16,12 @@ const openrouter = createOpenRouter({
 	apiKey: process.env.OPENROUTER_API_KEY,
 });
 
-function getModel(modelId: ModelId, useSearch?: boolean) {
+function getModel(modelId: ModelId, isSearchEnabled?: boolean) {
 	switch (modelId) {
 		case "gemini-2.5-pro":
 			return google("gemini-2.5-pro-exp-03-25");
 		case "gemini-2.0-flash":
-			if (useSearch)
+			if (isSearchEnabled)
 				return google("gemini-2.0-flash", {
 					useSearchGrounding: true,
 				});
@@ -70,9 +70,9 @@ export async function streamText(
 	modelId: ModelId,
 	messages: CoreMessage[],
 	abortSignal?: AbortSignal,
-	useSearch?: boolean
+	isSearchEnabled?: boolean
 ) {
-	let model = getModel(modelId, useSearch);
+	let model = getModel(modelId, isSearchEnabled);
 
 	if (messages.length === 0) {
 		throw new Error("[AI] No messages provided for chat completion.");
@@ -100,9 +100,9 @@ export async function generateObject(
 	systemPrompt: string,
 	messages: CoreMessage[],
 	schema: z.ZodSchema,
-	useSearch?: boolean
+	isSearchEnabled?: boolean
 ) {
-	let model = getModel(modelId, useSearch);
+	let model = getModel(modelId, isSearchEnabled);
 
 	const { object } = await generateO({
 		model,

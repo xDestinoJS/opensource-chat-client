@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useDropzone } from "react-dropzone";
-import { ArrowUp, Paperclip, Search, Square } from "lucide-react";
+import { ArrowUp, Globe, Paperclip, Search, Square } from "lucide-react";
 
 import { Button } from "../ui/button";
 import { AutosizeTextarea, AutosizeTextAreaRef } from "../ui/autosize-textarea";
@@ -14,6 +14,8 @@ import uploadFile from "@/utils/upload-file";
 import { GenericFileData, UploadItem } from "@/lib/files";
 import ImagePreview from "./previews/image-preview";
 import PDFPreview from "./previews/pdf-preview";
+import { cn } from "@/lib/utils";
+import { useSearchStore } from "@/stores/use-search-store";
 
 type Props = {
 	quote?: string;
@@ -23,7 +25,11 @@ type Props = {
 	setModelId: (id: ModelId) => void;
 	isAnswering: boolean;
 	messagesLength: number;
-	onSubmit: (text: string, files: GenericFileData[]) => void;
+	onSubmit: (
+		text: string,
+		files: GenericFileData[],
+		isSearchEnabled: boolean
+	) => void;
 	onCancel: () => void;
 	inputContainerRef: React.RefObject<HTMLDivElement | null>;
 };
@@ -40,6 +46,7 @@ export default function ChatInputForm({
 	onCancel,
 	inputContainerRef,
 }: Props) {
+	const { isSearchEnabled, toggleSearch } = useSearchStore();
 	const textAreaRef = useRef<AutosizeTextAreaRef>(null);
 	const hiddenInputRef = useRef<HTMLInputElement>(null);
 
@@ -50,11 +57,35 @@ export default function ChatInputForm({
 		[modelId]
 	);
 
-	// File handling
-	const startUpload = async (file: File, itemRef: UploadItem) => {
+	// Allowed file types based on model features
+	const allowedFileTypes = useMemo(() => {
+		const accept: Record<string, string[]> = {};
+		const allowedMimeTypes: string[] = [];
+
+		if (modelData?.features.includes("vision")) {
+			accept["image/*"] = [".png", ".jpg", ".jpeg"];
+			allowedMimeTypes.push("image/png", "image/jpg", "image/jpeg");
+		}
+		if (modelData?.features.includes("files")) {
+			accept["application/pdf"] = [".pdf"];
+			allowedMimeTypes.push("application/pdf");
+		}
+		return { accept, allowedMimeTypes };
+	}, [modelData]);
+
+	// Filter files that are allowed whenever allowedMimeTypes changes
+	useEffect(() => {
+		setFiles((prevFiles) =>
+			prevFiles.filter((file) =>
+				allowedFileTypes.allowedMimeTypes.includes(file.mimeType ?? "")
+			)
+		);
+	}, [allowedFileTypes.allowedMimeTypes]);
+
+	// Upload a file and update its state
+	const startUpload = useCallback(async (file: File, itemRef: UploadItem) => {
 		const res = await uploadFile(file);
 		if (!res) return;
-
 		setFiles((prev) =>
 			prev.map((f) =>
 				f === itemRef
@@ -67,87 +98,85 @@ export default function ChatInputForm({
 					: f
 			)
 		);
-	};
+	}, []);
 
-	const addFiles = (incoming: File[]) => {
-		incoming.forEach((file, index) => {
-			// Check if file has already been uploaded
-			const fileId = `${file.name}${file.lastModified}${file.type}`;
-			const existing = files.find((f) => f.fileId === fileId);
-			if (existing) return;
+	// Add files from drag/drop or input
+	const addFiles = useCallback(
+		(incoming: File[]) => {
+			incoming.forEach((file) => {
+				if (!allowedFileTypes.allowedMimeTypes.includes(file.type)) {
+					console.warn(
+						`File type ${file.type} not allowed for the current model.`
+					);
+					return;
+				}
+				const newItem: UploadItem = {
+					name: file.name,
+					mimeType: file.type,
+					fileId: Date.now().toString(),
+					uploadUrl: URL.createObjectURL(file).toString(),
+					isUploaded: false,
+				};
+				setFiles((prev) => [...prev, newItem]);
+				startUpload(file, newItem);
+			});
+		},
+		[allowedFileTypes.allowedMimeTypes, startUpload]
+	);
 
-			const newItem: UploadItem = {
-				name: file.name,
-				mimeType: file.type,
-				fileId: fileId,
-				uploadUrl: URL.createObjectURL(file).toString(),
-				isUploaded: false,
-			};
-
-			setFiles((prev) => [...prev, newItem]);
-			startUpload(file, newItem);
-		});
-	};
-
-	/* Drag and Drop */
 	const { getRootProps, isDragActive } = useDropzone({
 		onDrop: addFiles,
 		noClick: true,
 		noKeyboard: true,
-		accept: {
-			"image/*": [".png", ".jpg", ".jpeg"],
-			"application/pdf": [".pdf"],
-		},
+		accept: allowedFileTypes.accept,
 	});
 
-	/* Upload from Clipboard */
+	// Paste files from clipboard
 	useEffect(() => {
 		const handler = (e: ClipboardEvent) => {
 			if (
 				document.activeElement === textAreaRef.current?.textArea &&
 				e.clipboardData
 			) {
-				const items = Array.from(e.clipboardData.items)
-					.filter((i) => i.kind === "file")
-					.map((i) => i.getAsFile())
+				const filesFromClipboard = Array.from(e.clipboardData.items)
+					.filter((item) => item.kind === "file")
+					.map((item) => item.getAsFile())
 					.filter(
-						(f): f is File =>
-							!!f &&
-							[
-								"image/png",
-								"image/jpg",
-								"image/jpeg",
-								"application/pdf",
-							].includes(f.type)
+						(file): file is File =>
+							!!file && allowedFileTypes.allowedMimeTypes.includes(file.type)
 					);
-				if (items.length) {
+
+				if (filesFromClipboard.length) {
 					e.preventDefault();
-					addFiles(items);
+					addFiles(filesFromClipboard);
 				}
 			}
 		};
 		document.addEventListener("paste", handler);
 		return () => document.removeEventListener("paste", handler);
-	}, []);
+	}, [allowedFileTypes.allowedMimeTypes, addFiles]);
 
-	/* UI helpers */
 	const pickFiles = () => hiddenInputRef.current?.click();
 	const removeFile = (target: UploadItem) =>
 		setFiles((prev) => prev.filter((f) => f !== target));
 
 	const handleSend = () => {
 		const text = textAreaRef.current?.textArea.value.trim();
-		if (!text || isAnswering) return;
-		if (files.some((f) => !f.isUploaded)) return; // wait for files to upload
+		if (!text || isAnswering || files.some((f) => !f.isUploaded)) return;
 
-		const ready: GenericFileData[] = files.map(
-			({ isUploaded, ...data }) => data
+		const readyFiles: GenericFileData[] = files.map(
+			({ isUploaded, ...rest }) => rest
 		);
 
 		textAreaRef.current!.textArea.value = "";
 		setFiles([]);
-		onSubmit(text, ready);
+		onSubmit(text, readyFiles, isSearchEnabled);
 	};
+
+	const inputAcceptString = useMemo(
+		() => Object.values(allowedFileTypes.accept).flat().join(","),
+		[allowedFileTypes.accept]
+	);
 
 	return (
 		<form
@@ -158,11 +187,9 @@ export default function ChatInputForm({
 				ref={hiddenInputRef}
 				type="file"
 				multiple
-				accept="image/png,image/jpg,image/jpeg,application/pdf"
+				accept={inputAcceptString}
 				className="hidden"
-				onChange={(e) => {
-					if (e.target.files) addFiles(Array.from(e.target.files));
-				}}
+				onChange={(e) => e.target.files && addFiles(Array.from(e.target.files))}
 			/>
 
 			{isDragActive && (
@@ -175,7 +202,6 @@ export default function ChatInputForm({
 				ref={inputContainerRef}
 				className="relative z-0 rounded-tl-2xl rounded-tr-2xl border border-neutral-300 bg-neutral-50 p-4"
 			>
-				{/* Quote */}
 				{quote && (
 					<div className="mb-2">
 						<TextQuote
@@ -186,28 +212,26 @@ export default function ChatInputForm({
 					</div>
 				)}
 
-				{/* File Previews */}
 				{files.length > 0 && (
 					<div className="mb-2 flex h-16 w-full items-center gap-2 overflow-x-auto no-scrollbar">
-						{files.map((f, i) =>
-							f?.mimeType?.startsWith("image/") ? (
+						{files.map((file) =>
+							file.mimeType?.startsWith("image/") ? (
 								<ImagePreview
-									key={f.fileId}
-									fileData={f}
-									onRemove={() => removeFile(f)}
+									key={file.fileId}
+									fileData={file}
+									onRemove={() => removeFile(file)}
 								/>
 							) : (
 								<PDFPreview
-									key={f.fileId}
-									fileData={f}
-									onRemove={() => removeFile(f)}
+									key={file.fileId}
+									fileData={file}
+									onRemove={() => removeFile(file)}
 								/>
 							)
 						)}
 					</div>
 				)}
 
-				{/* Text area */}
 				<AutosizeTextarea
 					ref={textAreaRef}
 					type="transparent"
@@ -221,7 +245,6 @@ export default function ChatInputForm({
 					}}
 				/>
 
-				{/* Buttons */}
 				<div className="mt-2 flex items-center justify-between -mx-1.25">
 					<div className="flex items-center gap-1">
 						<ModelDropdown
@@ -230,28 +253,32 @@ export default function ChatInputForm({
 							setModelId={setModelId}
 						/>
 
-						{modelData?.features.some((f) =>
-							["vision", "files"].includes(f)
-						) && (
+						{modelData?.features.includes("search") && (
 							<Button
-								size="sm"
+								size="xs"
 								variant="outline"
 								type="button"
-								className="rounded-full shadow-none"
-								onClick={pickFiles}
+								className={cn(
+									"shadow-none",
+									isSearchEnabled &&
+										"bg-blue-500/10 hover:bg-blue-500/15 border-blue-500"
+								)}
+								onClick={() => toggleSearch()}
 							>
-								<Paperclip />
+								<Globe /> Search
 							</Button>
 						)}
 
-						{modelData?.features.includes("search") && (
+						{(modelData?.features.includes("vision") ||
+							modelData?.features.includes("files")) && (
 							<Button
-								size="sm"
+								size="xs"
 								variant="outline"
 								type="button"
-								className="rounded-full shadow-none"
+								className="shadow-none"
+								onClick={pickFiles}
 							>
-								<Search /> Buscar
+								<Paperclip />
 							</Button>
 						)}
 					</div>

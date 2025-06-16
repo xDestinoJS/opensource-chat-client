@@ -20,6 +20,7 @@ import type * as generate from "../generate.js";
 import type * as http from "../http.js";
 import type * as messages from "../messages.js";
 import type * as models from "../models.js";
+import type * as sources from "../sources.js";
 import type * as userPreferences from "../userPreferences.js";
 
 /**
@@ -38,6 +39,7 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   messages: typeof messages;
   models: typeof models;
+  sources: typeof sources;
   userPreferences: typeof userPreferences;
 }>;
 export declare const api: FilterApi<

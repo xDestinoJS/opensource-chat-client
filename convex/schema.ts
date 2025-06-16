@@ -48,7 +48,15 @@ export default defineSchema({
 		sessionId: v.string(),
 		isStreaming: v.boolean(),
 		cancelReason: v.optional(v.string()),
-		isSearchGrounded: v.boolean(),
+		isSearchEnabled: v.boolean(),
+		sources: v.optional(
+			v.array(
+				v.object({
+					title: v.optional(v.string()),
+					url: v.string(),
+				})
+			)
+		),
 	}),
 	chats: defineTable({
 		title: v.string(),

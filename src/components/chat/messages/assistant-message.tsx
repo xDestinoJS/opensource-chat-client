@@ -19,6 +19,12 @@ import useAssistantContent from "@/hooks/useAssistantContent";
 import WaveLoader from "../wave-loader";
 import { useState } from "react";
 import RetryDropdown from "../retry-dropdown";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
+import Link from "next/link";
 
 export default function AssistantMessage({
 	userMessage,
@@ -67,7 +73,7 @@ export default function AssistantMessage({
 						file.uploadUrl.length > 0 && (
 							<Zoom key={file.fileId} zoomMargin={10}>
 								<img
-									className="rounded-xl"
+									className="rounded-xl border border-muted-foreground/20"
 									src={file.uploadUrl}
 									alt={file.name}
 								/>
@@ -135,9 +141,34 @@ export default function AssistantMessage({
 					</IconButton>
 				</RetryDropdown>
 
-				<p className="ml-2.5 text-xs">
+				<p className="ml-3 text-xs">
 					{getFullModelName(assistantMessage.model)}
 				</p>
+
+				{assistantMessage?.sources && (
+					<div className="ml-2.5 flex gap-2 hover:bg-muted text-xs rounded-full p-1 items-center">
+						{assistantMessage?.sources.map((source, index) => {
+							return (
+								<Tooltip>
+									<TooltipTrigger
+										key={index}
+										className="not-first:-ml-3.25"
+										asChild
+									>
+										<Link href={source.url} target="_blank">
+											<img
+												className="size-[20px] rounded-full bg-secondary border border-muted"
+												src={`https://icon.horse/icon/${source.title}`}
+												alt={source.title}
+											/>
+										</Link>
+									</TooltipTrigger>
+									<TooltipContent>{source.title}</TooltipContent>
+								</Tooltip>
+							);
+						})}
+					</div>
+				)}
 			</div>
 			{isLastPair && <div className="pt-4" />}
 		</div>

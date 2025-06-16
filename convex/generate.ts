@@ -1,10 +1,10 @@
 import { httpAction, internalAction } from "./_generated/server";
 import { internal } from "./_generated/api";
+import { CoreMessage, FilePart, ImagePart, TextPart } from "ai";
 
 import { generateImage, streamText } from "../src/lib/ai";
 import { Doc } from "./_generated/dataModel";
 import { getModelDataById, ModelId } from "../src/lib/providers";
-import { CoreMessage, FilePart, ImagePart, TextPart } from "ai";
 import { uploadUint8ArrayToBucket } from "../src/lib/files";
 import { v } from "convex/values";
 
@@ -93,7 +93,12 @@ export const streamTextAnswer = httpAction(async (ctx, req) => {
 
 		const llmCtrl = new AbortController();
 		const model = messages.at(-1)?.model ?? "mistral-small";
-		const result = await streamText(model as ModelId, history, llmCtrl.signal);
+		const result = await streamText(
+			model as ModelId,
+			history,
+			llmCtrl.signal,
+			assistantMessage.isSearchEnabled
+		);
 
 		const encoder = new TextEncoder();
 		let content = "";
@@ -112,6 +117,18 @@ export const streamTextAnswer = httpAction(async (ctx, req) => {
 				content: finalContent,
 				isComplete: true,
 				isStreaming: false,
+			});
+
+			const sources = (await result.sources).map((source) => {
+				return {
+					title: source.title,
+					url: source.url,
+				};
+			});
+
+			ctx.scheduler.runAfter(0, internal.sources.addSourcesToAnswer, {
+				assistantMessageId,
+				sources,
 			});
 		};
 
@@ -192,6 +209,12 @@ export const processImageGeneration = internalAction({
 	handler: async (ctx, args) => {
 		const image = await generateImage(args.modelId as ModelId, args.prompt);
 
+		// Handle the cancellation event
+		const { cancelReason } = await ctx.runQuery(internal.messages.getMessage, {
+			messageId: args.assistantMessageId,
+		});
+		if (cancelReason) return;
+
 		const fileId = crypto.randomUUID();
 
 		const { Location } = await uploadUint8ArrayToBucket(
@@ -207,8 +230,8 @@ export const processImageGeneration = internalAction({
 			images: [
 				{
 					name: fileId,
-					id: fileId,
-					url: Location,
+					fileId,
+					uploadUrl: Location,
 				},
 			],
 			isStreaming: false,

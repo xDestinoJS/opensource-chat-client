@@ -28,7 +28,7 @@
       - [x] Add Tigris File Uploads
     - [x] Add PDF reading
     - [x] Add Image Generation -> Imagen/OpenAI? (https://ai-sdk.dev/docs/ai-sdk-core/image-generation) //openai, togetherai
-    - [ ] Add web search for Gemini (include sources) -> (just add frontend: halfway done) https://ai-sdk.dev/cookbook/node/web-search-agent#gemini
+    - [x] Add web search for Gemini (include sources) -> (just add frontend: halfway done) https://ai-sdk.dev/cookbook/node/web-search-agent#gemini
       - [x] Add to backend
       - [x] Add to frontend
     - [ ] Add reasoning & effort control: dropdown (high, medium, low) **TODO**

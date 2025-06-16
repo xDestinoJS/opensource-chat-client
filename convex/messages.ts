@@ -273,6 +273,7 @@ export const editMessage = mutation({
 			isStreaming: false,
 			sessionId: args.sessionId,
 			cancelReason: null,
+			sources: [],
 		});
 	},
 });
@@ -347,6 +348,7 @@ export const retryMessage = mutation({
 			isStreaming: false,
 			sessionId: args.sessionId,
 			cancelReason: null,
+			sources: [],
 		});
 	},
 });

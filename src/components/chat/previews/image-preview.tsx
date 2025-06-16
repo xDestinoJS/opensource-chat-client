@@ -1,6 +1,6 @@
 import { CircularProgressbar, buildStyles } from "react-circular-progressbar";
 import "react-circular-progressbar/dist/styles.css";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import RemoveButton from "./remove-button";
 import useProgress from "@/hooks/useProgress";
@@ -9,25 +9,24 @@ import "react-medium-image-zoom/dist/styles.css";
 import { cn } from "@/lib/utils";
 import { GenericFileData, UploadItem } from "@/lib/files";
 
-interface ImagePreviewProps {
-	fileData?: GenericFileData | UploadItem;
-	onRemove?: () => void;
-}
-
 export default function ImagePreview({
 	fileData,
 	onRemove,
-}: ImagePreviewProps) {
-	const imageSrc = fileData?.uploadUrl || "";
+}: {
+	fileData: GenericFileData | UploadItem;
+	onRemove?: () => void;
+}) {
+	const [imageSrc, setImageSrc] = useState<string | null>(null);
 	const [isZoomed, setIsZoomed] = useState(false);
-	const { progress } = useProgress();
+	const { progress } = useProgress({
+		isComplete: "isUploaded" in fileData && fileData?.isUploaded,
+	});
 
-	// Define a type guard to check if fileData is an UploadItem
-	function isUploadItem(
-		fileData: GenericFileData | UploadItem | undefined
-	): fileData is UploadItem {
-		return (fileData as UploadItem)?.isUploaded !== undefined;
-	}
+	useEffect(() => {
+		if (fileData?.uploadUrl && fileData.uploadUrl !== imageSrc) {
+			setImageSrc(fileData.uploadUrl);
+		}
+	}, [fileData?.uploadUrl, imageSrc]);
 
 	return imageSrc ? (
 		<div className="relative h-full select-none bg-muted border border-muted-foreground/20 rounded-xl aspect-square shrink-0 overflow-hidden">
@@ -71,8 +70,7 @@ export default function ImagePreview({
 				/>
 			)}
 
-			{/* Use the type guard to safely access isUploaded */}
-			{fileData && isUploadItem(fileData) && !fileData.isUploaded && (
+			{"isUploaded" in fileData && !fileData?.isUploaded && (
 				<div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 size-5">
 					<CircularProgressbar
 						value={progress}

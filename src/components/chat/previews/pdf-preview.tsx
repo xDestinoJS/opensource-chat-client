@@ -11,7 +11,9 @@ export default function PDFPreview({
 	fileData: UploadItem;
 	onRemove?: () => void;
 }) {
-	const { progress } = useProgress();
+	const { progress } = useProgress({
+		isComplete: "isUploaded" in fileData && fileData?.isUploaded,
+	});
 
 	return (
 		<div className="relative flex gap-3 h-full w-75 shrink-0 p-2 select-none items-center rounded-xl border border-muted-foreground/20">

@@ -70,14 +70,17 @@ export default function ChatInputForm({
 	};
 
 	const addFiles = (incoming: File[]) => {
-		incoming.forEach((file) => {
+		incoming.forEach((file, index) => {
+			// Check if file has already been uploaded
+			const fileId = `${file.name}${file.lastModified}${file.type}`;
+			const existing = files.find((f) => f.fileId === fileId);
+			if (existing) return;
+
 			const newItem: UploadItem = {
 				name: file.name,
 				mimeType: file.type,
-				fileId: "",
-				uploadUrl: file.type.startsWith("image/") // generate a local URL image
-					? URL.createObjectURL(file)
-					: "",
+				fileId: fileId,
+				uploadUrl: URL.createObjectURL(file).toString(),
 				isUploaded: false,
 			};
 
@@ -189,13 +192,13 @@ export default function ChatInputForm({
 						{files.map((f, i) =>
 							f?.mimeType?.startsWith("image/") ? (
 								<ImagePreview
-									key={i}
+									key={f.fileId}
 									fileData={f}
 									onRemove={() => removeFile(f)}
 								/>
 							) : (
 								<PDFPreview
-									key={i}
+									key={f.fileId}
 									fileData={f}
 									onRemove={() => removeFile(f)}
 								/>

@@ -62,11 +62,15 @@ export default function AssistantMessage({
 			</div>
 
 			<div className="max-w-1/2">
-				{assistantMessage.images.map((image) => {
+				{assistantMessage.images.map((file) => {
 					return (
-						image.url.length > 0 && (
-							<Zoom key={image.id} zoomMargin={10}>
-								<img className="rounded-xl" src={image.url} alt={image.name} />
+						file.uploadUrl.length > 0 && (
+							<Zoom key={file.fileId} zoomMargin={10}>
+								<img
+									className="rounded-xl"
+									src={file.uploadUrl}
+									alt={file.name}
+								/>
 							</Zoom>
 						)
 					);

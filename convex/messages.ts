@@ -8,7 +8,7 @@ import { internal } from "./_generated/api";
 import { v } from "convex/values";
 
 import { Doc, Id } from "./_generated/dataModel";
-import { modelIds } from "../src/lib/providers";
+import { getModelDataById, modelIds } from "../src/lib/providers";
 import { GenericFileData } from "../src/lib/files";
 
 // === INTERNAL QUERIES ===
@@ -38,6 +38,7 @@ export const getMessageHistory = internalQuery({
 					message.sessionId === args.excludeSession
 				) {
 					message.content = "";
+					if (message.reasoning) message.reasoning.content = "";
 				}
 			});
 		}
@@ -73,24 +74,48 @@ export const updateMessage = internalMutation({
 				})
 			)
 		),
+		reasoning: v.optional(
+			v.object({
+				isReasoning: v.optional(v.boolean()),
+				content: v.optional(v.string()),
+				effort: v.optional(v.string()),
+				startedAt: v.optional(v.number()),
+				endedAt: v.optional(v.number()),
+			})
+		),
 	},
+
 	handler: async (ctx, args) => {
-		const message = await ctx.db.get(args.messageId);
+		const { messageId, ...patch } = args;
+		const message = await ctx.db.get(messageId);
 		if (!message) throw new Error("Message not found");
 
-		const updates: any = {};
-		if (args.content !== undefined) updates.content = args.content;
-		if (args.isComplete !== undefined) updates.isComplete = args.isComplete;
-		if (args.isStreaming !== undefined) updates.isStreaming = args.isStreaming;
-		if (args.sessionId !== undefined) updates.sessionId = args.sessionId;
-		if (args.cancelReason !== undefined)
-			updates.cancelReason =
-				args.cancelReason != null ? args.cancelReason : undefined;
-		if (args.model !== undefined) updates.model = args.model;
-		if (args.images !== undefined) updates.images = args.images;
-		if (args.sources !== undefined) updates.sources = args.sources;
+		// build the real update object, merging nested objects
+		const updates: Record<string, any> = { ...message };
 
-		await ctx.db.patch(args.messageId, updates);
+		const deepMerge = (target: any, source: any) => {
+			for (const [key, value] of Object.entries(source)) {
+				if (value === undefined) continue; // ignore undefined
+				if (value === null && key === "cancelReason") {
+					target[key] = undefined; // clear cancelReason when null is passed
+				} else if (
+					typeof value === "object" &&
+					!Array.isArray(value) &&
+					value !== null
+				) {
+					target[key] = deepMerge(
+						{ ...(target[key] ?? {}) },
+						value as Record<string, any>
+					);
+				} else {
+					target[key] = value;
+				}
+			}
+			return target;
+		};
+
+		deepMerge(updates, patch);
+		await ctx.db.patch(messageId, updates);
 	},
 });
 
@@ -199,6 +224,9 @@ export const sendMessage = mutation({
 			});
 		});
 
+		const modelInfo = getModelDataById(args.model);
+		if (!modelInfo) throw new Error("Model data not found");
+
 		// Set chat to answering state
 		await ctx.runMutation(internal.chat.updateChat, {
 			chatId,
@@ -274,6 +302,7 @@ export const editMessage = mutation({
 			sessionId: args.sessionId,
 			cancelReason: null,
 			sources: [],
+			images: [],
 		});
 	},
 });
@@ -349,6 +378,7 @@ export const retryMessage = mutation({
 			sessionId: args.sessionId,
 			cancelReason: null,
 			sources: [],
+			images: [],
 		});
 	},
 });

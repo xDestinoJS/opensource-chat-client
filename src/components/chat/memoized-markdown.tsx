@@ -2,14 +2,15 @@ import { memo, useMemo } from "react";
 import ReactMarkdown from "react-markdown";
 import CodeBlock from "./blocks/code-block";
 import remarkGfm from "remark-gfm";
+import { cn } from "@/lib/utils";
 
 const MemoizedMarkdown = memo(
-	({ content }: { content: string }) => {
+	({ className, content }: { className?: string; content: string }) => {
 		// Only memoize content processing if needed
 		const markdownContent = useMemo(() => content, [content]);
 
 		return (
-			<div className="prose w-full mb-1 max-w-none">
+			<div className={cn("prose w-full mb-1 max-w-none", className)}>
 				<ReactMarkdown
 					remarkPlugins={[remarkGfm]}
 					components={{
@@ -40,7 +41,10 @@ const MemoizedMarkdown = memo(
 	},
 	(prevProps, nextProps) => {
 		// Only re-render if content changes
-		return prevProps.content === nextProps.content;
+		return (
+			prevProps.content === nextProps.content &&
+			prevProps.className === nextProps.className
+		);
 	}
 );
 

@@ -57,6 +57,15 @@ export default defineSchema({
 				})
 			)
 		),
+		reasoning: v.optional(
+			v.object({
+				isReasoning: v.boolean(),
+				content: v.string(),
+				effort: v.string(),
+				startedAt: v.number(),
+				endedAt: v.optional(v.number()),
+			})
+		),
 	}),
 	chats: defineTable({
 		title: v.string(),

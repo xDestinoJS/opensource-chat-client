@@ -31,10 +31,11 @@
     - [x] Add web search for Gemini (include sources) -> (just add frontend: halfway done) https://ai-sdk.dev/cookbook/node/web-search-agent#gemini
       - [x] Add to backend
       - [x] Add to frontend
-    - [ ] Add reasoning & effort control: dropdown (high, medium, low) **TODO**
+      - [x] Add reasoning
+        - [ ] effort control dropdown (high, medium, low)
+  - [ ] Add Thread Sharing **TODO**
   - [ ] Rename chats -> threads
   - [ ] Link threads to accounts
-  - [ ] Add Thread Sharing
   - [ ] Add Spotlight-like feature
   - [ ] Do UI
   - [ ] Add Settings

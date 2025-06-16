@@ -91,45 +91,78 @@ export const streamTextAnswer = httpAction(async (ctx, req) => {
 			}
 		}
 
+		// Initiate reasoning object
+		const isReasoningModel = modelInfo.features.includes("reasoning");
+		if (isReasoningModel) {
+			await ctx.runMutation(internal.messages.updateMessage, {
+				messageId: assistantMessageId,
+				reasoning: {
+					isReasoning: true,
+					content: "",
+					effort: "low",
+					startedAt: Date.now(),
+				},
+			});
+		}
+
 		const llmCtrl = new AbortController();
 		const model = messages.at(-1)?.model ?? "mistral-small";
-		const result = await streamText(
-			model as ModelId,
-			history,
-			llmCtrl.signal,
-			assistantMessage.isSearchEnabled
-		);
 
 		const encoder = new TextEncoder();
 		let content = "";
+		let reasoning = "";
+		let reasoningEndedAt: number | undefined;
 		let lastSaved = 0;
 
 		const savePartial = async () => {
 			await ctx.runMutation(internal.messages.updateMessage, {
 				messageId: assistantMessageId,
 				content,
+				reasoning: isReasoningModel
+					? {
+							isReasoning: reasoningEndedAt ? false : true,
+							content: reasoning,
+							endedAt: reasoningEndedAt,
+						}
+					: undefined,
 			});
 		};
 
-		const finish = async (finalContent: string) => {
+		const finish = async (
+			result: any | null,
+			finalContent: string,
+			hasErrored?: boolean
+		) => {
 			await ctx.runMutation(internal.messages.updateMessage, {
 				messageId: assistantMessageId,
 				content: finalContent,
+				reasoning: isReasoningModel
+					? {
+							isReasoning: false,
+							content: reasoning,
+							endedAt: reasoningEndedAt,
+						}
+					: undefined,
 				isComplete: true,
 				isStreaming: false,
+				cancelReason: hasErrored ? "system_error" : undefined,
 			});
 
-			const sources = (await result.sources).map((source) => {
-				return {
-					title: source.title,
-					url: source.url,
-				};
-			});
+			if (result) {
+				const sources = (await result.sources).map(
+					(source: { title: string; url: string }) => {
+						return {
+							title: source.title,
+							url: source.url,
+						};
+					}
+				);
 
-			ctx.scheduler.runAfter(0, internal.sources.addSourcesToAnswer, {
-				assistantMessageId,
-				sources,
-			});
+				ctx.scheduler.runAfter(0, internal.sources.addSourcesToAnswer, {
+					assistantMessageId,
+					sources,
+				});
+			}
 		};
 
 		const cleanup = async () => {
@@ -137,50 +170,88 @@ export const streamTextAnswer = httpAction(async (ctx, req) => {
 				chatId,
 				isAnswering: false,
 			});
+
 			await ctx.runMutation(internal.messages.updateMessage, {
 				messageId: assistantMessageId,
 				isStreaming: false,
+				reasoning: isReasoningModel
+					? {
+							isReasoning: false,
+							endedAt: Date.now(),
+						}
+					: undefined,
 			});
 		};
 
 		const stream = new ReadableStream<Uint8Array>({
 			async start(controller) {
+				const result = await streamText(
+					model as ModelId,
+					history,
+					llmCtrl.signal,
+					{
+						isSearchEnabled: assistantMessage.isSearchEnabled,
+						onChunk: async function (event) {
+							const message = await ctx.runQuery(internal.messages.getMessage, {
+								messageId: assistantMessageId,
+							});
+
+							if (message.cancelReason) {
+								llmCtrl.abort();
+								await finish(result, content);
+								await cleanup();
+								controller.close();
+								return;
+							}
+
+							if (event.chunk.type == "reasoning") {
+								reasoning += event.chunk.textDelta;
+								const jsonChunk =
+									JSON.stringify({ reasoning: event.chunk.textDelta }) + "\n";
+								controller.enqueue(encoder.encode(jsonChunk));
+
+								if (reasoning.length - lastSaved >= 75) {
+									lastSaved = reasoning.length;
+									void savePartial();
+								}
+							}
+						},
+						onError: async function (err) {
+							llmCtrl.abort();
+							await finish(result, content, true);
+							await cleanup();
+							controller.error(err);
+						},
+					}
+				);
+
 				try {
 					for await (const chunk of result.textStream) {
-						const { cancelReason } = await ctx.runQuery(
-							internal.messages.getMessage,
-							{
-								messageId: assistantMessageId,
-							}
-						);
-						if (cancelReason) {
-							llmCtrl.abort();
-							await finish(content);
-							await cleanup();
-							controller.close();
-							break;
+						if (!reasoningEndedAt) {
+							reasoningEndedAt = Date.now();
+							await savePartial();
 						}
 
 						content += chunk;
-						controller.enqueue(encoder.encode(chunk));
+						const jsonChunk = JSON.stringify({ text: chunk }) + "\n";
+						controller.enqueue(encoder.encode(jsonChunk));
 
 						if (content.length - lastSaved >= 75) {
 							lastSaved = content.length;
 							void savePartial();
 						}
 					}
-
-					await finish(content);
 				} catch (err) {
 					if (!llmCtrl.signal.aborted) controller.error(err);
 				} finally {
+					await finish(result, content);
 					await cleanup();
 				}
 			},
 
 			async cancel() {
 				llmCtrl.abort();
-				await finish(content);
+				await finish(null, content);
 				await cleanup();
 			},
 		});

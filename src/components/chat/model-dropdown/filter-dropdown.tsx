@@ -55,6 +55,7 @@ export default function FilterDropdown() {
 							key={feature.id}
 							className="justify-between p-1 w-45 cursor-default focus-visible:ring-0"
 							variant="ghost"
+							size="sm"
 							onClick={() => toggleFilter(feature.id)}
 						>
 							<div className="flex items-center gap-1.5 h-full">

@@ -8,6 +8,7 @@ export const modelIds = z.enum([
 	"mistral-small",
 	"llama-4-maverick",
 	"deepseek-v3",
+	"deepseek-r1",
 	"flux1-schnell",
 ]);
 export type ModelId = z.infer<typeof modelIds>;
@@ -132,6 +133,18 @@ const providers: Provider[] = [
 				icon: "/assets/icons/providers/deepseek.svg",
 				type: "text",
 				features: [],
+			},
+			{
+				id: "deepseek-r1",
+				brand: "DeepSeek",
+				version: "R1",
+				description: "Reasoning model for complex tasks",
+				maxTokens: 16384,
+				temperature: 0.6,
+				available: true,
+				icon: "/assets/icons/providers/deepseek.svg",
+				type: "text",
+				features: ["reasoning"],
 			},
 		],
 	},

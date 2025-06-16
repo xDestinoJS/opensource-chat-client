@@ -9,9 +9,13 @@ export default function useAssistantContent(
 	assistantMessage: Doc<"messages">
 ) {
 	const { sessionId } = useSessionId();
-	const [content, setContent] = useState<string>(
-		assistantMessage.content ?? ""
-	);
+	const [content, setContent] = useState<{
+		text: string;
+		reasoning: string;
+	}>({
+		text: assistantMessage.content ?? "",
+		reasoning: assistantMessage.reasoning?.content ?? "",
+	});
 	const controllerRef = useRef<AbortController | null>(null);
 
 	const modelData = getModelDataById(assistantMessage.model);
@@ -22,17 +26,33 @@ export default function useAssistantContent(
 		controllerRef.current?.abort();
 
 		const shouldStream =
-			!assistantMessage.isComplete && assistantMessage.sessionId === sessionId;
+			assistantMessage.isComplete == false &&
+			assistantMessage.sessionId === sessionId &&
+			assistantMessage.isStreaming == false;
 
 		// Handle "reset to empty" when streaming hasn’t started yet
-		if (shouldStream && assistantMessage.content === "" && content !== "") {
-			setContent(""); // clear local state
+		if (
+			shouldStream &&
+			assistantMessage.content === "" &&
+			content.text !== "" &&
+			!controllerRef.current // ensure it's not already streaming
+		) {
+			setContent({
+				text: "",
+				reasoning: "",
+			});
 		}
 
 		// If it shouldn't stream, just show whatever we have
 		if (!shouldStream) {
-			if (assistantMessage.content) {
-				setContent(assistantMessage.content);
+			if (
+				assistantMessage.content.length > 0 ||
+				(assistantMessage?.reasoning?.content ?? "").length > 0
+			) {
+				setContent({
+					text: assistantMessage.content,
+					reasoning: assistantMessage.reasoning?.content ?? "",
+				});
 			}
 			return;
 		}
@@ -55,16 +75,33 @@ export default function useAssistantContent(
 
 				const reader = res.body?.getReader();
 				const decoder = new TextDecoder();
-				let result = "";
+				let result = {
+					text: "",
+					reasoning: "",
+				};
 
 				while (reader && !controller.signal.aborted) {
 					const { done, value } = await reader.read();
 					if (done) break;
 
 					if (value) {
-						const chunk = decoder.decode(value, { stream: true });
-						result += chunk;
-						setContent(result);
+						const chunks = decoder
+							.decode(value, { stream: true })
+							.trim()
+							.split("\n");
+
+						chunks.forEach((chunk) => {
+							try {
+								const parsed = JSON.parse(chunk);
+								result = {
+									text: result.text + (parsed.text ?? ""),
+									reasoning: result.reasoning + (parsed.reasoning ?? ""),
+								};
+								setContent(result);
+							} catch (e) {
+								console.log(e);
+							}
+						});
 					}
 				}
 			} catch (err: any) {
@@ -106,5 +143,8 @@ export default function useAssistantContent(
 		})();
 	}, [assistantMessage.images]);
 
-	return { content };
+	return {
+		text: content.text,
+		reasoning: content.reasoning,
+	};
 }

@@ -1,7 +1,14 @@
 "use client";
 
 import { Doc } from "@/../convex/_generated/dataModel";
-import { Copy, Split, Volume2, Square, RefreshCcw } from "lucide-react";
+import {
+	Copy,
+	Split,
+	Volume2,
+	Square,
+	RefreshCcw,
+	ChevronDown,
+} from "lucide-react";
 import { RiDoubleQuotesR } from "react-icons/ri";
 import Zoom from "react-medium-image-zoom";
 import "react-medium-image-zoom/dist/styles.css";
@@ -17,7 +24,7 @@ import { getFullModelName, ModelId } from "@/lib/providers";
 import { useTextSelection } from "@/hooks/useTextSelection";
 import useAssistantContent from "@/hooks/useAssistantContent";
 import WaveLoader from "../wave-loader";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import RetryDropdown from "../retry-dropdown";
 import {
 	Tooltip,
@@ -25,6 +32,8 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { TextShimmer } from "@/components/ui/text-shimmer";
 
 export default function AssistantMessage({
 	userMessage,
@@ -41,9 +50,13 @@ export default function AssistantMessage({
 	onRetry: (modelId?: ModelId) => void;
 	onQuote: (quote: string) => void;
 }) {
+	const [isReasoningVisible, setIsReasoningVisible] = useState(false);
 	const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 	const { selectionData, contentRef } = useTextSelection();
-	const { content } = useAssistantContent(userMessage, assistantMessage);
+	const { text: content, reasoning } = useAssistantContent(
+		userMessage,
+		assistantMessage
+	);
 
 	const { start, speechStatus, stop } = useSpeech({
 		text: stripMarkdownFromString(content),
@@ -59,8 +72,38 @@ export default function AssistantMessage({
 
 	return (
 		<div className="relative w-full flex flex-col group">
+			{reasoning.length > 0 && (
+				<div>
+					<Button
+						variant="ghost"
+						size="sm"
+						className="mb-2 hover:bg-transparent p-0!"
+						onClick={() => setIsReasoningVisible(!isReasoningVisible)}
+					>
+						<span>
+							{assistantMessage.reasoning?.isReasoning ? (
+								<TextShimmer duration={3}>Thinking...</TextShimmer>
+							) : (
+								`Thought for ${Math.round(((assistantMessage.reasoning?.endedAt || 0) - (assistantMessage.reasoning?.startedAt || 0)) / 1000)} seconds`
+							)}
+						</span>
+						<ChevronDown className={isReasoningVisible ? "rotate-180" : ""} />
+					</Button>
+					{isReasoningVisible && (
+						<div className="text-sm mb-6">
+							<MemoizedMarkdown
+								content={reasoning}
+								className="text-sm text-muted-foreground"
+							/>
+						</div>
+					)}
+				</div>
+			)}
+
 			<div className="w-full" ref={contentRef}>
-				{content.length > 0 || assistantMessage.isComplete ? (
+				{content.length > 0 ||
+				reasoning.length > 0 ||
+				assistantMessage.isComplete ? (
 					<MemoizedMarkdown content={content} />
 				) : (
 					<WaveLoader />
@@ -110,6 +153,8 @@ export default function AssistantMessage({
 			{assistantMessage.cancelReason && (
 				<div className="w-full rounded-lg bg-destructive/7.5 my-2 py-3 px-4.5 text-sm text-destructive">
 					{assistantMessage.cancelReason == "user_request" && "Stopped by user"}
+					{assistantMessage.cancelReason == "system_error" &&
+						"Something went wrong"}
 				</div>
 			)}
 
@@ -146,13 +191,12 @@ export default function AssistantMessage({
 				</p>
 
 				{assistantMessage?.sources && (
-					<div className="ml-2.5 flex gap-2 hover:bg-muted text-xs rounded-full p-1 items-center">
+					<div className="ml-2.5 flex gap-2 hover:bg-muted text-xs rounded-full p-1 items-center overflow-y-scroll no-scrollbar">
 						{assistantMessage?.sources.map((source, index) => {
 							return (
-								<Tooltip>
+								<Tooltip key={index}>
 									<TooltipTrigger
-										key={index}
-										className="not-first:-ml-3.25"
+										className="not-first:-ml-3.25 shrink-0"
 										asChild
 									>
 										<Link href={source.url} target="_blank">

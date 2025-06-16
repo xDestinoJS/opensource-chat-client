@@ -3,6 +3,13 @@ import {
 	CoreMessage,
 	experimental_generateImage as generateI,
 	streamText as streamT,
+	smoothStream,
+	wrapLanguageModel,
+	extractReasoningMiddleware,
+	StreamTextOnChunkCallback,
+	ToolSet,
+	StreamTextOnFinishCallback,
+	StreamTextOnErrorCallback,
 } from "ai";
 import { z } from "zod";
 
@@ -16,12 +23,18 @@ const openrouter = createOpenRouter({
 	apiKey: process.env.OPENROUTER_API_KEY,
 });
 
-function getModel(modelId: ModelId, isSearchEnabled?: boolean) {
+function getModel(
+	modelId: ModelId,
+	opts?: {
+		isSearchEnabled?: boolean;
+		reasoningEffort?: "high" | "medium" | "low";
+	}
+) {
 	switch (modelId) {
 		case "gemini-2.5-pro":
 			return google("gemini-2.5-pro-exp-03-25");
 		case "gemini-2.0-flash":
-			if (isSearchEnabled)
+			if (opts?.isSearchEnabled)
 				return google("gemini-2.0-flash", {
 					useSearchGrounding: true,
 				});
@@ -32,6 +45,8 @@ function getModel(modelId: ModelId, isSearchEnabled?: boolean) {
 			return openrouter("meta-llama/llama-4-maverick:free");
 		case "deepseek-v3":
 			return openrouter("deepseek/deepseek-v3-base:free");
+		case "deepseek-r1":
+			return openrouter("deepseek/deepseek-r1-0528:free");
 		default:
 			throw new Error(`[AI] Unsupported model: ${modelId}`);
 	}
@@ -70,9 +85,16 @@ export async function streamText(
 	modelId: ModelId,
 	messages: CoreMessage[],
 	abortSignal?: AbortSignal,
-	isSearchEnabled?: boolean
+	opts?: {
+		isSearchEnabled?: boolean;
+		onChunk?: StreamTextOnChunkCallback<ToolSet>;
+		onError?: StreamTextOnErrorCallback;
+		onFinish?: StreamTextOnFinishCallback<ToolSet>;
+	}
 ) {
-	let model = getModel(modelId, isSearchEnabled);
+	let model = getModel(modelId, {
+		isSearchEnabled: opts?.isSearchEnabled,
+	});
 
 	if (messages.length === 0) {
 		throw new Error("[AI] No messages provided for chat completion.");
@@ -82,13 +104,17 @@ export async function streamText(
 		throw new Error("[AI] Last message must be from the user.");
 	}
 
+	// streamT to not conflict with the `streamText` function
 	return streamT({
-		// streamT to not conflict with the `streamText` function
 		model,
 		messages,
 		temperature: 0.3,
 		maxRetries: 3,
 		abortSignal: abortSignal,
+		experimental_transform: smoothStream(),
+		onChunk: opts?.onChunk,
+		onError: opts?.onError,
+		onFinish: opts?.onFinish,
 	});
 }
 
@@ -102,7 +128,9 @@ export async function generateObject(
 	schema: z.ZodSchema,
 	isSearchEnabled?: boolean
 ) {
-	let model = getModel(modelId, isSearchEnabled);
+	let model = getModel(modelId, {
+		isSearchEnabled,
+	});
 
 	const { object } = await generateO({
 		model,

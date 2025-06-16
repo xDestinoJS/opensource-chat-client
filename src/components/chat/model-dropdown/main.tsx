@@ -120,12 +120,10 @@ export default function ModelDropdown({
 		}
 	};
 
-	if (filteredProviders.length === 0) return null;
-
 	return isClient && modelId ? (
 		<DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
 			<DropdownMenuTrigger asChild>
-				<Button variant="ghost" size="sm">
+				<Button variant="ghost" className="min-w-25" size="sm">
 					{getFullModelName(modelId)} <ChevronDown />
 				</Button>
 			</DropdownMenuTrigger>

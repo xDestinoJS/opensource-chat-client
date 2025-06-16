@@ -1,4 +1,5 @@
-export default function stripMarkdownFromString(input: string): string {
+export default function stripMarkdownFromString(input?: string): string {
+	if (!input) return "";
 	const markdownRegex =
 		/(\*\*|__)(.*?)\1|(\*|_)(.*?)\3|`([^`]+)`|~~(.*?)~~|\*|#|\n/g;
 	return input

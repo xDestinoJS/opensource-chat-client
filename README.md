@@ -32,13 +32,15 @@
       - [x] Add to backend
       - [x] Add to frontend
       - [x] Add reasoning
-        - [ ] effort control dropdown (high, medium, low)
+        - [x] effort control dropdown (high, medium, low)
+  - [x] Add Thread Seaching
+  - [x] Add Spotlight-like feature
   - [ ] Add Thread Sharing **TODO**
-  - [ ] Rename chats -> threads
-  - [ ] Link threads to accounts
-  - [ ] Add Spotlight-like feature
-  - [ ] Do UI
   - [ ] Add Settings
+  - [ ] Add auth, ratelimiting (watch theo's vid)
+    - [ ] Link threads to accounts
+  - [ ] Rename chats -> threads
+  - [ ] Do UI
 
 Please add, Troy:
 

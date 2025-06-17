@@ -1,8 +1,8 @@
 import { z } from "zod";
-import { ModelFeatureId } from "./features";
+import { ModelFeatureId } from "./features"; // Assuming ModelFeatureId is defined elsewhere
 
 export const modelIds = z.enum([
-	"gemini-2.5-pro",
+	"gemini-2.5-flash",
 	"gpt-4o",
 	"gemini-2.0-flash",
 	"mistral-small",
@@ -18,12 +18,13 @@ export type ModelConfig = {
 	version: string;
 	id: ModelId;
 	description: string;
-	maxTokens: number;
-	temperature: number;
 	available: boolean;
 	icon: string;
 	isFavorited?: boolean;
-	features: ModelFeatureId[];
+	features: {
+		id: ModelFeatureId;
+		hidden: boolean;
+	}[];
 	type: "text" | "image";
 };
 
@@ -47,12 +48,32 @@ const providers: Provider[] = [
 				brand: "Gemini",
 				version: "2.0 Flash",
 				description: "A fast and efficient model for quick responses",
-				maxTokens: 8192,
-				temperature: 0.2,
 				available: true,
 				icon: "/assets/icons/providers/gemini.svg",
 				type: "text",
-				features: ["fast", "files", "vision", "search"],
+				features: [
+					{ id: "fast", hidden: true },
+					{ id: "files", hidden: false },
+					{ id: "vision", hidden: false },
+					{ id: "search", hidden: false },
+				],
+			},
+			{
+				id: "gemini-2.5-flash",
+				brand: "Gemini",
+				version: "2.5 Flash",
+				description: "A fast and efficient model for quick responses",
+				available: true,
+				icon: "/assets/icons/providers/gemini.svg",
+				type: "text",
+				features: [
+					{ id: "fast", hidden: true },
+					{ id: "effort-control", hidden: true },
+					{ id: "files", hidden: false },
+					{ id: "vision", hidden: false },
+					{ id: "search", hidden: false },
+					{ id: "reasoning", hidden: false },
+				],
 			},
 		],
 	},
@@ -67,12 +88,13 @@ const providers: Provider[] = [
 				brand: "Mistral",
 				version: "Small",
 				description: "A compact model designed for small tasks",
-				maxTokens: 4096,
-				temperature: 0.5,
 				available: true,
 				icon: "/assets/icons/providers/mistral.svg",
 				type: "text",
-				features: ["files", "vision"],
+				features: [
+					{ id: "files", hidden: false },
+					{ id: "vision", hidden: false },
+				],
 			},
 		],
 	},
@@ -87,12 +109,10 @@ const providers: Provider[] = [
 				brand: "GPT",
 				version: "4o",
 				description: "OpenAI's most advanced model",
-				maxTokens: 128000,
-				temperature: 0.5,
 				available: true,
 				icon: "/assets/icons/providers/openai.svg",
 				type: "text",
-				features: ["vision"],
+				features: [{ id: "vision", hidden: false }],
 			},
 		],
 	},
@@ -107,12 +127,10 @@ const providers: Provider[] = [
 				brand: "Llama",
 				version: "4 Maverick",
 				description: "An advanced model with high performance",
-				maxTokens: 32768,
-				temperature: 0.7,
 				available: true,
 				icon: "/assets/icons/providers/meta.svg",
 				type: "text",
-				features: ["vision"],
+				features: [{ id: "vision", hidden: false }],
 			},
 		],
 	},
@@ -127,24 +145,23 @@ const providers: Provider[] = [
 				brand: "DeepSeek",
 				version: "V3",
 				description: "A powerful model for complex tasks",
-				maxTokens: 16384,
-				temperature: 0.6,
 				available: true,
 				icon: "/assets/icons/providers/deepseek.svg",
 				type: "text",
-				features: [],
+				features: [], // No features listed, so it remains an empty array
 			},
 			{
 				id: "deepseek-r1",
 				brand: "DeepSeek",
 				version: "R1",
 				description: "Reasoning model for complex tasks",
-				maxTokens: 16384,
-				temperature: 0.6,
 				available: true,
 				icon: "/assets/icons/providers/deepseek.svg",
 				type: "text",
-				features: ["reasoning"],
+				features: [
+					{ id: "effort-control", hidden: true },
+					{ id: "reasoning", hidden: false },
+				],
 			},
 		],
 	},
@@ -159,12 +176,10 @@ const providers: Provider[] = [
 				brand: "Flux.1",
 				version: "Schnell",
 				description: "A powerful model for complex tasks",
-				maxTokens: 16384,
-				temperature: 0.6,
 				available: true,
 				icon: "/assets/icons/providers/bfl.svg",
 				type: "image",
-				features: ["image-generation"],
+				features: [{ id: "image-generation", hidden: false }],
 			},
 		],
 	},
@@ -194,6 +209,16 @@ export function getFullModelName(modelId: string | undefined) {
 
 export function listAllModels(providerList?: Provider[]) {
 	return (providerList ?? providers).flatMap((p) => p.models);
+}
+
+export function modelHasFeature(
+	modelId: ModelId | null,
+	featureId: ModelFeatureId
+) {
+	if (!modelId) return false;
+	const model = getModelDataById(modelId);
+	if (!model) return false;
+	return model.features.some((f) => f.id === featureId);
 }
 
 export default providers;

@@ -3,7 +3,8 @@
 import { ModelId, Provider } from "@/lib/providers";
 import { Fragment } from "react";
 import { motion } from "framer-motion";
-import NonExpandedModelButton from "./non-expanded-list-button";
+import NonExpandedModelContent from "./non-expanded-model-content";
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 
 export default function NonExpandedList({
 	providers,
@@ -24,12 +25,13 @@ export default function NonExpandedList({
 			{providers.map((provider) => (
 				<Fragment key={provider.name}>
 					{provider.models.map((model) => (
-						<NonExpandedModelButton
-							key={model.id}
-							provider={provider}
-							model={model}
-							onSelect={onSelect}
-						/>
+						<DropdownMenuItem key={model.id} className="p-0">
+							<NonExpandedModelContent
+								provider={provider}
+								model={model}
+								onSelect={onSelect}
+							/>
+						</DropdownMenuItem>
 					))}
 				</Fragment>
 			))}

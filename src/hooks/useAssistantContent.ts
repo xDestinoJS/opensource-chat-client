@@ -32,10 +32,10 @@ export default function useAssistantContent(
 
 		// Handle "reset to empty" when streaming hasn’t started yet
 		if (
-			shouldStream &&
-			assistantMessage.content === "" &&
-			content.text !== "" &&
-			!controllerRef.current // ensure it's not already streaming
+			shouldStream ||
+			(assistantMessage.content === "" &&
+				content.text !== "" &&
+				!controllerRef.current) // ensure it's not already streaming
 		) {
 			setContent({
 				text: "",

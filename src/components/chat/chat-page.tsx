@@ -16,12 +16,15 @@ import useSessionId from "@/stores/use-session";
 import { ModelId } from "@/lib/providers";
 import ChatInputForm from "./chat-input-form";
 import { GenericFileData } from "@/lib/files";
+import { useChatFeatures } from "@/stores/use-chat-features-store";
 
 export default function ChatPage({ chatId }: { chatId?: Id<"chats"> }) {
 	const { sessionId } = useSessionId();
 
 	const [quote, setQuote] = useState<string | undefined>();
 	const [mounted, setMounted] = useState(false);
+
+	const { isSearchEnabled, reasoningEffort } = useChatFeatures();
 
 	// If chatId is not of a real chat, we redirect to the chat page
 	if (chatId) {
@@ -80,8 +83,7 @@ export default function ChatPage({ chatId }: { chatId?: Id<"chats"> }) {
 
 	async function handleSubmit(
 		currentInput: string,
-		fileDataList: GenericFileData[],
-		isSearchEnabled: boolean
+		fileDataList: GenericFileData[]
 	) {
 		(async () => {
 			if (!modelId) return;
@@ -94,6 +96,7 @@ export default function ChatPage({ chatId }: { chatId?: Id<"chats"> }) {
 				sessionId,
 				fileDataList,
 				isSearchEnabled: isSearchEnabled,
+				reasoningEffort: reasoningEffort,
 			});
 
 			setQuote(undefined); // Clear the quote after sending
@@ -142,6 +145,7 @@ export default function ChatPage({ chatId }: { chatId?: Id<"chats"> }) {
 										sessionId,
 										messageId,
 										modelId,
+										reasoningEffort,
 									});
 								}}
 								onBranchMessage={async (messageId) => {

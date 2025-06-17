@@ -2,20 +2,24 @@
 
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useDropzone } from "react-dropzone";
-import { ArrowUp, Globe, Paperclip, Search, Square } from "lucide-react";
+import { ArrowUp, Brain, Globe, Paperclip, Search, Square } from "lucide-react";
 
 import { Button } from "../ui/button";
 import { AutosizeTextarea, AutosizeTextAreaRef } from "../ui/autosize-textarea";
 import { TextQuote } from "../text-quote";
 import ModelDropdown from "./model-dropdown/main";
 
-import { getModelDataById, ModelId } from "@/lib/providers";
+import { getModelDataById, modelHasFeature, ModelId } from "@/lib/providers";
 import uploadFile from "@/utils/upload-file";
 import { GenericFileData, UploadItem } from "@/lib/files";
 import ImagePreview from "./previews/image-preview";
 import PDFPreview from "./previews/pdf-preview";
 import { cn } from "@/lib/utils";
-import { useSearchStore } from "@/stores/use-search-store";
+import { useChatFeatures } from "@/stores/use-chat-features-store";
+import {
+	EffortControlSelector,
+	getIconForReasoningEffort,
+} from "./effort-control-selector";
 
 type Props = {
 	quote?: string;
@@ -25,11 +29,7 @@ type Props = {
 	setModelId: (id: ModelId) => void;
 	isAnswering: boolean;
 	messagesLength: number;
-	onSubmit: (
-		text: string,
-		files: GenericFileData[],
-		isSearchEnabled: boolean
-	) => void;
+	onSubmit: (text: string, files: GenericFileData[]) => void;
 	onCancel: () => void;
 	inputContainerRef: React.RefObject<HTMLDivElement | null>;
 };
@@ -46,7 +46,9 @@ export default function ChatInputForm({
 	onCancel,
 	inputContainerRef,
 }: Props) {
-	const { isSearchEnabled, toggleSearch } = useSearchStore();
+	const { isSearchEnabled, toggleSearch, reasoningEffort, setReasoningEffort } =
+		useChatFeatures();
+
 	const textAreaRef = useRef<AutosizeTextAreaRef>(null);
 	const hiddenInputRef = useRef<HTMLInputElement>(null);
 
@@ -62,11 +64,11 @@ export default function ChatInputForm({
 		const accept: Record<string, string[]> = {};
 		const allowedMimeTypes: string[] = [];
 
-		if (modelData?.features.includes("vision")) {
+		if (modelHasFeature(modelId, "vision")) {
 			accept["image/*"] = [".png", ".jpg", ".jpeg"];
 			allowedMimeTypes.push("image/png", "image/jpg", "image/jpeg");
 		}
-		if (modelData?.features.includes("files")) {
+		if (modelHasFeature(modelId, "files")) {
 			accept["application/pdf"] = [".pdf"];
 			allowedMimeTypes.push("application/pdf");
 		}
@@ -170,13 +172,15 @@ export default function ChatInputForm({
 
 		textAreaRef.current!.textArea.value = "";
 		setFiles([]);
-		onSubmit(text, readyFiles, isSearchEnabled);
+		onSubmit(text, readyFiles);
 	};
 
 	const inputAcceptString = useMemo(
 		() => Object.values(allowedFileTypes.accept).flat().join(","),
 		[allowedFileTypes.accept]
 	);
+
+	const ReasoningEffortIcon = getIconForReasoningEffort(reasoningEffort);
 
 	return (
 		<form
@@ -246,14 +250,28 @@ export default function ChatInputForm({
 				/>
 
 				<div className="mt-2 flex items-center justify-between -mx-1.25">
-					<div className="flex items-center gap-1">
+					<div className="flex items-center gap-1.5">
 						<ModelDropdown
 							modelId={modelId}
 							providersList={providersList}
 							setModelId={setModelId}
 						/>
 
-						{modelData?.features.includes("search") && (
+						{modelHasFeature(modelId, "effort-control") && (
+							<EffortControlSelector>
+								<Button
+									size="xs"
+									variant="outline"
+									type="button"
+									className="shadow-none"
+								>
+									<ReasoningEffortIcon />
+									<span className="capitalize">{reasoningEffort}</span>
+								</Button>
+							</EffortControlSelector>
+						)}
+
+						{modelHasFeature(modelId, "search") && (
 							<Button
 								size="xs"
 								variant="outline"
@@ -269,8 +287,8 @@ export default function ChatInputForm({
 							</Button>
 						)}
 
-						{(modelData?.features.includes("vision") ||
-							modelData?.features.includes("files")) && (
+						{(modelHasFeature(modelId, "vision") ||
+							modelHasFeature(modelId, "files")) && (
 							<Button
 								size="xs"
 								variant="outline"

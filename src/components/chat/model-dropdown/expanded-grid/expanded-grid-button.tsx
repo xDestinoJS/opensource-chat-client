@@ -9,6 +9,7 @@ import {
 import { getFeatureById } from "@/lib/features";
 import { Button } from "@/components/ui/button";
 import FeatureIcon from "../../feature-icon";
+import { cn } from "@/lib/utils";
 
 interface ExpandedGridButtonProps {
 	model: ModelConfig;
@@ -26,7 +27,7 @@ export function ExpandedGridButton({
 	return (
 		<Tooltip key={model.id}>
 			<TooltipTrigger asChild>
-				<div className="relative group h-37.5">
+				<div className="relative group h-40">
 					<Button
 						className="relative flex-col justify-between h-full w-full p-3 border rounded-lg focus-visible:ring-0"
 						size="lg"
@@ -37,9 +38,9 @@ export function ExpandedGridButton({
 							<Image
 								src={model.icon}
 								alt={model.id}
-								className="size-[35px]"
-								width={30}
-								height={30}
+								className="size-[27.5px]"
+								width={27.5}
+								height={27.5}
 							/>
 							<div className="text-center text-normal">
 								<h1 className="font-bold break-word text-accent-foreground">
@@ -48,10 +49,16 @@ export function ExpandedGridButton({
 								<h2 className="text-accent-foreground/80">{model.version}</h2>
 							</div>
 						</div>
-						<div className="flex gap-1.5 ">
-							{model.features.map((featureId) => {
+						<div
+							className={cn(
+								model.features.length <= 4
+									? "flex gap-1.5"
+									: "grid grid-cols-2 gap-1.5"
+							)}
+						>
+							{model.features.map(({ id: featureId, hidden }) => {
 								const feature = getFeatureById(featureId);
-								if (feature?.hidden) return;
+								if (hidden) return;
 
 								return (
 									<Tooltip key={featureId}>

@@ -6,7 +6,13 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { getFullModelName, ModelId, Provider } from "@/lib/providers";
+import {
+	getFullModelName,
+	ModelConfig,
+	modelHasFeature,
+	ModelId,
+	Provider,
+} from "@/lib/providers";
 import { Button } from "../../ui/button";
 import { Input } from "../../ui/input";
 import {
@@ -58,17 +64,17 @@ export default function ModelDropdown({
 		const favorites = userPreferences?.favoriteModels || [];
 		const search = searchQuery.trim().toLowerCase();
 
-		const passesSearch = (model: any, providerName: string) =>
+		const passesSearch = (model: ModelConfig, providerName: string) =>
 			!search ||
 			`${getFullModelName(model.id)} ${providerName}`
 				.toLowerCase()
 				.includes(search);
 
-		const passesFeatureFilters = (model: any) =>
+		const passesFeatureFilters = (model: ModelConfig) =>
 			featureFilters.length === 0 ||
-			featureFilters.every((f) => model.features.includes(f));
+			featureFilters.every((f) => modelHasFeature(model.id, f));
 
-		const withFilteredModels = (models: any[], provider: Provider) =>
+		const withFilteredModels = (models: ModelConfig[], provider: Provider) =>
 			models
 				.filter(
 					(model) =>
@@ -149,7 +155,7 @@ export default function ModelDropdown({
 				<div
 					className={cn(
 						"transition-all duration-300 overflow-y-scroll overflow-x-hidden -m-1 max-h-screen max-w-screen",
-						!isExpanded ? "w-75 h-50" : "w-160 h-90"
+						!isExpanded ? "w-85 h-50" : "w-160 h-90"
 					)}
 				>
 					<AnimatePresence mode="sync">

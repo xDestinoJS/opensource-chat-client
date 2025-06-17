@@ -7,16 +7,20 @@ import {
 	SidebarFooter,
 	SidebarHeader,
 	SidebarTrigger,
+	useSidebar,
 } from "@/components/ui/sidebar";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Doc, Id } from "../../../convex/_generated/dataModel";
 import Link from "next/link";
 import { Button } from "../ui/button";
-import { Pin, Plus } from "lucide-react";
+import { Pin } from "lucide-react";
 import { ChatGroupSection } from "./chat-group-section";
 import { useSession } from "@/lib/auth-client";
 import { NavUser } from "./nav-user";
+import SearchInput from "./search-input";
+import { cn } from "@/lib/utils";
+import QuickActions from "./quick-actions";
 
 interface ChatGroup {
 	label: string;
@@ -31,10 +35,12 @@ interface GroupedChatsResult {
 export function AppSidebar() {
 	const { data: session } = useSession();
 	const [editingChatId, setEditingChatId] = useState<Id<"chats"> | null>(null);
+	const [query, setQuery] = useState(""); // State for the search query
 
 	const editInputAreaRef = useRef<HTMLInputElement>(null);
 
-	const chats = useQuery(api.chat.listChats) ?? [];
+	const allChats = useQuery(api.chat.listChats) ?? []; // Renamed to allChats for clarity
+
 	const updateChatData = useMutation(api.chat.updateChatData);
 
 	const isRecentlyCreated = (creationTime: number) => {
@@ -63,7 +69,8 @@ export function AppSidebar() {
 		}
 	}
 
-	const getChatGroups = (): GroupedChatsResult => {
+	// Modified getChatGroups to accept chats as an argument
+	const getChatGroups = (chatsToGroup: Doc<"chats">[]): GroupedChatsResult => {
 		const now = new Date();
 		const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 		const yesterday = new Date(today);
@@ -76,8 +83,8 @@ export function AppSidebar() {
 		const pinnedChats: Doc<"chats">[] = [];
 		const unpinnedChats: Doc<"chats">[] = [];
 
-		chats.forEach((chat) => {
-			// Assuming chat objects have a 'pinned' boolean property
+		chatsToGroup.forEach((chat) => {
+			// Use chatsToGroup here
 			if (chat.isPinned) {
 				pinnedChats.push(chat);
 			} else {
@@ -121,28 +128,33 @@ export function AppSidebar() {
 		return { pinnedChats, dateBasedGroups };
 	};
 
-	const { pinnedChats, dateBasedGroups } = getChatGroups();
+	const normalizedQuery = query.toLowerCase();
+	const matchingChats = allChats.filter((chat) =>
+		chat.title.toLowerCase().includes(normalizedQuery)
+	);
+
+	const { pinnedChats, dateBasedGroups } = getChatGroups(matchingChats);
 
 	return (
 		<Sidebar className="duration-250 ease-in-out">
-			<SidebarHeader>
+			<SidebarHeader className="p-3">
 				<div className="flex justify-between items-center">
-					<div className="size-7">
-						<SidebarTrigger className="fixed top-2 left-2" />
-					</div>
+					<QuickActions />
 					<p className="mt-1">Chat</p>
-					<Button size="icon" variant="ghost" className="size-7" asChild>
-						<Link href="/chat">
-							<Plus />
-						</Link>
-					</Button>
+					<div className="size-7"></div>
 				</div>
+				<Button size="lg" className="w-full" asChild>
+					<Link href="/chat">New Chat</Link>
+				</Button>
+
+				<SearchInput query={query} setQuery={setQuery} />
 			</SidebarHeader>
 			<SidebarContent>
+				{/* Pass allChats (unfiltered) to ChatGroupSection if it needs access to the complete list for actions */}
 				<ChatGroupSection
 					label="Pinned"
-					chats={pinnedChats}
-					allChats={chats}
+					chats={pinnedChats} // These are already filtered and grouped
+					allChats={allChats} // Keep this as the full list for operations like pinning/unpinning
 					editingChatId={editingChatId}
 					isRecentlyCreated={isRecentlyCreated}
 					updateTitle={updateTitle}
@@ -155,8 +167,8 @@ export function AppSidebar() {
 					<ChatGroupSection
 						key={group.label}
 						label={group.label}
-						chats={group.chats}
-						allChats={chats}
+						chats={group.chats} // These are already filtered and grouped
+						allChats={allChats} // Keep this as the full list for operations like pinning/unpinning
 						editingChatId={editingChatId}
 						isRecentlyCreated={isRecentlyCreated}
 						updateTitle={updateTitle}

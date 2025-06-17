@@ -61,10 +61,12 @@ export default defineSchema({
 			v.object({
 				isReasoning: v.boolean(),
 				content: v.string(),
-				effort: v.string(),
 				startedAt: v.number(),
 				endedAt: v.optional(v.number()),
 			})
+		),
+		reasoningEffort: v.optional(
+			v.union(v.literal("low"), v.literal("medium"), v.literal("high"))
 		),
 	}),
 	chats: defineTable({

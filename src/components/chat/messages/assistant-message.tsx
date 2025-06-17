@@ -70,9 +70,16 @@ export default function AssistantMessage({
 		}
 	}
 
+	const shouldContentExist = useMemo(() => {
+		return (
+			(assistantMessage.isStreaming || assistantMessage.isComplete) &&
+			(content.length > 0 || reasoning.length > 0)
+		);
+	}, [assistantMessage, content, reasoning]);
+
 	return (
 		<div className="relative w-full flex flex-col group">
-			{reasoning.length > 0 && (
+			{shouldContentExist && reasoning.length > 0 && (
 				<div>
 					<Button
 						variant="ghost"
@@ -101,9 +108,7 @@ export default function AssistantMessage({
 			)}
 
 			<div className="w-full" ref={contentRef}>
-				{content.length > 0 ||
-				reasoning.length > 0 ||
-				assistantMessage.isComplete ? (
+				{shouldContentExist ? (
 					<MemoizedMarkdown content={content} />
 				) : (
 					<WaveLoader />
@@ -202,7 +207,7 @@ export default function AssistantMessage({
 										<Link href={source.url} target="_blank">
 											<img
 												className="size-[20px] rounded-full bg-secondary border border-muted"
-												src={`https://icon.horse/icon/${source.title}`}
+												src={`https://www.google.com/s2/favicons?domain=${source.title}&sz=256`}
 												alt={source.title}
 											/>
 										</Link>

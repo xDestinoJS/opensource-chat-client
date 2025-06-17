@@ -3,8 +3,10 @@ import { cn } from "@/lib/utils";
 
 export default function FeatureIcon({
 	featureId,
+	className,
 }: {
 	featureId: ModelFeatureId;
+	className?: string;
 }) {
 	const feature = getFeatureById(featureId);
 	if (!feature) return;
@@ -18,7 +20,7 @@ export default function FeatureIcon({
 				feature.colors.background
 			)}
 		>
-			<Icon className={feature.colors.icon} />
+			<Icon className={cn(feature.colors.icon, className)} />
 		</div>
 	);
 }

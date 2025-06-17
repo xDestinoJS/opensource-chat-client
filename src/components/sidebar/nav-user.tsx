@@ -1,30 +1,12 @@
 "use client";
 
-import {
-	BadgeCheck,
-	Bell,
-	ChevronsUpDown,
-	CreditCard,
-	LogOut,
-	Sparkles,
-} from "lucide-react";
-
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuGroup,
-	DropdownMenuItem,
-	DropdownMenuLabel,
-	DropdownMenuSeparator,
-	DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import {
 	SidebarMenu,
 	SidebarMenuButton,
 	SidebarMenuItem,
-	useSidebar,
 } from "@/components/ui/sidebar";
+import Link from "next/link";
 
 export function NavUser({
 	user,
@@ -35,8 +17,6 @@ export function NavUser({
 		image?: string | undefined | null;
 	};
 }) {
-	const { isMobile } = useSidebar();
-
 	user.image = user.image ?? "";
 
 	return (
@@ -45,18 +25,20 @@ export function NavUser({
 				<SidebarMenuButton
 					size="lg"
 					className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+					asChild
 				>
-					<Avatar className="h-8 w-8 rounded-full">
-						<AvatarImage src={user.image} alt={user.name} />
-						<AvatarFallback className="rounded-full">
-							{user.name.charAt(0).toUpperCase()}
-						</AvatarFallback>
-					</Avatar>
-					<div className="grid flex-1 text-left text-sm leading-tight">
-						<span className="truncate font-medium">{user.name}</span>
-						<span className="truncate text-xs">{user.email}</span>
-					</div>
-					<ChevronsUpDown className="ml-auto size-4" />
+					<Link href="/chat">
+						<Avatar className="h-8 w-8 rounded-full">
+							<AvatarImage src={user.image} alt={user.name} />
+							<AvatarFallback className="rounded-full">
+								{user.name.charAt(0).toUpperCase()}
+							</AvatarFallback>
+						</Avatar>
+						<div className="grid flex-1 text-left text-sm leading-tight">
+							<span className="truncate font-medium">{user.name}</span>
+							<span className="truncate text-xs">Free</span>
+						</div>
+					</Link>
 				</SidebarMenuButton>
 			</SidebarMenuItem>
 		</SidebarMenu>

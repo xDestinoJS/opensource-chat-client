@@ -1,4 +1,12 @@
-import { Brain, Eye, File, Globe, ImagePlus, Zap } from "lucide-react";
+import {
+	Brain,
+	Eye,
+	File,
+	Globe,
+	ImagePlus,
+	Settings2,
+	Zap,
+} from "lucide-react";
 
 export type ModelFeatureId =
 	| "fast"
@@ -6,12 +14,12 @@ export type ModelFeatureId =
 	| "vision"
 	| "image-generation"
 	| "search"
+	| "effort-control"
 	| "reasoning";
 
 export type Feature = {
 	name: string;
 	id: ModelFeatureId;
-	hidden: boolean;
 	icon: any;
 	description: string;
 	colors: {
@@ -24,7 +32,6 @@ export const features: Feature[] = [
 	{
 		name: "Fast",
 		id: "fast",
-		hidden: true,
 		icon: Zap,
 		description: "A fast and efficient model for quick responses",
 		colors: {
@@ -35,7 +42,6 @@ export const features: Feature[] = [
 	{
 		name: "PDFs",
 		id: "files",
-		hidden: false,
 		icon: File,
 		description: "Support PDF uploads and analysis",
 		colors: {
@@ -46,7 +52,6 @@ export const features: Feature[] = [
 	{
 		name: "Vision",
 		id: "vision",
-		hidden: false,
 		icon: Eye,
 		description: "Supports image uploads and analysis",
 		colors: {
@@ -57,7 +62,6 @@ export const features: Feature[] = [
 	{
 		name: "Image Generation",
 		id: "image-generation",
-		hidden: false,
 		icon: ImagePlus,
 		description: "Can generate images",
 		colors: {
@@ -68,7 +72,6 @@ export const features: Feature[] = [
 	{
 		name: "Search",
 		id: "search",
-		hidden: false,
 		icon: Globe,
 		description: "Uses search to answer questions",
 		colors: {
@@ -77,9 +80,18 @@ export const features: Feature[] = [
 		},
 	},
 	{
+		name: "Effort Control",
+		id: "effort-control",
+		icon: Settings2,
+		description: "Control the effort of the reasoning model",
+		colors: {
+			background: "bg-pink-500/20",
+			icon: "text-pink-500",
+		},
+	},
+	{
 		name: "Reasoning",
 		id: "reasoning",
-		hidden: false,
 		icon: Brain,
 		description: "Has reasoning capabilities",
 		colors: {

@@ -4,7 +4,11 @@ import { CoreMessage, FilePart, ImagePart, TextPart } from "ai";
 
 import { generateImage, streamText } from "../src/lib/ai";
 import { Doc } from "./_generated/dataModel";
-import { getModelDataById, ModelId } from "../src/lib/providers";
+import {
+	getModelDataById,
+	modelHasFeature,
+	ModelId,
+} from "../src/lib/providers";
 import { uploadUint8ArrayToBucket } from "../src/lib/files";
 import { v } from "convex/values";
 
@@ -28,6 +32,8 @@ export const streamTextAnswer = httpAction(async (ctx, req) => {
 
 	const assistantMessage = messages[assistantIdx];
 	const modelInfo = getModelDataById(assistantMessage.model);
+
+	if (!assistantMessage.model) throw new Error("Model not found.");
 
 	if (modelInfo?.type == "text") {
 		const history: CoreMessage[] = [];
@@ -92,14 +98,17 @@ export const streamTextAnswer = httpAction(async (ctx, req) => {
 		}
 
 		// Initiate reasoning object
-		const isReasoningModel = modelInfo.features.includes("reasoning");
+		const isReasoningModel = modelHasFeature(
+			assistantMessage.model as ModelId,
+			"reasoning"
+		);
+		const reasoningEffort = assistantMessage.reasoningEffort;
 		if (isReasoningModel) {
 			await ctx.runMutation(internal.messages.updateMessage, {
 				messageId: assistantMessageId,
 				reasoning: {
 					isReasoning: true,
 					content: "",
-					effort: "low",
 					startedAt: Date.now(),
 				},
 			});
@@ -177,7 +186,7 @@ export const streamTextAnswer = httpAction(async (ctx, req) => {
 				reasoning: isReasoningModel
 					? {
 							isReasoning: false,
-							endedAt: Date.now(),
+							endedAt: reasoningEndedAt ?? Date.now(),
 						}
 					: undefined,
 			});
@@ -191,6 +200,7 @@ export const streamTextAnswer = httpAction(async (ctx, req) => {
 					llmCtrl.signal,
 					{
 						isSearchEnabled: assistantMessage.isSearchEnabled,
+						reasoningEffort: reasoningEffort,
 						onChunk: async function (event) {
 							const message = await ctx.runQuery(internal.messages.getMessage, {
 								messageId: assistantMessageId,

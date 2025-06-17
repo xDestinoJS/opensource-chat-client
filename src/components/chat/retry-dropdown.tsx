@@ -8,13 +8,17 @@ import {
 	DropdownMenuSubTrigger,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import providers, { ModelId } from "@/lib/providers";
+import providers, { modelHasFeature, ModelId } from "@/lib/providers";
 import { ReactNode } from "react";
 import { Button } from "../ui/button";
 import Image from "next/image";
-import NonExpandedModelButton from "./model-dropdown/non-expanded-list/non-expanded-list-button";
+import NonExpandedModelContent from "./model-dropdown/non-expanded-list/non-expanded-model-content";
 import LabeledSeparator from "../labeled-separator";
 import { RefreshCcw } from "lucide-react";
+import {
+	EffortControlContent,
+	EffortControlSelector,
+} from "./effort-control-selector";
 
 export default function RetryDropdown({
 	children,
@@ -63,20 +67,43 @@ export default function RetryDropdown({
 							<span className="line-clamp-1">{provider.name}</span>
 						</DropdownMenuSubTrigger>
 						<DropdownMenuPortal>
-							<DropdownMenuSubContent className="w-70" sideOffset={10}>
-								{provider.models.map((model) => (
-									<DropdownMenuItem key={model.id} asChild>
-										<NonExpandedModelButton
-											key={model.id}
-											model={model}
-											onSelect={() => {
-												onRetry(model.id);
-											}}
-											provider={provider}
-											hideProvider
-										/>
-									</DropdownMenuItem>
-								))}
+							<DropdownMenuSubContent className="w-85" sideOffset={10}>
+								{provider.models.map((model) => {
+									return modelHasFeature(model.id, "effort-control") ? (
+										<DropdownMenuSub>
+											<DropdownMenuSubTrigger
+												className="p-0 w-full"
+												hideChevron
+											>
+												<NonExpandedModelContent
+													key={model.id}
+													model={model}
+													provider={provider}
+													hideProvider
+												/>
+											</DropdownMenuSubTrigger>
+											<DropdownMenuSubContent sideOffset={10}>
+												<EffortControlContent
+													onSelect={() => {
+														onRetry(model.id);
+													}}
+												/>
+											</DropdownMenuSubContent>
+										</DropdownMenuSub>
+									) : (
+										<DropdownMenuItem key={model.id} className="p-0 w-full">
+											<NonExpandedModelContent
+												key={model.id}
+												model={model}
+												onSelect={() => {
+													onRetry(model.id);
+												}}
+												provider={provider}
+												hideProvider
+											/>
+										</DropdownMenuItem>
+									);
+								})}
 							</DropdownMenuSubContent>
 						</DropdownMenuPortal>
 					</DropdownMenuSub>

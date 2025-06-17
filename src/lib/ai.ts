@@ -4,8 +4,6 @@ import {
 	experimental_generateImage as generateI,
 	streamText as streamT,
 	smoothStream,
-	wrapLanguageModel,
-	extractReasoningMiddleware,
 	StreamTextOnChunkCallback,
 	ToolSet,
 	StreamTextOnFinishCallback,
@@ -13,11 +11,13 @@ import {
 } from "ai";
 import { z } from "zod";
 
-import { google } from "@ai-sdk/google";
+import { google, GoogleGenerativeAIProviderOptions } from "@ai-sdk/google";
 import { mistral } from "@ai-sdk/mistral";
 import { togetherai } from "@ai-sdk/togetherai";
-import { ModelId } from "./providers";
+import { modelHasFeature, ModelId } from "./providers";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
+
+export type ReasoningEffort = "low" | "medium" | "high";
 
 const openrouter = createOpenRouter({
 	apiKey: process.env.OPENROUTER_API_KEY,
@@ -27,18 +27,17 @@ function getModel(
 	modelId: ModelId,
 	opts?: {
 		isSearchEnabled?: boolean;
-		reasoningEffort?: "high" | "medium" | "low";
 	}
 ) {
 	switch (modelId) {
-		case "gemini-2.5-pro":
-			return google("gemini-2.5-pro-exp-03-25");
+		case "gemini-2.5-flash":
+			return google("gemini-2.5-flash-preview-05-20", {
+				useSearchGrounding: opts?.isSearchEnabled,
+			});
 		case "gemini-2.0-flash":
-			if (opts?.isSearchEnabled)
-				return google("gemini-2.0-flash", {
-					useSearchGrounding: true,
-				});
-			return google("gemini-2.0-flash");
+			return google("gemini-2.0-flash", {
+				useSearchGrounding: opts?.isSearchEnabled,
+			});
 		case "mistral-small":
 			return mistral("mistral-small-latest");
 		case "llama-4-maverick":
@@ -87,6 +86,7 @@ export async function streamText(
 	abortSignal?: AbortSignal,
 	opts?: {
 		isSearchEnabled?: boolean;
+		reasoningEffort?: ReasoningEffort;
 		onChunk?: StreamTextOnChunkCallback<ToolSet>;
 		onError?: StreamTextOnErrorCallback;
 		onFinish?: StreamTextOnFinishCallback<ToolSet>;
@@ -104,6 +104,25 @@ export async function streamText(
 		throw new Error("[AI] Last message must be from the user.");
 	}
 
+	const providerOptions: Record<string, any> = {};
+	if (modelHasFeature(modelId, "reasoning")) {
+		const thinkingBudget =
+			opts?.reasoningEffort === "low"
+				? 1000
+				: opts?.reasoningEffort === "medium"
+					? 6000
+					: opts?.reasoningEffort === "high"
+						? 15000
+						: 2048;
+
+		providerOptions.google = {
+			thinkingConfig: {
+				thinkingBudget,
+				includeThoughts: true,
+			},
+		} satisfies GoogleGenerativeAIProviderOptions;
+	}
+
 	// streamT to not conflict with the `streamText` function
 	return streamT({
 		model,
@@ -115,6 +134,7 @@ export async function streamText(
 		onChunk: opts?.onChunk,
 		onError: opts?.onError,
 		onFinish: opts?.onFinish,
+		providerOptions,
 	});
 }
 

@@ -10,7 +10,6 @@ import {
 	DialogClose,
 } from "../ui/dialog";
 import { Button } from "../ui/button";
-import { redirect } from "next/navigation";
 import { useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { useDeleteChatModal } from "@/stores/use-delete-chat-modal";

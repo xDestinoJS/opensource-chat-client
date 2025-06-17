@@ -15,7 +15,6 @@ import {
 import { TextQuote } from "@/components/text-quote";
 import { ModelId } from "@/lib/providers";
 import RetryDropdown from "../retry-dropdown";
-import Image from "next/image";
 import ImagePreview from "../previews/image-preview";
 import PDFPreview from "../previews/pdf-preview";
 

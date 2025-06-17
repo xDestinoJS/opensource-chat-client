@@ -8,7 +8,11 @@ import {
 import { generateObject } from "../src/lib/ai";
 import { z } from "zod";
 import { internal } from "./_generated/api";
-import { getModelDataById, ModelId } from "../src/lib/providers";
+import {
+	getModelDataById,
+	modelHasFeature,
+	ModelId,
+} from "../src/lib/providers";
 
 export const getChat = query({
 	args: {
@@ -96,7 +100,7 @@ export const generateTitle = internalAction({
 		).filter((modelId) => {
 			const modelData = getModelDataById(modelId);
 			return (
-				modelData?.type == "text" && !modelData.features.includes("reasoning")
+				modelData?.type == "text" && !modelHasFeature(modelId, "reasoning")
 			);
 		});
 

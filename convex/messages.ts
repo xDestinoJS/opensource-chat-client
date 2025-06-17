@@ -78,10 +78,12 @@ export const updateMessage = internalMutation({
 			v.object({
 				isReasoning: v.optional(v.boolean()),
 				content: v.optional(v.string()),
-				effort: v.optional(v.string()),
 				startedAt: v.optional(v.number()),
 				endedAt: v.optional(v.number()),
 			})
+		),
+		reasoningEffort: v.optional(
+			v.union(v.literal("low"), v.literal("medium"), v.literal("high"))
 		),
 	},
 
@@ -188,6 +190,9 @@ export const sendMessage = mutation({
 				mimeType: v.optional(v.string()),
 			})
 		),
+		reasoningEffort: v.optional(
+			v.union(v.literal("low"), v.literal("medium"), v.literal("high"))
+		),
 	},
 	handler: async (ctx, args) => {
 		args.model = modelIds.parse(args.model ?? "mistral-small");
@@ -245,6 +250,7 @@ export const sendMessage = mutation({
 			isComplete: true,
 			isStreaming: false,
 			isSearchEnabled: args.isSearchEnabled,
+			reasoningEffort: args.reasoningEffort,
 		});
 
 		const assistantMessageId = await ctx.db.insert("messages", {
@@ -258,6 +264,7 @@ export const sendMessage = mutation({
 			isComplete: false,
 			isStreaming: false,
 			isSearchEnabled: args.isSearchEnabled,
+			reasoningEffort: args.reasoningEffort,
 		});
 
 		return {
@@ -301,6 +308,7 @@ export const editMessage = mutation({
 			isStreaming: false,
 			sessionId: args.sessionId,
 			cancelReason: null,
+			reasoning: undefined,
 			sources: [],
 			images: [],
 		});
@@ -353,6 +361,9 @@ export const retryMessage = mutation({
 		messageId: v.id("messages"),
 		sessionId: v.string(),
 		modelId: v.optional(v.string()),
+		reasoningEffort: v.optional(
+			v.union(v.literal("low"), v.literal("medium"), v.literal("high"))
+		),
 	},
 	handler: async (ctx, args) => {
 		const { chatId, assistantMessageId } = await _handleMessageUpdate(
@@ -377,6 +388,8 @@ export const retryMessage = mutation({
 			isStreaming: false,
 			sessionId: args.sessionId,
 			cancelReason: null,
+			reasoningEffort: args.reasoningEffort,
+			reasoning: undefined,
 			sources: [],
 			images: [],
 		});

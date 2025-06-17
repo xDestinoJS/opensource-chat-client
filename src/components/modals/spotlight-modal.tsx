@@ -14,19 +14,29 @@ import useSessionId from "@/stores/use-session";
 import { useChatFeatures } from "@/stores/use-chat-features-store";
 import { useRouter } from "next/navigation";
 import { useSpotlightModalStore } from "@/stores/use-spotlight-modal";
+import { useSession } from "@/lib/auth-client";
 
 export default function SpotlightModal() {
 	const router = useRouter();
 	const { isSearchEnabled, reasoningEffort } = useChatFeatures();
 	const { modelId } = useChatModels();
 	const { sessionId } = useSessionId();
+	const { data: sessionData } = useSession();
 
 	const { isOpen, open, close } = useSpotlightModalStore();
 
 	const sendMessage = useMutation(api.messages.sendMessage);
 
 	const [query, setQuery] = useState("");
-	const allChats = useQuery(api.chat.listChats) ?? [];
+	const allChats =
+		useQuery(
+			api.chat.listChats,
+			sessionData
+				? {
+						sessionToken: sessionData?.session.token,
+					}
+				: "skip"
+		) ?? []; // Renamed to allChats for clarity
 	const chatButtonRefs = useRef<(HTMLAnchorElement | null)[]>([]);
 
 	const normalizedQuery = query.toLowerCase();
@@ -35,7 +45,7 @@ export default function SpotlightModal() {
 	);
 
 	async function startNewChat() {
-		if (!modelId) return;
+		if (!modelId || !sessionData) return;
 
 		const response = await sendMessage({
 			content: query,
@@ -44,6 +54,7 @@ export default function SpotlightModal() {
 			isSearchEnabled: isSearchEnabled,
 			reasoningEffort: reasoningEffort,
 			fileDataList: [],
+			sessionToken: sessionData?.session.token,
 		});
 
 		if (response) {

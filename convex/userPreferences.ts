@@ -5,7 +5,7 @@ import { Doc, Id } from "./_generated/dataModel";
 
 // --- Helpers ---
 
-async function getSessionFromToken(
+export async function getSessionFromToken(
 	ctx: any,
 	sessionToken: string
 ): Promise<Doc<"session">> {
@@ -72,10 +72,10 @@ export const toggleFavoriteModel = mutation({
 // --- Public Query ---
 
 export const getUserPreferences = query({
-	args: { sessionToken: v.optional(v.string()) },
+	args: { sessionToken: v.string() },
 	handler: async (ctx, args): Promise<Doc<"userPreferences"> | null> => {
-		if (!args.sessionToken) return null;
 		const session = await getSessionFromToken(ctx, args.sessionToken);
+
 		return await ctx.db
 			.query("userPreferences")
 			.withIndex("byUserId", (q) => q.eq("userId", session.userId))

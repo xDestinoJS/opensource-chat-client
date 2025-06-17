@@ -6,7 +6,7 @@ import { useMemo, useEffect, useRef, useState } from "react";
 import MessagePair from "@/components/chat/message-pair";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
-import { redirect } from "next/navigation";
+import { redirect, useRouter } from "next/navigation";
 import { AutosizeTextAreaRef } from "../ui/autosize-textarea";
 import chunkArray from "@/utils/chunk-array";
 import { useChatInputEvents } from "@/hooks/useChatInputEvents";
@@ -17,54 +17,72 @@ import { ModelId } from "@/lib/providers";
 import ChatInputForm from "./chat-input-form";
 import { GenericFileData } from "@/lib/files";
 import { useChatFeatures } from "@/stores/use-chat-features-store";
+import { authClient, useSession } from "@/lib/auth-client";
 
 export default function ChatPage({ chatId }: { chatId?: Id<"chats"> }) {
-	const { sessionId } = useSessionId();
+	const router = useRouter();
 
+	const { sessionId } = useSessionId();
 	const [quote, setQuote] = useState<string | undefined>();
 	const [mounted, setMounted] = useState(false);
-
+	const { data: sessionData, isPending } = useSession();
 	const { isSearchEnabled, reasoningEffort } = useChatFeatures();
 
-	// If chatId is not of a real chat, we redirect to the chat page
-	if (chatId) {
-		try {
-			useQuery(api.chat.getChat, { chatId });
-		} catch (error) {
-			redirect("/chat");
-		}
-	}
+	// Always call useQuery at the top level, and handle the sessionData conditionally
+	const chatDataQuery = useQuery(
+		api.chat.getChat,
+		chatId && sessionData
+			? { chatId, sessionToken: sessionData.session.token }
+			: "skip"
+	);
 
-	const chat = (chatId ? useQuery(api.chat.getChat, { chatId }) : null) ?? null;
-	const messages =
-		(chatId
-			? useQuery(api.messages.listMessages, {
+	const messagesDataQuery = useQuery(
+		api.messages.listMessages,
+		chatId && sessionData
+			? {
 					chatId: chatId,
 					excludeSession: sessionId,
-				})
-			: null) ?? [];
+					sessionToken: sessionData.session.token,
+				}
+			: "skip"
+	);
+
+	useEffect(() => {
+		(async () => {
+			// There is no user data after being fetched
+			if (!isPending && !sessionData) {
+				await authClient.signIn.anonymous();
+				router.refresh();
+			}
+		})();
+	}, [isPending, sessionData]);
+
+	useEffect(() => {
+		if (chatId && sessionData && chatDataQuery === null) {
+			redirect("/chat");
+		}
+	}, [chatId, sessionData, chatDataQuery]);
+
+	// Assign chat and messages only when the sessionData is available
+	const chat = chatDataQuery ?? null;
+	const messages = messagesDataQuery ?? [];
 
 	const pairedMessages = useMemo(() => chunkArray(messages, 2), [messages]);
 
 	const sendMessage = useMutation(api.messages.sendMessage);
-
 	const branchMessage = useMutation(api.messages.branchMessage);
 	const editMessage = useMutation(api.messages.editMessage);
 	const retryMessage = useMutation(api.messages.retryMessage);
 	const cancelMessage = useMutation(api.messages.cancelMessage);
 
 	const inputAreaRef = useRef<AutosizeTextAreaRef>(null);
-
 	const inputContainerRef = useRef<HTMLDivElement>(null);
 	const scrollContainerRef = useRef<HTMLDivElement>(null);
 	const lastPairContainerRef = useRef<HTMLDivElement>(null);
 
 	const { modelId, providersList, setModelId } = useChatModels();
 
-	// Use the custom hook for input events
 	useChatInputEvents(inputAreaRef);
-
-	// Use the custom hook for scroll management
 	useChatScrollManagement(
 		lastPairContainerRef,
 		inputContainerRef,
@@ -85,27 +103,26 @@ export default function ChatPage({ chatId }: { chatId?: Id<"chats"> }) {
 		currentInput: string,
 		fileDataList: GenericFileData[]
 	) {
-		(async () => {
-			if (!modelId) return;
+		if (!modelId || !sessionData) return;
 
-			const response = await sendMessage({
-				quote: quote,
-				content: currentInput,
-				chatId: chatId as Id<"chats">,
-				model: modelId,
-				sessionId,
-				fileDataList,
-				isSearchEnabled: isSearchEnabled,
-				reasoningEffort: reasoningEffort,
-			});
+		const response = await sendMessage({
+			quote: quote,
+			content: currentInput,
+			chatId: chatId as Id<"chats">,
+			model: modelId,
+			sessionId,
+			fileDataList,
+			isSearchEnabled: isSearchEnabled,
+			reasoningEffort: reasoningEffort,
+			sessionToken: sessionData?.session.token,
+		});
 
-			setQuote(undefined); // Clear the quote after sending
+		setQuote(undefined); // Clear the quote after sending
 
-			// If the chatId is not provided, we redirect to the chat page
-			if (messages?.length === 0) {
-				redirect("/chat/" + response?.chatId);
-			}
-		})();
+		// If the chatId is not provided, we redirect to the chat page
+		if (messages?.length === 0) {
+			redirect("/chat/" + response?.chatId);
+		}
 
 		if (inputAreaRef.current) {
 			inputAreaRef.current.textArea.value = "";
@@ -133,24 +150,33 @@ export default function ChatPage({ chatId }: { chatId?: Id<"chats"> }) {
 								isLastPair={isLastPair}
 								lastPairContainerRef={lastPairContainerRef}
 								onEditMessage={(messageId, content) => {
+									if (!sessionData) return;
+
 									editMessage({
 										sessionId,
 										messageId,
 										content,
+										sessionToken: sessionData?.session.token,
 									});
 								}}
 								onRetryMessage={(messageId, modelId?: ModelId) => {
+									if (!sessionData) return;
+
 									if (modelId) setModelId(modelId);
 									retryMessage({
 										sessionId,
 										messageId,
 										modelId,
 										reasoningEffort,
+										sessionToken: sessionData?.session.token,
 									});
 								}}
 								onBranchMessage={async (messageId) => {
+									if (!sessionData) return;
+
 									const response = await branchMessage({
 										messageId,
+										sessionToken: sessionData?.session.token,
 									});
 									redirect("/chat/" + response.chatId);
 								}}
@@ -172,7 +198,11 @@ export default function ChatPage({ chatId }: { chatId?: Id<"chats"> }) {
 				inputContainerRef={inputContainerRef}
 				onSubmit={handleSubmit}
 				onCancel={async () => {
-					await cancelMessage({ chatId: chatId as Id<"chats"> });
+					if (!sessionData) return;
+					await cancelMessage({
+						chatId: chatId as Id<"chats">,
+						sessionToken: sessionData?.session.token,
+					});
 				}}
 			/>
 		</main>

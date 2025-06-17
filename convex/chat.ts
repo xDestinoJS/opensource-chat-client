@@ -13,12 +13,19 @@ import {
 	modelHasFeature,
 	ModelId,
 } from "../src/lib/providers";
+import { Id } from "./_generated/dataModel";
+import { getSessionFromToken } from "./userPreferences";
 
 export const getChat = query({
 	args: {
 		chatId: v.id("chats"),
+		sessionToken: v.string(),
 	},
 	handler: async (ctx, args) => {
+		authorizeUser(ctx, args.sessionToken, {
+			chatId: args.chatId,
+		});
+
 		// Fetch the chat by ID
 		const chat = await ctx.db.get(args.chatId);
 		if (!chat) {
@@ -30,10 +37,15 @@ export const getChat = query({
 });
 
 export const listChats = query({
-	handler: async (ctx) => {
+	args: {
+		sessionToken: v.string(),
+	},
+	handler: async (ctx, args) => {
+		const session = await getSessionFromToken(ctx, args.sessionToken);
+
 		return await ctx.db
 			.query("chats")
-			.withIndex("by_creation_time")
+			.withIndex("byOwnerId", (q) => q.eq("ownerId", session.userId))
 			.order("desc")
 			.collect();
 	},
@@ -68,8 +80,18 @@ export const updateChatData = mutation({
 		id: v.id("chats"),
 		title: v.optional(v.string()),
 		isPinned: v.optional(v.boolean()),
+		sessionToken: v.string(),
 	},
 	handler: async (ctx, args) => {
+		authorizeUser(
+			ctx,
+			args.sessionToken,
+			{
+				chatId: args.id,
+			},
+			true
+		);
+
 		if (args.title != undefined && args.title.trim() === "") {
 			throw new Error("Title cannot be empty.");
 		}
@@ -133,6 +155,8 @@ export const createChat = internalMutation({
 		model: v.optional(v.string()),
 		messages: v.optional(v.array(v.id("messages"))),
 		isSearchEnabled: v.boolean(),
+		ownerId: v.id("user"),
+		visibility: v.union(v.literal("private"), v.literal("public")),
 	},
 	handler: async (ctx, args) => {
 		// Create a new chat and generate a title based on the provided content
@@ -140,6 +164,8 @@ export const createChat = internalMutation({
 			title: "",
 			isPinned: false,
 			isAnswering: true,
+			ownerId: args.ownerId,
+			visibility: args.visibility,
 		});
 
 		// If it's a new chat, we can generate a title based on the content
@@ -184,6 +210,8 @@ export const branchChat = internalMutation({
 			branchOf: chat._id,
 			isPinned: false,
 			isAnswering: false,
+			ownerId: chat.ownerId,
+			visibility: "private",
 		});
 
 		// Insert the messages into the new chat
@@ -202,8 +230,18 @@ export const branchChat = internalMutation({
 export const deleteChat = mutation({
 	args: {
 		id: v.id("chats"),
+		sessionToken: v.string(),
 	},
 	handler: async (ctx, args) => {
+		authorizeUser(
+			ctx,
+			args.sessionToken,
+			{
+				chatId: args.id,
+			},
+			true
+		);
+
 		const chat = await ctx.db.get(args.id);
 		if (!chat) {
 			throw new Error("[DB] Chat not found.");
@@ -221,3 +259,55 @@ export const deleteChat = mutation({
 		await ctx.db.delete(args.id);
 	},
 });
+
+export async function authorizeUser(
+	ctx: any, // Context object, likely from Convex functions
+	sessionToken: string,
+	of: {
+		chatId?: Id<"chats">;
+		messageId?: Id<"messages">;
+	},
+	ownerOnlyAction?: boolean
+) {
+	const session = await getSessionFromToken(ctx, sessionToken);
+
+	let targetChatId: Id<"chats">;
+
+	// 1. Determine the target chatId
+	if (of.chatId) {
+		targetChatId = of.chatId;
+	} else if (of.messageId) {
+		const message = await ctx.db.get(of.messageId);
+		if (!message) {
+			throw new Error("Message not found.");
+		}
+		targetChatId = message.chatId;
+	} else {
+		// If neither chatId nor messageId is provided, we can't determine the chat.
+		throw new Error("Either chatId or messageId must be provided.");
+	}
+
+	// 2. Fetch the chat once
+	const chat = await ctx.db.get(targetChatId);
+	if (!chat) {
+		throw new Error("Chat not found.");
+	}
+
+	// 3. Apply ownerOnlyAction logic
+	// If ownerOnlyAction is true, only the chat owner can proceed, regardless of visibility.
+	if (ownerOnlyAction) {
+		if (chat.ownerId !== session.userId) {
+			throw new Error("This action can only be performed by the chat owner.");
+		}
+		// If the user is the owner and it's an owner-only action, they are authorized.
+		return;
+	}
+
+	// 4. Apply general chat visibility logic (only if ownerOnlyAction is false)
+	// If the chat is private and the user is not the owner, throw an error.
+	if (chat.visibility === "private" && chat.ownerId !== session.userId) {
+		throw new Error("Chat is private and user is not the owner.");
+	}
+
+	// If none of the above conditions throw an error, the user is authorized.
+}

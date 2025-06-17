@@ -10,6 +10,8 @@ import { v } from "convex/values";
 import { Doc, Id } from "./_generated/dataModel";
 import { getModelDataById, modelIds } from "../src/lib/providers";
 import { GenericFileData } from "../src/lib/files";
+import { getSessionFromToken } from "./userPreferences";
+import { authorizeUser } from "./chat";
 
 // === INTERNAL QUERIES ===
 export const getMessage = internalQuery({
@@ -123,8 +125,9 @@ export const updateMessage = internalMutation({
 
 export const startStreaming = internalMutation({
 	args: { messageId: v.id("messages") },
-	handler: async (ctx, { messageId }) => {
-		const message = await ctx.db.get(messageId);
+	handler: async (ctx, args) => {
+		const message = await ctx.db.get(args.messageId);
+
 		if (!message) {
 			throw new Error("Message not found");
 		}
@@ -134,7 +137,7 @@ export const startStreaming = internalMutation({
 		}
 
 		// Atomically update the message to mark it as streaming
-		await ctx.db.patch(messageId, {
+		await ctx.db.patch(args.messageId, {
 			isStreaming: true,
 			isComplete: false,
 			content: "",
@@ -193,8 +196,11 @@ export const sendMessage = mutation({
 		reasoningEffort: v.optional(
 			v.union(v.literal("low"), v.literal("medium"), v.literal("high"))
 		),
+		sessionToken: v.string(),
 	},
 	handler: async (ctx, args) => {
+		const session = await getSessionFromToken(ctx, args.sessionToken);
+
 		args.model = modelIds.parse(args.model ?? "mistral-small");
 
 		let chat: Doc<"chats"> | null;
@@ -204,12 +210,22 @@ export const sendMessage = mutation({
 				content: args.content,
 				model: args.model,
 				isSearchEnabled: args.isSearchEnabled,
+				ownerId: session.userId,
+				visibility: "private",
 			});
 			if (!args.chatId) {
 				throw new Error("Chat could not be created");
 			}
 			chat = await ctx.db.get(args.chatId);
 		} else {
+			authorizeUser(
+				ctx,
+				args.sessionToken,
+				{
+					chatId: args.chatId,
+				},
+				true
+			);
 			chat = await ctx.db.get(args.chatId);
 			if (chat?.isAnswering) {
 				throw new Error("Answer is already being generated for chat.");
@@ -280,8 +296,18 @@ export const editMessage = mutation({
 		messageId: v.id("messages"),
 		content: v.string(),
 		sessionId: v.string(),
+		sessionToken: v.string(),
 	},
 	handler: async (ctx, args) => {
+		authorizeUser(
+			ctx,
+			args.sessionToken,
+			{
+				messageId: args.messageId,
+			},
+			true
+		);
+
 		const { chatId, assistantMessageId } = await _handleMessageUpdate(
 			ctx,
 			args.messageId
@@ -321,8 +347,18 @@ export const cancelMessage = mutation({
 		reason: v.optional(
 			v.union(v.literal("user_request"), v.literal("system_error"), v.string())
 		),
+		sessionToken: v.string(),
 	},
 	handler: async (ctx, args) => {
+		authorizeUser(
+			ctx,
+			args.sessionToken,
+			{
+				chatId: args.chatId,
+			},
+			true
+		);
+
 		const chat = await ctx.db.get(args.chatId);
 		if (!chat) {
 			throw new Error("[DB] Chat not found.");
@@ -364,8 +400,18 @@ export const retryMessage = mutation({
 		reasoningEffort: v.optional(
 			v.union(v.literal("low"), v.literal("medium"), v.literal("high"))
 		),
+		sessionToken: v.string(),
 	},
 	handler: async (ctx, args) => {
+		authorizeUser(
+			ctx,
+			args.sessionToken,
+			{
+				messageId: args.messageId,
+			},
+			true
+		);
+
 		const { chatId, assistantMessageId } = await _handleMessageUpdate(
 			ctx,
 			args.messageId
@@ -399,8 +445,13 @@ export const retryMessage = mutation({
 export const branchMessage = mutation({
 	args: {
 		messageId: v.id("messages"),
+		sessionToken: v.string(),
 	},
 	handler: async (ctx, args) => {
+		authorizeUser(ctx, args.sessionToken, {
+			messageId: args.messageId,
+		});
+
 		const message = await ctx.db.get(args.messageId);
 
 		if (!message) throw new Error("[DB] Message not found.");
@@ -430,8 +481,13 @@ export const listMessages = query({
 	args: {
 		chatId: v.id("chats"),
 		excludeSession: v.optional(v.string()),
+		sessionToken: v.string(),
 	},
 	handler: async (ctx, args) => {
+		authorizeUser(ctx, args.sessionToken, {
+			chatId: args.chatId,
+		});
+
 		const messages: Doc<"messages">[] = await ctx.runQuery(
 			internal.messages.getMessageHistory,
 			{

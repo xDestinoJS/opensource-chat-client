@@ -1,6 +1,7 @@
 import { betterAuth } from "better-auth";
 import { convexAdapter } from "@better-auth-kit/convex";
 import { ConvexHttpClient } from "convex/browser";
+import { anonymous } from "better-auth/plugins";
 
 const convexClient = new ConvexHttpClient(
 	process.env.NEXT_PUBLIC_CONVEX_URL as string
@@ -14,5 +15,5 @@ export const auth = betterAuth({
 			clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
 		},
 	},
-	plugins: [],
+	plugins: [anonymous()],
 });

@@ -74,5 +74,7 @@ export default defineSchema({
 		branchOf: v.optional(v.id("chats")),
 		isPinned: v.boolean(),
 		isAnswering: v.boolean(),
-	}),
+		ownerId: v.id("user"),
+		visibility: v.union(v.literal("private"), v.literal("public")),
+	}).index("byOwnerId", ["ownerId"]),
 });

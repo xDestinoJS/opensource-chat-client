@@ -6,8 +6,6 @@ import {
 	SidebarContent,
 	SidebarFooter,
 	SidebarHeader,
-	SidebarTrigger,
-	useSidebar,
 } from "@/components/ui/sidebar";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
@@ -33,13 +31,21 @@ interface GroupedChatsResult {
 }
 
 export function AppSidebar() {
-	const { data: session } = useSession();
+	const { data: sessionData } = useSession();
 	const [editingChatId, setEditingChatId] = useState<Id<"chats"> | null>(null);
 	const [query, setQuery] = useState(""); // State for the search query
 
 	const editInputAreaRef = useRef<HTMLInputElement>(null);
 
-	const allChats = useQuery(api.chat.listChats) ?? []; // Renamed to allChats for clarity
+	const allChats =
+		useQuery(
+			api.chat.listChats,
+			sessionData
+				? {
+						sessionToken: sessionData?.session.token,
+					}
+				: "skip"
+		) ?? []; // Renamed to allChats for clarity
 
 	const updateChatData = useMutation(api.chat.updateChatData);
 
@@ -49,12 +55,13 @@ export function AppSidebar() {
 	};
 
 	function updateTitle() {
-		if (editingChatId && editInputAreaRef.current) {
+		if (sessionData && editingChatId && editInputAreaRef.current) {
 			const editText = editInputAreaRef.current.value.trim();
 			if (editText != "") {
 				updateChatData({
 					id: editingChatId,
 					title: editInputAreaRef.current?.value,
+					sessionToken: sessionData?.session.token,
 				});
 			}
 		}
@@ -178,9 +185,9 @@ export function AppSidebar() {
 					/>
 				))}
 			</SidebarContent>
-			{session?.user && (
+			{sessionData?.user && (
 				<SidebarFooter>
-					<NavUser user={session.user} />
+					<NavUser user={sessionData.user} />
 				</SidebarFooter>
 			)}
 		</Sidebar>

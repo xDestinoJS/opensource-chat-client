@@ -49,11 +49,12 @@ export default function ModelDropdown({
 	const [isExpanded, setIsExpanded] = useState(false);
 	const inputRef = useRef<HTMLInputElement | null>(null);
 
-	const { data: session } = useSession();
+	const { data: sessionData } = useSession();
 
-	const userPreferences = useQuery(api.userPreferences.getUserPreferences, {
-		sessionToken: session?.session.token,
-	});
+	const userPreferences = useQuery(
+		api.userPreferences.getUserPreferences,
+		sessionData ? { sessionToken: sessionData.session.token } : "skip"
+	);
 	const toggleFavoriteModel = useMutation(
 		api.userPreferences.toggleFavoriteModel
 	);
@@ -118,9 +119,9 @@ export default function ModelDropdown({
 	};
 
 	const onToggleFavorite = async (id: ModelId) => {
-		if (session) {
+		if (sessionData) {
 			await toggleFavoriteModel({
-				sessionToken: session.session.token,
+				sessionToken: sessionData.session.token,
 				modelId: id,
 			});
 		}

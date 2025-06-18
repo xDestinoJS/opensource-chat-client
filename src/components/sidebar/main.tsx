@@ -12,7 +12,7 @@ import { api } from "../../../convex/_generated/api";
 import { Doc, Id } from "../../../convex/_generated/dataModel";
 import Link from "next/link";
 import { Button } from "../ui/button";
-import { Pin } from "lucide-react";
+import { LogInIcon, Pin } from "lucide-react";
 import { ChatGroupSection } from "./chat-group-section";
 import { useSession } from "@/lib/auth-client";
 import { NavUser } from "./nav-user";
@@ -193,11 +193,17 @@ export function AppSidebar() {
 					/>
 				))}
 			</SidebarContent>
-			{isClient && sessionData?.user && !sessionData?.user.isAnonymous && (
-				<SidebarFooter>
+			<SidebarFooter>
+				{isClient && sessionData?.user && !sessionData?.user.isAnonymous ? (
 					<NavUser user={sessionData.user} />
-				</SidebarFooter>
-			)}
+				) : (
+					<Button size="lg" asChild>
+						<Link href="/auth">
+							<LogInIcon /> Login
+						</Link>
+					</Button>
+				)}
+			</SidebarFooter>
 		</Sidebar>
 	);
 }

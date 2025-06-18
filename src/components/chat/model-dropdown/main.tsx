@@ -130,7 +130,7 @@ export default function ModelDropdown({
 	return isClient && modelId ? (
 		<DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
 			<DropdownMenuTrigger asChild>
-				<Button variant="ghost" className="min-w-25" size="sm">
+				<Button variant="ghost" className="min-w-25 font-bold" size="sm">
 					{getFullModelName(modelId)} <ChevronDown />
 				</Button>
 			</DropdownMenuTrigger>
@@ -140,7 +140,7 @@ export default function ModelDropdown({
 					<Search className="ml-2.25" size={18} />
 					<Input
 						ref={inputRef}
-						className="grow border-none focus-visible:ring-0 shadow-none"
+						className="grow border-none focus-visible:ring-0 bg-transparent! dark:bg-transparent shadow-none"
 						placeholder="Search models..."
 						value={searchQuery}
 						onChange={(e) => {
@@ -155,8 +155,8 @@ export default function ModelDropdown({
 				{/* List and Grid */}
 				<div
 					className={cn(
-						"transition-all duration-300 overflow-y-scroll overflow-x-hidden -m-1 max-h-screen max-w-screen",
-						!isExpanded ? "w-85 h-50" : "w-160 h-90"
+						"transition-all duration-300 overflow-x-hidden -m-1 max-h-screen max-w-screen",
+						!isExpanded ? "w-85 h-50 overflow-y-scroll" : "w-160 h-90"
 					)}
 				>
 					<AnimatePresence mode="sync">

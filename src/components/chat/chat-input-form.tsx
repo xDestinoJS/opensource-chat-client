@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useDropzone } from "react-dropzone";
-import { ArrowUp, Brain, Globe, Paperclip, Search, Square } from "lucide-react";
+import { ArrowUp, Brain, Globe, Paperclip, Square } from "lucide-react";
 
 import { Button } from "../ui/button";
 import { AutosizeTextarea, AutosizeTextAreaRef } from "../ui/autosize-textarea";
@@ -32,6 +32,9 @@ type Props = {
 	onSubmit: (text: string, files: GenericFileData[]) => void;
 	onCancel: () => void;
 	inputContainerRef: React.RefObject<HTMLDivElement | null>;
+	inputValue: string;
+	setInputValue: (v: string) => void;
+	textAreaRef: React.RefObject<AutosizeTextAreaRef | null>;
 };
 
 export default function ChatInputForm({
@@ -45,11 +48,15 @@ export default function ChatInputForm({
 	onSubmit,
 	onCancel,
 	inputContainerRef,
+	inputValue,
+	setInputValue,
+	textAreaRef,
 }: Props) {
+	const [isClient, setIsClient] = useState(false);
+
 	const { isSearchEnabled, toggleSearch, reasoningEffort, setReasoningEffort } =
 		useChatFeatures();
 
-	const textAreaRef = useRef<AutosizeTextAreaRef>(null);
 	const hiddenInputRef = useRef<HTMLInputElement>(null);
 
 	const [files, setFiles] = useState<UploadItem[]>([]);
@@ -58,6 +65,8 @@ export default function ChatInputForm({
 		() => (modelId ? getModelDataById(modelId) : undefined),
 		[modelId]
 	);
+
+	useEffect(() => setIsClient(true), []);
 
 	// Allowed file types based on model features
 	const allowedFileTypes = useMemo(() => {
@@ -156,21 +165,21 @@ export default function ChatInputForm({
 		};
 		document.addEventListener("paste", handler);
 		return () => document.removeEventListener("paste", handler);
-	}, [allowedFileTypes.allowedMimeTypes, addFiles]);
+	}, [allowedFileTypes.allowedMimeTypes, addFiles, textAreaRef]);
 
 	const pickFiles = () => hiddenInputRef.current?.click();
 	const removeFile = (target: UploadItem) =>
 		setFiles((prev) => prev.filter((f) => f !== target));
 
 	const handleSend = () => {
-		const text = textAreaRef.current?.textArea.value.trim();
+		const text = inputValue.trim();
 		if (!text || isAnswering || files.some((f) => !f.isUploaded)) return;
 
 		const readyFiles: GenericFileData[] = files.map(
 			({ isUploaded, ...rest }) => rest
 		);
 
-		textAreaRef.current!.textArea.value = "";
+		setInputValue("");
 		setFiles([]);
 		onSubmit(text, readyFiles);
 	};
@@ -187,14 +196,18 @@ export default function ChatInputForm({
 			className="relative w-full max-w-3xl max-lg:px-4 shrink-0"
 			{...getRootProps()}
 		>
-			<input
-				ref={hiddenInputRef}
-				type="file"
-				multiple
-				accept={inputAcceptString}
-				className="hidden"
-				onChange={(e) => e.target.files && addFiles(Array.from(e.target.files))}
-			/>
+			{isClient && (
+				<input
+					ref={hiddenInputRef}
+					type="file"
+					multiple
+					accept={inputAcceptString}
+					className="hidden"
+					onChange={(e) =>
+						e.target.files && addFiles(Array.from(e.target.files))
+					}
+				/>
+			)}
 
 			{isDragActive && (
 				<div className="absolute inset-0 z-10 flex items-center justify-center rounded-tl-2xl rounded-tr-2xl border-2 border-dashed border-blue-500 bg-blue-500/20 text-lg font-semibold text-blue-800 backdrop-blur-sm">
@@ -204,7 +217,7 @@ export default function ChatInputForm({
 
 			<div
 				ref={inputContainerRef}
-				className="relative z-0 rounded-tl-2xl rounded-tr-2xl border border-neutral-300 bg-neutral-50 p-4"
+				className="relative z-0 rounded-tl-2xl rounded-tr-2xl border border-accent bg-white/3 dark:bg-[#2c2531] dark:border-[#312a38] p-4 pb-2"
 			>
 				{quote && (
 					<div className="mb-2">
@@ -240,6 +253,8 @@ export default function ChatInputForm({
 					ref={textAreaRef}
 					type="transparent"
 					maxHeight={170}
+					value={inputValue}
+					onChange={(e) => setInputValue(e.target.value)}
 					className="w-full resize-none bg-transparent px-0.75 focus:outline-none"
 					onKeyDown={(e) => {
 						if (e.key === "Enter" && !e.shiftKey) {
@@ -257,7 +272,7 @@ export default function ChatInputForm({
 							setModelId={setModelId}
 						/>
 
-						{modelHasFeature(modelId, "effort-control") && (
+						{isClient && modelHasFeature(modelId, "effort-control") && (
 							<EffortControlSelector>
 								<Button
 									size="xs"
@@ -271,7 +286,7 @@ export default function ChatInputForm({
 							</EffortControlSelector>
 						)}
 
-						{modelHasFeature(modelId, "search") && (
+						{isClient && modelHasFeature(modelId, "search") && (
 							<Button
 								size="xs"
 								variant="outline"
@@ -279,7 +294,7 @@ export default function ChatInputForm({
 								className={cn(
 									"shadow-none",
 									isSearchEnabled &&
-										"bg-blue-500/10 hover:bg-blue-500/15 border-blue-500"
+										"bg-primary/10 hover:bg-primary/15 border-primary"
 								)}
 								onClick={() => toggleSearch()}
 							>
@@ -287,26 +302,38 @@ export default function ChatInputForm({
 							</Button>
 						)}
 
-						{(modelHasFeature(modelId, "vision") ||
-							modelHasFeature(modelId, "files")) && (
-							<Button
-								size="xs"
-								variant="outline"
-								type="button"
-								className="shadow-none"
-								onClick={pickFiles}
-							>
-								<Paperclip />
-							</Button>
-						)}
+						{isClient &&
+							(modelHasFeature(modelId, "vision") ||
+								modelHasFeature(modelId, "files")) && (
+								<Button
+									size="xs"
+									variant="outline"
+									type="button"
+									className="shadow-none"
+									onClick={pickFiles}
+								>
+									<Paperclip />
+								</Button>
+							)}
 					</div>
 
 					{messagesLength === 0 || !isAnswering ? (
-						<Button size="icon" type="button" onClick={handleSend}>
+						<Button
+							size="icon"
+							type="button"
+							className="dark:bg-[#4b1e39]  dark:border dark:border-[#6b2748]"
+							disabled={inputValue.length == 0}
+							onClick={handleSend}
+						>
 							<ArrowUp />
 						</Button>
 					) : (
-						<Button size="icon" type="button" onClick={onCancel}>
+						<Button
+							size="icon"
+							type="button"
+							className="dark:bg-[#4b1e39] dark:border dark:border-[#6b2748]"
+							onClick={onCancel}
+						>
 							<Square className="fill-secondary" />
 						</Button>
 					)}

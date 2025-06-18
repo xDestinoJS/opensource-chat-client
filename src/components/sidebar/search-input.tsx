@@ -58,7 +58,7 @@ export default function SearchInput({
 			</div>
 
 			<Input
-				className="grow shadow-none rounded-none border-none outline-none focus-visible:ring-0 text-sm"
+				className="grow shadow-none bg-transparent! rounded-none border-none outline-none focus-visible:ring-0 text-sm"
 				placeholder={placeholder}
 				value={query}
 				onChange={(e) => setQuery(e.target.value)}

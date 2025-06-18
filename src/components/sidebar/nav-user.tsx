@@ -24,10 +24,10 @@ export function NavUser({
 			<SidebarMenuItem>
 				<SidebarMenuButton
 					size="lg"
-					className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+					className="data-[state=open]:bg-sidebar-accent hover:bg-sidebar-accent/5 dark:text-accent-foreground!"
 					asChild
 				>
-					<Link href="/chat">
+					<Link href="/settings/account">
 						<Avatar className="h-8 w-8 rounded-full">
 							<AvatarImage src={user.image} alt={user.name} />
 							<AvatarFallback className="rounded-full">

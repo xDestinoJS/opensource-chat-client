@@ -10,7 +10,12 @@ const MemoizedMarkdown = memo(
 		const markdownContent = useMemo(() => content, [content]);
 
 		return (
-			<div className={cn("prose w-full mb-1 max-w-none", className)}>
+			<div
+				className={cn(
+					"prose dark:prose-invert w-full mb-1 max-w-none",
+					className
+				)}
+			>
 				<ReactMarkdown
 					remarkPlugins={[remarkGfm]}
 					components={{

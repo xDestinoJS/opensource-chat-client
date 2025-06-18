@@ -46,7 +46,7 @@ export function ChatGroupSection({
 
 	return (
 		<SidebarGroup>
-			<SidebarGroupLabel className="[&>svg]:size-3">
+			<SidebarGroupLabel className="[&>svg]:size-3 dark:text-[#c46095]">
 				{Icon && <Icon />}
 				<span className={Icon && "ml-1"}>{label}</span>
 			</SidebarGroupLabel>

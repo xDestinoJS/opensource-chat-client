@@ -6,6 +6,8 @@ import { generateImage, streamText } from "../src/lib/ai";
 import { Doc } from "./_generated/dataModel";
 import {
 	getModelDataById,
+	getProviderDataById,
+	getProviderDataByModelId,
 	modelHasFeature,
 	ModelId,
 } from "../src/lib/providers";
@@ -192,6 +194,37 @@ export const streamTextAnswer = httpAction(async (ctx, req) => {
 			});
 		};
 
+		const chat = await ctx.runQuery(internal.chat.getChatInternal, {
+			chatId,
+		});
+
+		const userPreferences = await ctx.runQuery(
+			internal.userPreferences.getInternalUserPreferences,
+			{
+				userId: chat.ownerId,
+			}
+		);
+
+		const systemPrompt = `
+		You are a helpful and versatile assistant. Your primary goal is to provide informative, relevant, and engaging responses tailored to the specific user you are interacting with. You will receive information about the user, including their name, occupation, traits, and any additional information they provide. Use this information to personalize your responses and make them as helpful and relevant as possible.
+
+		Here's how you should use the provided user information:
+
+		*   **Name:** Use the user's name to address them directly in a friendly and appropriate manner. For example, instead of saying "Here is the information you requested," say "Here is the information you requested, ${userPreferences?.chatSettings?.name ?? ""}." Adjust the level of formality based on the user's occupation and traits.
+
+		*   **Occupation:** ( ${userPreferences?.chatSettings?.occupation ?? ""}) Consider the user's occupation when providing information. Tailor your responses to be relevant to their field and level of expertise. Use appropriate terminology and examples that resonate with their professional background. If the user asks for help with a task, consider how someone in their profession would approach it.
+
+		*   **Traits:** ( ${userPreferences?.chatSettings?.traits.join(" ") ?? ""}) Take the user's traits into account when crafting your responses. If the user is described as "creative," offer innovative and imaginative solutions. If they are described as "detail-oriented," provide thorough and precise information. If they are described as "friendly," maintain a warm and approachable tone.
+
+		*   **Additional Information:** ( ${userPreferences?.chatSettings?.additionalInfo ?? ""}) This section may contain any other relevant details about the user, such as their interests, goals, or current projects. Use this information to further personalize your responses and provide even more relevant and helpful assistance.
+		`;
+
+		const providerData = getProviderDataByModelId(model);
+		const apiKey = userPreferences?.apiKeys?.find((data) => {
+			return data.providerId === providerData?.id && data.key.length > 0;
+		})?.key;
+		console.log(apiKey);
+
 		const stream = new ReadableStream<Uint8Array>({
 			async start(controller) {
 				const result = await streamText(
@@ -201,6 +234,8 @@ export const streamTextAnswer = httpAction(async (ctx, req) => {
 					{
 						isSearchEnabled: assistantMessage.isSearchEnabled,
 						reasoningEffort: reasoningEffort,
+						systemPrompt: userPreferences?.chatSettings && systemPrompt,
+						apiKey,
 						onChunk: async function (event) {
 							const message = await ctx.runQuery(internal.messages.getMessage, {
 								messageId: assistantMessageId,
@@ -288,13 +323,29 @@ export const processImageGeneration = internalAction({
 		assistantMessageId: v.id("messages"),
 	},
 	handler: async (ctx, args) => {
-		const image = await generateImage(args.modelId as ModelId, args.prompt);
-
 		// Handle the cancellation event
-		const { cancelReason } = await ctx.runQuery(internal.messages.getMessage, {
+		const message = await ctx.runQuery(internal.messages.getMessage, {
 			messageId: args.assistantMessageId,
 		});
-		if (cancelReason) return;
+		if (message.cancelReason) return;
+
+		const chat = await ctx.runQuery(internal.chat.getChatInternal, {
+			chatId: args.chatId,
+		});
+		const userPreferences = await ctx.runQuery(
+			internal.userPreferences.getInternalUserPreferences,
+			{
+				userId: chat.ownerId,
+			}
+		);
+		const providerData = getProviderDataByModelId(message.model);
+		const apiKey = userPreferences?.apiKeys?.find((data) => {
+			return data.providerId === providerData?.id && data.key.length > 0;
+		})?.key;
+
+		const image = await generateImage(args.modelId as ModelId, args.prompt, {
+			apiKey,
+		});
 
 		const fileId = crypto.randomUUID();
 

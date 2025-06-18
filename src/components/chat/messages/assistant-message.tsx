@@ -181,15 +181,17 @@ export default function AssistantMessage({
 				<IconButton onClick={onPlayAudio}>
 					{speechStatus != "started" ? <Volume2 /> : <Square />}
 				</IconButton>
-				<RetryDropdown
-					isDropdownOpen={isDropdownOpen}
-					setIsDropdownOpen={setIsDropdownOpen}
-					onRetry={onRetry}
-				>
-					<IconButton>
-						<RefreshCcw />
-					</IconButton>
-				</RetryDropdown>
+				{userMessage.isModifiable != false && (
+					<RetryDropdown
+						isDropdownOpen={isDropdownOpen}
+						setIsDropdownOpen={setIsDropdownOpen}
+						onRetry={onRetry}
+					>
+						<IconButton>
+							<RefreshCcw />
+						</IconButton>
+					</RetryDropdown>
+				)}
 
 				<p className="ml-3 text-xs">
 					{getFullModelName(assistantMessage.model)}

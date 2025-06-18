@@ -21,7 +21,23 @@ export default defineSchema({
 		.index("byToken", ["token"])
 		.index("byUserId", ["userId"]),
 	userPreferences: defineTable({
-		userId: v.string(),
+		userId: v.id("user"),
+		chatSettings: v.optional(
+			v.object({
+				name: v.string(),
+				occupation: v.string(),
+				traits: v.array(v.string()),
+				additionalInfo: v.string(),
+			})
+		),
+		apiKeys: v.optional(
+			v.array(
+				v.object({
+					providerId: v.string(),
+					key: v.string(),
+				})
+			)
+		),
 		favoriteModels: v.array(v.string()),
 	}).index("byUserId", ["userId"]),
 	messages: defineTable({
@@ -68,6 +84,7 @@ export default defineSchema({
 		reasoningEffort: v.optional(
 			v.union(v.literal("low"), v.literal("medium"), v.literal("high"))
 		),
+		isModifiable: v.optional(v.boolean()),
 	}),
 	chats: defineTable({
 		title: v.string(),
@@ -75,6 +92,6 @@ export default defineSchema({
 		isPinned: v.boolean(),
 		isAnswering: v.boolean(),
 		ownerId: v.id("user"),
-		visibility: v.union(v.literal("private"), v.literal("public")),
+		isShared: v.boolean(),
 	}).index("byOwnerId", ["ownerId"]),
 });

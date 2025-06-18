@@ -35,10 +35,10 @@
         - [x] effort control dropdown (high, medium, low)
   - [x] Add Thread Seaching
   - [x] Add Spotlight-like feature
-  - [ ] Add auth, ratelimiting (watch theo's vid) **TODO**
-    - [ ] Link threads to accounts
-  - [ ] Add Thread Sharing
-  - [ ] Add Settings
+  - [x] Add auth, ratelimiting (watch theo's vid)
+    - [x] Link threads to accounts
+  - [x] Add Thread Sharing
+  - [ ] Add Settings (50%) **TODO**
   - [ ] Rename chats -> threads
   - [ ] Do UI
 

@@ -18,6 +18,8 @@ import { api } from "../../../convex/_generated/api";
 import useHover from "@/hooks/useHover";
 import { useDeleteChatModal } from "@/stores/use-delete-chat-modal";
 import useSessionId from "@/stores/use-session";
+import { useShareModalStore } from "@/stores/use-share-modal";
+import { useSession } from "@/lib/auth-client";
 
 type ChatDoc = Doc<"chats">;
 
@@ -49,7 +51,11 @@ export const ChatListItem = React.memo(function ChatListItem({
 	const [ref, isHovering] = useHover();
 
 	const { reset } = useSessionId();
-	const { open, setChat } = useDeleteChatModal();
+	const { open: openDeleteModal, setChat: setDeleteModalChat } =
+		useDeleteChatModal();
+	const { open: openShareModal, setChat: setShareModalChat } =
+		useShareModalStore();
+	const { data: sessionData } = useSession();
 	const updateChatData = useMutation(api.chat.updateChatData);
 
 	const handleBranchClick = (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -63,9 +69,12 @@ export const ChatListItem = React.memo(function ChatListItem({
 	function togglePin(e: React.MouseEvent<HTMLButtonElement>) {
 		e.preventDefault();
 		e.stopPropagation();
+
+		if (!sessionData) return;
 		updateChatData({
 			id: chat._id,
 			isPinned: !chat.isPinned,
+			sessionToken: sessionData.session.token,
 		});
 	}
 
@@ -80,7 +89,7 @@ export const ChatListItem = React.memo(function ChatListItem({
 		<SidebarMenuItem ref={ref}>
 			<Button
 				className={cn(
-					"relative w-full justify-start overflow-hidden",
+					"relative w-full justify-start overflow-hidden dark:text-accent-foreground!",
 					!isEditing && highlighted && "shadow-none"
 				)}
 				variant={!isEditing && !highlighted ? "ghost" : "secondary"}
@@ -100,7 +109,7 @@ export const ChatListItem = React.memo(function ChatListItem({
 					{!isEditing ? (
 						<div
 							className={cn(
-								"absolute bg-gradient-to-r pointer-events-none from-secondary/0 z-5 via-secondary w-4/5 to-secondary h-full top-0 right-0 flex p-1 items-center justify-end transition-transform ease-in-out duration-150",
+								"absolute bg-gradient-to-r pointer-events-none from-accent-foreground/0 z-5 via-accent-foreground w-4/5 to-accent-foreground dark:from-[#281727]/0 dark:via-[#281727] dark:to-[#281727] h-full top-0 right-0 flex p-1 items-center justify-end transition-transform ease-in-out duration-150",
 								isHovering ? "translate-x-0" : "translate-x-full"
 							)}
 						>
@@ -108,7 +117,12 @@ export const ChatListItem = React.memo(function ChatListItem({
 								size="icon"
 								variant="ghost"
 								className="size-7 hover:bg-accent-foreground/10 pointer-events-auto"
-								onClick={alert}
+								onClick={(e) => {
+									e.preventDefault();
+									e.stopPropagation();
+									setShareModalChat(chat);
+									openShareModal();
+								}}
 							>
 								<Share />
 							</Button>
@@ -127,8 +141,8 @@ export const ChatListItem = React.memo(function ChatListItem({
 								onClick={(e) => {
 									e.preventDefault();
 									e.stopPropagation();
-									setChat(chat);
-									open();
+									setDeleteModalChat(chat);
+									openDeleteModal();
 								}}
 							>
 								<X />
@@ -141,7 +155,7 @@ export const ChatListItem = React.memo(function ChatListItem({
 							<Tooltip>
 								<TooltipTrigger asChild>
 									<button
-										className="p-0 cursor-pointer"
+										className="p-0 cursor-pointer opacity-70 hover:opacity-100"
 										onClick={handleBranchClick}
 										aria-label={`Navigate to branched chat: ${branchData.title}`}
 									>

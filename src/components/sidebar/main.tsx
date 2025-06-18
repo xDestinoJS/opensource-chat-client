@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
 	Sidebar,
 	SidebarContent,
@@ -17,7 +17,6 @@ import { ChatGroupSection } from "./chat-group-section";
 import { useSession } from "@/lib/auth-client";
 import { NavUser } from "./nav-user";
 import SearchInput from "./search-input";
-import { cn } from "@/lib/utils";
 import QuickActions from "./quick-actions";
 
 interface ChatGroup {
@@ -32,10 +31,15 @@ interface GroupedChatsResult {
 
 export function AppSidebar() {
 	const { data: sessionData } = useSession();
+	const [isClient, setIsClient] = useState(false);
 	const [editingChatId, setEditingChatId] = useState<Id<"chats"> | null>(null);
 	const [query, setQuery] = useState(""); // State for the search query
 
 	const editInputAreaRef = useRef<HTMLInputElement>(null);
+
+	useEffect(() => {
+		setIsClient(true);
+	}, []);
 
 	const allChats =
 		useQuery(
@@ -143,14 +147,18 @@ export function AppSidebar() {
 	const { pinnedChats, dateBasedGroups } = getChatGroups(matchingChats);
 
 	return (
-		<Sidebar className="duration-250 ease-in-out">
+		<Sidebar className="duration-250 ease-in-out dark:border-r-accent">
 			<SidebarHeader className="p-3">
 				<div className="flex justify-between items-center">
 					<QuickActions />
-					<p className="mt-1">Chat</p>
+					<p className="mt-1 dark:text-[#e3bad1]">Not T3 Chat</p>
 					<div className="size-7"></div>
 				</div>
-				<Button size="lg" className="w-full" asChild>
+				<Button
+					size="lg"
+					className="w-full dark:bg-[#44132b] dark:text-accent-foreground"
+					asChild
+				>
 					<Link href="/chat">New Chat</Link>
 				</Button>
 
@@ -185,7 +193,7 @@ export function AppSidebar() {
 					/>
 				))}
 			</SidebarContent>
-			{sessionData?.user && (
+			{isClient && sessionData?.user && !sessionData?.user.isAnonymous && (
 				<SidebarFooter>
 					<NavUser user={sessionData.user} />
 				</SidebarFooter>

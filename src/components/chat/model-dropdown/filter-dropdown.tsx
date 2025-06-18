@@ -18,7 +18,7 @@ export default function FilterDropdown() {
 			<DropdownMenuTrigger asChild>
 				<div className="relative">
 					{enabledFilters.length > 0 && (
-						<div className="absolute bg-blue-500 top-0.5 right-0.5 size-[7.5px] rounded-full" />
+						<div className="absolute bg-primary top-0.5 right-0.5 size-[7.5px] rounded-full" />
 					)}
 					<Button size="icon" variant="ghost">
 						<Filter />

@@ -211,28 +211,45 @@ export const sendMessage = mutation({
 				model: args.model,
 				isSearchEnabled: args.isSearchEnabled,
 				ownerId: session.userId,
-				visibility: "private",
 			});
 			if (!args.chatId) {
 				throw new Error("Chat could not be created");
 			}
 			chat = await ctx.db.get(args.chatId);
 		} else {
-			authorizeUser(
-				ctx,
-				args.sessionToken,
-				{
-					chatId: args.chatId,
-				},
-				true
-			);
 			chat = await ctx.db.get(args.chatId);
+			if (!chat?.isShared) {
+				authorizeUser(
+					ctx,
+					args.sessionToken,
+					{
+						chatId: args.chatId,
+					},
+					true
+				);
+			}
 			if (chat?.isAnswering) {
 				throw new Error("Answer is already being generated for chat.");
 			}
 		}
 
 		if (!chat) throw new Error("Chat not found");
+
+		// If the chat is shared, branch the message from the last message
+		if (chat.isShared) {
+			const messages = await ctx.runQuery(internal.messages.getMessageHistory, {
+				chatId: chat._id,
+			});
+
+			args.chatId = await ctx.runMutation(internal.chat.branchChat, {
+				messageId: messages[messages.length - 1]._id,
+				title: chat.title,
+				ownerId: session.userId,
+			});
+
+			chat = await ctx.db.get(args.chatId);
+		}
+
 		const chatId = args.chatId as Id<"chats">;
 
 		const images: GenericFileData[] = [];
@@ -307,6 +324,11 @@ export const editMessage = mutation({
 			},
 			true
 		);
+
+		const message = await ctx.db.get(args.messageId);
+		if (!message) throw new Error("Message not found");
+		if (!message.isModifiable == false)
+			throw new Error("Message is not modifiable");
 
 		const { chatId, assistantMessageId } = await _handleMessageUpdate(
 			ctx,
@@ -411,6 +433,11 @@ export const retryMessage = mutation({
 			},
 			true
 		);
+
+		const message = await ctx.db.get(args.messageId);
+		if (!message) throw new Error("Message not found");
+		if (!message.isModifiable == false)
+			throw new Error("Message is not modifiable");
 
 		const { chatId, assistantMessageId } = await _handleMessageUpdate(
 			ctx,

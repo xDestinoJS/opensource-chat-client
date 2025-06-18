@@ -4,8 +4,6 @@ import {
 	ConvexHandler,
 	type ConvexReturnType,
 } from "@better-auth-kit/convex/handler";
-import { Doc, Id } from "./_generated/dataModel";
-import { v } from "convex/values";
 
 const { betterAuth, query, insert, update, delete_, count, getSession } =
 	ConvexHandler({

@@ -201,6 +201,17 @@ export function getProviderDataById(providerId: string) {
 	return provider;
 }
 
+export function getProviderDataByModelId(modelId: string | undefined) {
+	for (const provider of providers) {
+		for (const model of provider.models) {
+			if (model.id === modelId) {
+				return provider;
+			}
+		}
+	}
+	return null;
+}
+
 export function getFullModelName(modelId: string | undefined) {
 	const model = getModelDataById(modelId);
 	if (!model) return "";
@@ -220,5 +231,10 @@ export function modelHasFeature(
 	if (!model) return false;
 	return model.features.some((f) => f.id === featureId);
 }
+
+export const recommendedModels: ModelId[] = [
+	"gemini-2.0-flash",
+	"gemini-2.5-flash",
+];
 
 export default providers;

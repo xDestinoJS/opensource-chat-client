@@ -18,6 +18,8 @@ import ChatInputForm from "./chat-input-form";
 import { GenericFileData } from "@/lib/files";
 import { useChatFeatures } from "@/stores/use-chat-features-store";
 import { authClient, useSession } from "@/lib/auth-client";
+import { cn } from "@/lib/utils";
+import SuggestionsContainer from "./suggestions/main";
 
 export default function ChatPage({ chatId }: { chatId?: Id<"chats"> }) {
 	const router = useRouter();
@@ -25,6 +27,12 @@ export default function ChatPage({ chatId }: { chatId?: Id<"chats"> }) {
 	const { sessionId } = useSessionId();
 	const [quote, setQuote] = useState<string | undefined>();
 	const [mounted, setMounted] = useState(false);
+	const [inputValue, setInputValue] = useState("");
+	const [areSuggestionsHidden, setAreSuggestionsHidden] = useState(false);
+	const initiateUserPreferences = useMutation(
+		api.userPreferences.initiateUserPreferences
+	);
+
 	const { data: sessionData, isPending } = useSession();
 	const { isSearchEnabled, reasoningEffort } = useChatFeatures();
 
@@ -53,7 +61,13 @@ export default function ChatPage({ chatId }: { chatId?: Id<"chats"> }) {
 			if (!isPending && !sessionData) {
 				await authClient.signIn.anonymous();
 				router.refresh();
+				return;
 			}
+
+			if (sessionData)
+				await initiateUserPreferences({
+					sessionToken: sessionData.session.token,
+				});
 		})();
 	}, [isPending, sessionData]);
 
@@ -75,6 +89,7 @@ export default function ChatPage({ chatId }: { chatId?: Id<"chats"> }) {
 	const retryMessage = useMutation(api.messages.retryMessage);
 	const cancelMessage = useMutation(api.messages.cancelMessage);
 
+	// Keep a ref only for focusing & hooks – value is stored in state
 	const inputAreaRef = useRef<AutosizeTextAreaRef>(null);
 	const inputContainerRef = useRef<HTMLDivElement>(null);
 	const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -101,9 +116,11 @@ export default function ChatPage({ chatId }: { chatId?: Id<"chats"> }) {
 
 	async function handleSubmit(
 		currentInput: string,
-		fileDataList: GenericFileData[]
+		fileDataList?: GenericFileData[]
 	) {
 		if (!modelId || !sessionData) return;
+
+		setAreSuggestionsHidden(true);
 
 		const response = await sendMessage({
 			quote: quote,
@@ -111,80 +128,102 @@ export default function ChatPage({ chatId }: { chatId?: Id<"chats"> }) {
 			chatId: chatId as Id<"chats">,
 			model: modelId,
 			sessionId,
-			fileDataList,
+			fileDataList: fileDataList ?? [],
 			isSearchEnabled: isSearchEnabled,
 			reasoningEffort: reasoningEffort,
 			sessionToken: sessionData?.session.token,
 		});
 
 		setQuote(undefined); // Clear the quote after sending
+		setInputValue(""); // Clear the input box
 
 		// If the chatId is not provided, we redirect to the chat page
-		if (messages?.length === 0) {
-			redirect("/chat/" + response?.chatId);
+		if (messages?.length === 0 || chat?.isShared) {
+			router.push("/chat/" + response?.chatId);
 		}
 
-		if (inputAreaRef.current) {
-			inputAreaRef.current.textArea.value = "";
-			inputAreaRef.current.textArea.focus();
-		}
+		inputAreaRef.current?.textArea.focus();
 	}
 
 	return (
 		<main className="flex flex-col items-center justify-center flex-1 h-screen">
 			<div
 				ref={scrollContainerRef}
-				className="flex w-full justify-center grow min-h-0 overflow-y-scroll pb-4 pt-8"
+				className={cn(
+					"flex w-full justify-center grow min-h-0 overflow-y-scroll pb-4 pt-8",
+					pairedMessages?.length == 0 && "items-center"
+				)}
 			>
-				<div className="flex flex-col gap-2 w-full max-w-3xl max-lg:px-8 px-4">
-					{pairedMessages?.map((chunk, index) => {
-						const isLastPair = pairedMessages.length - 1 === index;
-						const userMessage = chunk[0]; // Always user first
-						const assistantMessage = chunk[1]; // Assistant second (might be undefined)
+				{pairedMessages?.length > 0 ? (
+					<div className="flex flex-col gap-2 w-full max-w-3xl max-lg:px-8 px-4">
+						{chat && chat?.isShared && (
+							<div className="w-full border-b border-accent-foreground/20 pb-2 mb-2">
+								<h1 className="flex gap-2 items-end">
+									<span className="text-2xl font-bold">{chat?.title}</span>
+									<span className="text-lg">by Anonymous</span>
+								</h1>
+							</div>
+						)}
+						{pairedMessages?.map((chunk, index) => {
+							const isLastPair = pairedMessages.length - 1 === index;
+							const userMessage = chunk[0]; // Always user first
+							const assistantMessage = chunk[1]; // Assistant second (might be undefined)
 
-						return (
-							<MessagePair
-								key={index}
-								userMessage={userMessage}
-								assistantMessage={assistantMessage}
-								isLastPair={isLastPair}
-								lastPairContainerRef={lastPairContainerRef}
-								onEditMessage={(messageId, content) => {
-									if (!sessionData) return;
+							return (
+								<MessagePair
+									key={index}
+									userMessage={userMessage}
+									assistantMessage={assistantMessage}
+									isLastPair={isLastPair}
+									lastPairContainerRef={lastPairContainerRef}
+									onEditMessage={(messageId, content) => {
+										if (!sessionData) return;
 
-									editMessage({
-										sessionId,
-										messageId,
-										content,
-										sessionToken: sessionData?.session.token,
-									});
+										editMessage({
+											sessionId,
+											messageId,
+											content,
+											sessionToken: sessionData?.session.token,
+										});
+									}}
+									onRetryMessage={(messageId, modelId?: ModelId) => {
+										if (!sessionData) return;
+
+										if (modelId) setModelId(modelId);
+										retryMessage({
+											sessionId,
+											messageId,
+											modelId,
+											reasoningEffort,
+											sessionToken: sessionData?.session.token,
+										});
+									}}
+									onBranchMessage={async (messageId) => {
+										if (!sessionData) return;
+
+										const response = await branchMessage({
+											messageId,
+											sessionToken: sessionData?.session.token,
+										});
+										redirect("/chat/" + response.chatId);
+									}}
+									onQuote={setQuote}
+								/>
+							);
+						})}
+					</div>
+				) : (
+					<>
+						{inputValue.length === 0 && !areSuggestionsHidden && !chatId && (
+							<SuggestionsContainer
+								onSelect={(suggestion: string) => {
+									setInputValue(suggestion);
+									inputAreaRef.current?.textArea.focus();
 								}}
-								onRetryMessage={(messageId, modelId?: ModelId) => {
-									if (!sessionData) return;
-
-									if (modelId) setModelId(modelId);
-									retryMessage({
-										sessionId,
-										messageId,
-										modelId,
-										reasoningEffort,
-										sessionToken: sessionData?.session.token,
-									});
-								}}
-								onBranchMessage={async (messageId) => {
-									if (!sessionData) return;
-
-									const response = await branchMessage({
-										messageId,
-										sessionToken: sessionData?.session.token,
-									});
-									redirect("/chat/" + response.chatId);
-								}}
-								onQuote={setQuote}
 							/>
-						);
-					})}
-				</div>
+						)}
+					</>
+				)}
 			</div>
 
 			<ChatInputForm
@@ -204,6 +243,9 @@ export default function ChatPage({ chatId }: { chatId?: Id<"chats"> }) {
 						sessionToken: sessionData?.session.token,
 					});
 				}}
+				inputValue={inputValue}
+				setInputValue={setInputValue}
+				textAreaRef={inputAreaRef}
 			/>
 		</main>
 	);

@@ -78,7 +78,7 @@ export function EffortControlSelector({
 	align,
 }: {
 	children: ReactNode;
-	onSelect: () => void;
+	onSelect?: () => void;
 	align?: "center" | "start" | "end";
 }) {
 	return (

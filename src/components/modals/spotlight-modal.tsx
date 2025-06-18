@@ -132,31 +132,21 @@ export default function SpotlightModal() {
 					icons={[Plus]}
 					onEnter={() => {
 						startNewChat();
+						close();
 					}}
 					placeholder="Search or press Enter to start new chat..."
 					onKeyDown={handleSearchInputKeyDown}
 				/>
 
-				<ScrollArea className="w-full min-h-30 max-h-90 overflow-y-scroll px-2">
+				<ScrollArea className="w-full min-h-20 max-h-90 overflow-y-scroll p-2">
 					<div className="pt-1" onKeyDown={handleChatListKeyDown}>
-						{matchingChats.length > 0 && (
-							<div className="flex gap-2 my-1.25 font-semibold text-sm items-center w-full">
-								{query.length === 0 ? (
-									<>
-										<Clock size={14} /> <span>Recent Chats</span>
-									</>
-								) : (
-									<span>Threads ({matchingChats.length})</span>
-								)}
-							</div>
-						)}
-
 						{matchingChats.map((chat, i) => (
 							<Button
 								key={chat._id}
-								className="w-full justify-start focus:bg-muted focus-visible:ring-0"
-								size="sm"
+								className="w-full justify-start px-1.5 text-accent-foreground/80 hover:text-accent-foreground focus:text-accent-foreground focus:bg-muted focus-visible:ring-0"
 								variant="ghost"
+								size="lg"
+								onClick={close}
 								asChild
 							>
 								<Link

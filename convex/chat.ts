@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import {
 	internalAction,
 	internalMutation,
+	internalQuery,
 	mutation,
 	query,
 } from "./_generated/server";
@@ -46,6 +47,7 @@ export const listChats = query({
 		return await ctx.db
 			.query("chats")
 			.withIndex("byOwnerId", (q) => q.eq("ownerId", session.userId))
+			.filter((q) => q.eq(q.field("isShared"), false))
 			.order("desc")
 			.collect();
 	},
@@ -72,6 +74,63 @@ export const updateChat = internalMutation({
 
 		// Update the chat with the new title
 		await ctx.db.patch(args.chatId, updates);
+	},
+});
+
+export const shareChat = mutation({
+	args: {
+		chatId: v.id("chats"),
+		toMessageId: v.optional(v.string()),
+		sessionToken: v.string(),
+	},
+	handler: async (ctx, args) => {
+		const session = await getSessionFromToken(ctx, args.sessionToken);
+
+		authorizeUser(
+			ctx,
+			args.sessionToken,
+			{
+				chatId: args.chatId,
+			},
+			true
+		);
+
+		const chat = await ctx.db.get(args.chatId);
+		if (!chat) {
+			throw new Error("[DB] Chat not found.");
+		}
+
+		const messages = await ctx.runQuery(internal.messages.getMessageHistory, {
+			chatId: chat._id,
+		});
+		const index = args.toMessageId
+			? messages.findIndex((msg) => msg._id === args.toMessageId)
+			: messages.length - 1;
+		const messagesToKeep = messages.slice(0, index + 1);
+
+		// Create a new chat with the same messages but a different title
+		const newChatId = await ctx.db.insert("chats", {
+			title: chat.title,
+			isPinned: false,
+			isAnswering: false,
+			ownerId: session.userId,
+			isShared: true,
+		});
+
+		// Insert the messages into the new chat
+		for (const message of messagesToKeep) {
+			const { _id, _creationTime, ...messageWithoutId } = message;
+			await ctx.db.insert("messages", {
+				...messageWithoutId,
+				chatId: newChatId,
+				isStreaming: false,
+				isModifiable: false,
+			});
+		}
+
+		return {
+			chatId: newChatId,
+		};
 	},
 });
 
@@ -156,7 +215,6 @@ export const createChat = internalMutation({
 		messages: v.optional(v.array(v.id("messages"))),
 		isSearchEnabled: v.boolean(),
 		ownerId: v.id("user"),
-		visibility: v.union(v.literal("private"), v.literal("public")),
 	},
 	handler: async (ctx, args) => {
 		// Create a new chat and generate a title based on the provided content
@@ -165,7 +223,7 @@ export const createChat = internalMutation({
 			isPinned: false,
 			isAnswering: true,
 			ownerId: args.ownerId,
-			visibility: args.visibility,
+			isShared: false,
 		});
 
 		// If it's a new chat, we can generate a title based on the content
@@ -186,6 +244,7 @@ export const branchChat = internalMutation({
 	args: {
 		messageId: v.id("messages"),
 		title: v.string(),
+		ownerId: v.optional(v.id("user")),
 	},
 	handler: async (ctx, args) => {
 		const message = await ctx.db.get(args.messageId);
@@ -210,16 +269,18 @@ export const branchChat = internalMutation({
 			branchOf: chat._id,
 			isPinned: false,
 			isAnswering: false,
-			ownerId: chat.ownerId,
-			visibility: "private",
+			ownerId: args.ownerId ?? chat.ownerId,
+			isShared: false,
 		});
 
 		// Insert the messages into the new chat
 		for (const message of messagesToKeep) {
+			const { _id, _creationTime, ...messageWithoutId } = message;
 			await ctx.db.insert("messages", {
-				...message,
+				...messageWithoutId,
 				chatId: newChatId,
 				isStreaming: false,
+				isModifiable: true,
 			});
 		}
 
@@ -305,9 +366,24 @@ export async function authorizeUser(
 
 	// 4. Apply general chat visibility logic (only if ownerOnlyAction is false)
 	// If the chat is private and the user is not the owner, throw an error.
-	if (chat.visibility === "private" && chat.ownerId !== session.userId) {
+	if (!chat.isShared && chat.ownerId !== session.userId) {
 		throw new Error("Chat is private and user is not the owner.");
 	}
 
 	// If none of the above conditions throw an error, the user is authorized.
 }
+
+export const getChatInternal = internalQuery({
+	args: {
+		chatId: v.id("chats"),
+	},
+	handler: async (ctx, args) => {
+		// Fetch the chat by ID
+		const chat = await ctx.db.get(args.chatId);
+		if (!chat) {
+			throw new Error("[DB] Chat not found.");
+		}
+
+		return chat;
+	},
+});

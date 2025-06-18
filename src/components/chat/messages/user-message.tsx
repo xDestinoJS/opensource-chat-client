@@ -113,18 +113,22 @@ export default function UserMessage({
 					isDropdownOpen && "opacity-100!"
 				)}
 			>
-				<RetryDropdown
-					isDropdownOpen={isDropdownOpen}
-					setIsDropdownOpen={setIsDropdownOpen}
-					onRetry={onRetry}
-				>
-					<IconButton>
-						<RefreshCcw />
-					</IconButton>
-				</RetryDropdown>
-				<IconButton onClick={toggleEditing}>
-					<EditIcon />
-				</IconButton>
+				{userMessage.isModifiable != false && (
+					<>
+						<RetryDropdown
+							isDropdownOpen={isDropdownOpen}
+							setIsDropdownOpen={setIsDropdownOpen}
+							onRetry={onRetry}
+						>
+							<IconButton>
+								<RefreshCcw />
+							</IconButton>
+						</RetryDropdown>
+						<IconButton onClick={toggleEditing}>
+							<EditIcon />
+						</IconButton>
+					</>
+				)}
 				<IconButton onClick={() => copyToClipboard(content)} hasConfirmation>
 					<Copy />
 				</IconButton>

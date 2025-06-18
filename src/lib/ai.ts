@@ -11,24 +11,36 @@ import {
 } from "ai";
 import { z } from "zod";
 
-import { google, GoogleGenerativeAIProviderOptions } from "@ai-sdk/google";
-import { mistral } from "@ai-sdk/mistral";
-import { togetherai } from "@ai-sdk/togetherai";
+import {
+	createGoogleGenerativeAI,
+	GoogleGenerativeAIProviderOptions,
+} from "@ai-sdk/google";
 import { modelHasFeature, ModelId } from "./providers";
+import { createMistral } from "@ai-sdk/mistral";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
+import { createTogetherAI } from "@ai-sdk/togetherai";
 
 export type ReasoningEffort = "low" | "medium" | "high";
-
-const openrouter = createOpenRouter({
-	apiKey: process.env.OPENROUTER_API_KEY,
-});
 
 function getModel(
 	modelId: ModelId,
 	opts?: {
 		isSearchEnabled?: boolean;
+		apiKey?: string;
 	}
 ) {
+	const google = createGoogleGenerativeAI({
+		apiKey: opts?.apiKey ?? process.env.GOOGLE_GENERATIVE_AI_API_KEY,
+	});
+
+	const mistral = createMistral({
+		apiKey: opts?.apiKey ?? process.env.MISTRAL_API_KEY,
+	});
+
+	const openrouter = createOpenRouter({
+		apiKey: opts?.apiKey ?? process.env.OPENROUTER_API_KEY,
+	});
+
 	switch (modelId) {
 		case "gemini-2.5-flash":
 			return google("gemini-2.5-flash-preview-05-20", {
@@ -51,7 +63,16 @@ function getModel(
 	}
 }
 
-function getImageModel(modelId: ModelId) {
+function getImageModel(
+	modelId: ModelId,
+	opts?: {
+		apiKey?: string;
+	}
+) {
+	const togetherai = createTogetherAI({
+		apiKey: opts?.apiKey ?? process.env.TOGETHER_AI_API_KEY ?? "",
+	});
+
 	switch (modelId) {
 		case "flux1-schnell":
 			return togetherai.image("black-forest-labs/FLUX.1-schnell-Free");
@@ -63,8 +84,16 @@ function getImageModel(modelId: ModelId) {
 /**
  * Generate an image using the specified AI model.
  */
-export async function generateImage(modelId: ModelId, prompt: string) {
-	let model = getImageModel(modelId);
+export async function generateImage(
+	modelId: ModelId,
+	prompt: string,
+	opts?: {
+		apiKey?: string;
+	}
+) {
+	let model = getImageModel(modelId, {
+		apiKey: opts?.apiKey,
+	});
 
 	if (!prompt) throw new Error("No prompt was provided!");
 
@@ -90,10 +119,13 @@ export async function streamText(
 		onChunk?: StreamTextOnChunkCallback<ToolSet>;
 		onError?: StreamTextOnErrorCallback;
 		onFinish?: StreamTextOnFinishCallback<ToolSet>;
+		systemPrompt?: string;
+		apiKey?: string;
 	}
 ) {
 	let model = getModel(modelId, {
 		isSearchEnabled: opts?.isSearchEnabled,
+		apiKey: opts?.apiKey,
 	});
 
 	if (messages.length === 0) {
@@ -126,6 +158,7 @@ export async function streamText(
 	// streamT to not conflict with the `streamText` function
 	return streamT({
 		model,
+		system: opts?.systemPrompt,
 		messages,
 		temperature: 0.3,
 		maxRetries: 3,
@@ -146,10 +179,14 @@ export async function generateObject(
 	systemPrompt: string,
 	messages: CoreMessage[],
 	schema: z.ZodSchema,
-	isSearchEnabled?: boolean
+	isSearchEnabled?: boolean,
+	opts?: {
+		apiKey?: string;
+	}
 ) {
 	let model = getModel(modelId, {
 		isSearchEnabled,
+		apiKey: opts?.apiKey,
 	});
 
 	const { object } = await generateO({

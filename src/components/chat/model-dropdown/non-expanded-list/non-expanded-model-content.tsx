@@ -55,7 +55,7 @@ export default function NonExpandedModelContent({
 					height={20}
 				/>
 				<div className="flex items-center">
-					{getFullModelName(model.id)}
+					<span className="font-bold">{getFullModelName(model.id)}</span>
 					<Tooltip>
 						<TooltipTrigger asChild>
 							<div className="flex items-center cursor-pointer p-2.5">

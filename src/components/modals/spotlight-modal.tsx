@@ -8,7 +8,7 @@ import { api } from "../../../convex/_generated/api";
 import { useState, useRef, useEffect } from "react";
 import { Button } from "../ui/button";
 import Link from "next/link";
-import { Clock, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import useChatModels from "@/hooks/useChatModels";
 import useSessionId from "@/stores/use-session";
 import { useChatFeatures } from "@/stores/use-chat-features-store";

@@ -19,7 +19,7 @@ const MemoizedMarkdown = memo(
 				<ReactMarkdown
 					remarkPlugins={[remarkGfm]}
 					components={{
-						pre: ({ node, ...props }) => {
+						pre: ({ ...props }) => {
 							return <pre className="not-prose" {...props} />;
 						},
 						code({ className, children }) {

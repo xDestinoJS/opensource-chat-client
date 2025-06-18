@@ -111,7 +111,9 @@ export default function ChatPage({ chatId }: { chatId?: Id<"chats"> }) {
 
 	useEffect(() => {
 		if (mounted)
-			document.title = chat?.title ? `${chat.title} - ChatApp` : "ChatApp";
+			document.title = chat?.title
+				? `${chat.title} - Not T3 Chat`
+				: "Not T3 Chat";
 	}, [chat, mounted]);
 
 	async function handleSubmit(

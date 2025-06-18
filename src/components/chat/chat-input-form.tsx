@@ -2,14 +2,19 @@
 
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useDropzone } from "react-dropzone";
-import { ArrowUp, Brain, Globe, Paperclip, Square } from "lucide-react";
+import { ArrowUp, Globe, Paperclip, Square } from "lucide-react";
 
 import { Button } from "../ui/button";
 import { AutosizeTextarea, AutosizeTextAreaRef } from "../ui/autosize-textarea";
 import { TextQuote } from "../text-quote";
 import ModelDropdown from "./model-dropdown/main";
 
-import { getModelDataById, modelHasFeature, ModelId } from "@/lib/providers";
+import {
+	getModelDataById,
+	modelHasFeature,
+	ModelId,
+	Provider,
+} from "@/lib/providers";
 import uploadFile from "@/utils/upload-file";
 import { GenericFileData, UploadItem } from "@/lib/files";
 import ImagePreview from "./previews/image-preview";
@@ -25,7 +30,7 @@ type Props = {
 	quote?: string;
 	setQuote: (q: string | undefined) => void;
 	modelId: ModelId | null;
-	providersList: any[];
+	providersList: Provider[];
 	setModelId: (id: ModelId) => void;
 	isAnswering: boolean;
 	messagesLength: number;
@@ -54,8 +59,7 @@ export default function ChatInputForm({
 }: Props) {
 	const [isClient, setIsClient] = useState(false);
 
-	const { isSearchEnabled, toggleSearch, reasoningEffort, setReasoningEffort } =
-		useChatFeatures();
+	const { isSearchEnabled, toggleSearch, reasoningEffort } = useChatFeatures();
 
 	const hiddenInputRef = useRef<HTMLInputElement>(null);
 

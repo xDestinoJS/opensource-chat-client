@@ -13,8 +13,10 @@ import { Button } from "../ui/button";
 import { useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { useDeleteChatModal } from "@/stores/use-delete-chat-modal";
+import { useSession } from "@/lib/auth-client";
 
 export default function DeleteChatModal() {
+	const { data: sessionData } = useSession();
 	const { isOpen, close, chat } = useDeleteChatModal();
 	const deleteChat = useMutation(api.chat.deleteChat);
 
@@ -24,8 +26,8 @@ export default function DeleteChatModal() {
 				<DialogHeader>
 					<DialogTitle>Delete Chat</DialogTitle>
 					<DialogDescription>
-						Are you sure you want to delete "{chat?.title}"? This action cannot
-						be undone.
+						Are you sure you want to delete &quot;{chat?.title}&quot;? This
+						action cannot be undone.
 					</DialogDescription>
 				</DialogHeader>
 				<DialogFooter>
@@ -35,10 +37,11 @@ export default function DeleteChatModal() {
 					<Button
 						variant="destructive"
 						onClick={async () => {
-							if (chat) {
+							if (chat && sessionData) {
 								close();
 								deleteChat({
 									id: chat._id,
+									sessionToken: sessionData.session.token,
 								});
 							}
 						}}

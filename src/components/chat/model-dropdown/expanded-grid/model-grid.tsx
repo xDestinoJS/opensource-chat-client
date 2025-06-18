@@ -31,7 +31,6 @@ export function ModelGrid({
 						<ExpandedGridButton
 							key={model.id}
 							model={model}
-							provider={provider}
 							onSelect={onSelect}
 							onToggleFavorite={onToggleFavorite}
 						/>

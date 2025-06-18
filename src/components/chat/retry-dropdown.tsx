@@ -15,10 +15,7 @@ import Image from "next/image";
 import NonExpandedModelContent from "./model-dropdown/non-expanded-list/non-expanded-model-content";
 import LabeledSeparator from "../labeled-separator";
 import { RefreshCcw } from "lucide-react";
-import {
-	EffortControlContent,
-	EffortControlSelector,
-} from "./effort-control-selector";
+import { EffortControlContent } from "./effort-control-selector";
 
 export default function RetryDropdown({
 	children,

@@ -16,8 +16,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-	title: "ChatApp",
-	description: "A Next.js chat application",
+	title: "Not T3 Chat",
+	description: "A T3 Chat Clone",
 };
 
 export default function RootLayout({

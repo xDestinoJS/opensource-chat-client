@@ -75,8 +75,8 @@ export default function Models() {
 		<>
 			<h1 className="text-2xl font-semibold">Available Models</h1>
 			<p>
-				Choose which models appear in your model selector. This won't affect
-				existing conversations.
+				Choose which models appear in your model selector. This won&apos;t
+				affect existing conversations.
 			</p>
 
 			<div className="flex justify-between w-full flex-wrap">

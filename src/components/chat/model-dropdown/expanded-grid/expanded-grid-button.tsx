@@ -13,14 +13,12 @@ import { cn } from "@/lib/utils";
 
 interface ExpandedGridButtonProps {
 	model: ModelConfig;
-	provider: Provider;
 	onSelect: (id: ModelId) => void;
 	onToggleFavorite: (id: ModelId) => void;
 }
 
 export function ExpandedGridButton({
 	model,
-	provider,
 	onSelect,
 	onToggleFavorite,
 }: ExpandedGridButtonProps) {

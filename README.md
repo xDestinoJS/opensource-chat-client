@@ -41,8 +41,8 @@
   - [x] Add Settings (50%) **TODO**
   - [x] Do UI
   - [x] Add dark theme
-  - [ ] Add color theme changing
-  - [ ] Add Custom Agents (GPTs)
+  - [x] Add Custom Agents (GPTs)
+  - [x] Add color theme changing
 
 Pending:
 

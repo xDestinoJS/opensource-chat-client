@@ -5,7 +5,7 @@ import Image from "next/image";
 
 function Content({ agent }: { agent: Doc<"agents"> }) {
 	return (
-		<div className="flex gap-3.5 justify-start w-full h-full">
+		<div className="flex gap-3.5 justify-start items-center w-full h-full overflow-hidden">
 			{agent.imageUrl && (
 				<Image
 					src={agent.imageUrl}
@@ -16,9 +16,11 @@ function Content({ agent }: { agent: Doc<"agents"> }) {
 					unoptimized
 				/>
 			)}
-			<div className="flex flex-col shrink-0 grow text-left">
+			<div className="flex flex-col grow min-w-0 text-left">
 				<h1 className="text-xl font-bold">{agent.title}</h1>
-				<p className="line-clamp-3">{agent.description}</p>
+				<p className="line-clamp-3 break-words whitespace-normal">
+					{agent.description}
+				</p>
 			</div>
 		</div>
 	);

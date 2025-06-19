@@ -221,7 +221,7 @@ export default function AgentModal() {
 											id: agent._id,
 											sessionToken: sessionData.session.token,
 										});
-										toast.success("Agente eliminado.");
+										toast.success("Deleted agent succesfully");
 										close();
 									}
 								}}
@@ -236,7 +236,7 @@ export default function AgentModal() {
 										variant="ghost"
 										onClick={() => {
 											copyToClipboard(link);
-											toast.success("Link copiado.");
+											toast.success("Copied link!");
 										}}
 									>
 										<Copy />

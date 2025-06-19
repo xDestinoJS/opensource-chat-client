@@ -32,7 +32,7 @@ export default function AgentButton({
 			{onClick ? (
 				<Content agent={agent} />
 			) : (
-				<Link href={`/agents/${agent._id}`}>
+				<Link href={`/chat/agents/${agent._id}`}>
 					<Content agent={agent} />
 				</Link>
 			)}

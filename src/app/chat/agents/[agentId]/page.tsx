@@ -5,11 +5,7 @@ import { Id } from "../../../../../convex/_generated/dataModel";
 import ChatPage from "@/components/chat/chat-page";
 
 export default function Page() {
-	const { agentId, chatId } = useParams();
-	return (
-		<ChatPage
-			chatId={chatId as Id<"chats">}
-			agentId={agentId as Id<"agents">}
-		/>
-	);
+	const { agentId } = useParams();
+
+	return <ChatPage agentId={agentId as Id<"agents">} />;
 }

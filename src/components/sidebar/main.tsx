@@ -6,6 +6,7 @@ import {
 	SidebarContent,
 	SidebarFooter,
 	SidebarHeader,
+	useSidebar,
 } from "@/components/ui/sidebar";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
@@ -144,6 +145,23 @@ export function AppSidebar() {
 	);
 
 	const { pinnedChats, dateBasedGroups } = getChatGroups(matchingChats);
+	const { setOpen, isMobile } = useSidebar();
+
+	// Open desktop sidebar when user runs CTRL b or CMD b
+	useEffect(() => {
+		const handleKeyDown = (e: KeyboardEvent) => {
+			if (e.ctrlKey || (e.metaKey && (e.key === "b" || e.key === "B"))) {
+				e.preventDefault();
+				if (!isMobile) setOpen(true);
+			}
+		};
+
+		document.addEventListener("keydown", handleKeyDown);
+
+		return () => {
+			document.removeEventListener("keydown", handleKeyDown);
+		};
+	}, []);
 
 	return (
 		<Sidebar className="duration-250 ease-in-out border-r-sidebar-border">

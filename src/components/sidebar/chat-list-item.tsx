@@ -116,7 +116,7 @@ export const ChatListItem = React.memo(function ChatListItem({
 							<Button
 								size="icon"
 								variant="ghost"
-								className="size-7 hover:bg-accent-foreground/10 pointer-events-auto"
+								className="size-7 hover:bg-foreground/10 dark:hover:bg-accent-foreground/10 pointer-events-auto"
 								onClick={(e) => {
 									e.preventDefault();
 									e.stopPropagation();
@@ -129,7 +129,7 @@ export const ChatListItem = React.memo(function ChatListItem({
 							<Button
 								size="icon"
 								variant="ghost"
-								className="size-7 hover:bg-accent-foreground/10 pointer-events-auto"
+								className="size-7 hover:bg-foreground/10 dark:hover:bg-accent-foreground/10 pointer-events-auto"
 								onClick={togglePin}
 							>
 								{chat.isPinned ? <PinOff /> : <Pin />}
@@ -137,7 +137,7 @@ export const ChatListItem = React.memo(function ChatListItem({
 							<Button
 								size="icon"
 								variant="ghost"
-								className="size-7 hover:bg-destructive pointer-events-auto"
+								className="size-7 hover:bg-highlight-background hover:text-highlight-foreground dark:hover:text-highlight-foreground dark:hover:bg-highlight-background pointer-events-auto"
 								onClick={(e) => {
 									e.preventDefault();
 									e.stopPropagation();

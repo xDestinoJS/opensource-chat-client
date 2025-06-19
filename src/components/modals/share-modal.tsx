@@ -59,7 +59,7 @@ export default function ShareModal() {
 
 				<div className="flex w-full gap-2 rounded-lg">
 					<Input className="grow h-full" value={link} readOnly />
-					<Button onClick={generateShareLink} size="lg">
+					<Button onClick={generateShareLink} variant="highlight" size="lg">
 						{link ? (
 							<>
 								<CopyIcon /> Copy link

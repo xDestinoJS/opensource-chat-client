@@ -153,6 +153,22 @@ export default function ChatPage({ chatId }: { chatId?: Id<"chats"> }) {
 	const isSmallScreen = useMediaQuery("(max-width: 640px)");
 	const { open, openMobile, isMobile } = useSidebar();
 
+	// If user presses CTRL or CMD O, redirect to /chat
+	useEffect(() => {
+		const handleKeyDown = (e: KeyboardEvent) => {
+			if (e.ctrlKey || (e.metaKey && (e.key === "o" || e.key === "O"))) {
+				e.preventDefault();
+				router.push("/chat");
+			}
+		};
+
+		document.addEventListener("keydown", handleKeyDown);
+
+		return () => {
+			document.removeEventListener("keydown", handleKeyDown);
+		};
+	}, []);
+
 	return (
 		<main className="relative flex flex-col items-center justify-center flex-1 h-screen">
 			<div className="absolute w-full h-full bg-[url(/assets/noise-light.png)] pointer-events-none opacity-8 bg-repeat" />

@@ -90,7 +90,7 @@ export default function AgentModal() {
 			form.setValue("title", agent.title);
 			form.setValue("description", agent.description);
 			form.setValue("systemPrompt", agent.systemPrompt);
-			setLink(window.location.origin + "/chat?agentId=" + agent._id);
+			setLink(window.location.origin + "/agents/" + agent._id);
 		}
 	}, [agent]);
 

@@ -273,6 +273,7 @@ export const branchChat = internalMutation({
 			isAnswering: false,
 			ownerId: args.ownerId ?? chat.ownerId,
 			isShared: false,
+			agentId: chat.agentId,
 		});
 
 		// Insert the messages into the new chat

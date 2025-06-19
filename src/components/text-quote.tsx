@@ -7,6 +7,7 @@ interface TextQuoteProps {
 	variant: "background" | "foreground";
 	onRemove?: () => void;
 	className?: string;
+	paragraphClassName?: string;
 }
 
 export function TextQuote({
@@ -14,21 +15,25 @@ export function TextQuote({
 	variant,
 	onRemove,
 	className,
+	paragraphClassName,
 }: TextQuoteProps) {
 	return (
 		<div
 			className={cn(
-				"flex items-center w-full rounded-lg p-2.5 px-3.5 gap-2 mb-2",
+				"flex items-center w-full rounded-lg overflow-hidden p-2.5 px-3.5 gap-2 mb-2",
 				variant == "foreground" &&
 					"bg-accent-foreground/2.5 rounded-tl-xl rounded-tr-xl",
-				variant == "background" && "bg-transparent",
+				variant == "background" && "justify-end",
 				className
 			)}
 		>
 			<div className="shrink-0 text-muted-foreground mr-1 mt-1">
 				<CornerDownRight size={20} />
 			</div>
-			<p className="grow text-sm text-muted-foreground line-clamp-3">{quote}</p>
+			<div className="text-sm text-muted-foreground break-all line-clamp-3">
+				{quote}
+			</div>
+
 			{onRemove && (
 				<Button
 					className="shrink-0"

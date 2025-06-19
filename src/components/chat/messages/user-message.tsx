@@ -85,7 +85,8 @@ export default function UserMessage({
 				<TextQuote
 					quote={userMessage.quote}
 					variant="background"
-					className="mb-2 w-max max-w-full"
+					className="mb-2 max-w-full"
+					paragraphClassName="grow-0 w-max max-w-full"
 				/>
 			)}
 			<div

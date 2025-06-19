@@ -82,28 +82,31 @@ export default function AgentModal() {
 			values.imageUrl = res.uploadUrl;
 		}
 
-		if (!agent) {
-			await createAgent({
-				title: values.title,
-				description: values.description,
-				imageUrl: values.imageUrl,
-				systemPrompt: values.systemPrompt,
-				sessionToken: sessionData.session.token,
-			});
-			toast.success("Created agent succesfully!");
-		} else {
-			await updateAgent({
-				id: agent._id,
-				title: values.title,
-				imageUrl: values.imageUrl,
-				description: values.description,
-				systemPrompt: values.systemPrompt,
-				sessionToken: sessionData.session.token,
-			});
-			toast.success("Updated agent succesfully!");
+		try {
+			if (!agent) {
+				await createAgent({
+					title: values.title,
+					description: values.description,
+					imageUrl: values.imageUrl,
+					systemPrompt: values.systemPrompt,
+					sessionToken: sessionData.session.token,
+				});
+				toast.success("Created agent succesfully!");
+			} else {
+				await updateAgent({
+					id: agent._id,
+					title: values.title,
+					imageUrl: values.imageUrl,
+					description: values.description,
+					systemPrompt: values.systemPrompt,
+					sessionToken: sessionData.session.token,
+				});
+				toast.success("Updated agent succesfully!");
+			}
+			close();
+		} catch (err) {
+			toast.error("An error occured.");
 		}
-
-		close();
 	};
 
 	useEffect(() => {

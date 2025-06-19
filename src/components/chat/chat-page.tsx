@@ -105,11 +105,12 @@ export default function ChatPage({
 	const lastPairContainerRef = useRef<HTMLDivElement>(null);
 	const scrollContainerRef = useRef<HTMLDivElement>(null);
 
+	const agentIdString = (chat ? chat?.agentId : null) ?? agentId;
 	const agent = useQuery(
 		api.agents.getAgentData,
-		agentId
+		agentIdString
 			? {
-					id: agentId,
+					id: agentIdString,
 				}
 			: "skip"
 	);

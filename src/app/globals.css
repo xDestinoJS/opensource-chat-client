@@ -138,12 +138,11 @@
 	@apply [scrollbar-width:none] [&::-webkit-scrollbar]:hidden;
 }
 
-*, body {
-	scrollbar-width: none; /* Firefox */
-	-ms-overflow-style: none; /* IE and Edge */
-	overflow: auto;
+* {
+  scrollbar-width: none;       /* Firefox */
+  -ms-overflow-style: none;    /* IE 10+ */
 }
 
-*, body::-webkit-scrollbar {
-	display: none; /* Chrome, Safari, Opera */
+*::-webkit-scrollbar {
+  display: none;               /* Chrome, Safari */
 }

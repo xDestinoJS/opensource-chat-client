@@ -108,7 +108,7 @@ export default function CustomizeT3Chat() {
 				{...field}
 				placeholder={placeholder}
 				maxLength={max}
-				className="pr-12 dark:bg-black/5 dark:border-black/20"
+				className="pr-12"
 			/>
 			<span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
 				{watchValue.length}/{max}
@@ -168,35 +168,36 @@ export default function CustomizeT3Chat() {
 								form
 							>
 								<div>
-									{/* Active Traits */}
-									{form.watch("traits").length > 0 && (
-										<div className="flex flex-wrap gap-2 mb-2">
-											{form.watch("traits").map((trait, idx) => (
-												<TraitBadge
-													key={idx}
-													label={trait}
-													removable
-													onClick={() => removeTrait(trait)}
-												/>
-											))}
+									<div className="bg-input/30 rounded-md border border-input p-2">
+										{/* Active Traits */}
+										{form.watch("traits").length > 0 && (
+											<div className="flex flex-wrap gap-2 mb-2">
+												{form.watch("traits").map((trait, idx) => (
+													<TraitBadge
+														key={idx}
+														label={trait}
+														removable
+														onClick={() => removeTrait(trait)}
+													/>
+												))}
+											</div>
+										)}
+
+										{/* Trait Input */}
+										<div className="relative">
+											<Input
+												placeholder="Type a trait and press Enter or Tab..."
+												value={traitInput}
+												onChange={(e) => setTraitInput(e.target.value)}
+												onKeyDown={handleTraitKeyDown}
+												maxLength={50}
+												className="bg-transparent! rounded-md px-1 shadow-none border-none pr-12"
+											/>
+											<span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+												{traitInput.length}/50
+											</span>
 										</div>
-									)}
-
-									{/* Trait Input */}
-									<div className="relative">
-										<Input
-											placeholder="Type a trait and press Enter or Tab..."
-											value={traitInput}
-											onChange={(e) => setTraitInput(e.target.value)}
-											onKeyDown={handleTraitKeyDown}
-											maxLength={50}
-											className="pr-12 dark:bg-black/5 dark:border-black/20"
-										/>
-										<span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-											{traitInput.length}/50
-										</span>
 									</div>
-
 									{/* Suggested Traits */}
 									<div className="flex flex-wrap gap-2 mt-2">
 										{suggestedTraits.map((trait, idx) =>
@@ -231,7 +232,7 @@ export default function CustomizeT3Chat() {
 											{...field}
 											placeholder="Interests, values, or preferences to keep in mind"
 											maxLength={300}
-											className="min-h-[120px] resize-none pr-16 dark:bg-black/5 dark:border-black/20"
+											className="min-h-[120px] resize-none pr-16"
 										/>
 									</FormControl>
 									<span className="absolute right-3 bottom-3 text-sm text-muted-foreground">
@@ -245,7 +246,7 @@ export default function CustomizeT3Chat() {
 
 					{/* Submit */}
 					<div className="flex justify-end pt-4">
-						<Button type="submit" className="dark:bg-[#ae1b6c]">
+						<Button type="submit" variant="highlight">
 							Save Preferences
 						</Button>
 					</div>

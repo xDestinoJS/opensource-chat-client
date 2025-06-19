@@ -9,6 +9,7 @@ import {
 	Sparkles,
 } from "lucide-react";
 import { useSession } from "@/lib/auth-client";
+import { motion } from "framer-motion";
 
 export type SuggestionCategory = {
 	id: number;
@@ -106,8 +107,13 @@ export default function SuggestionsContainer({
 	}
 
 	return (
-		<div className="flex flex-col gap-4.5 w-full max-w-2xl max-md:px-10">
-			<h1 className="text-2xl font-bold">
+		<motion.div
+			className="flex flex-col gap-4.5 w-full max-w-2xl max-md:px-10"
+			initial={{ opacity: 0, scale: 0.95 }}
+			animate={{ opacity: 1, scale: 1 }}
+			transition={{ duration: 0.25 }}
+		>
+			<h1 className="text-3xl font-bold">
 				{sessionData?.session && !sessionData?.user.isAnonymous
 					? `How can I help you, ${sessionData?.user?.name}?`
 					: "How can I help you?"}
@@ -134,6 +140,6 @@ export default function SuggestionsContainer({
 					/>
 				))}
 			</div>
-		</div>
+		</motion.div>
 	);
 }

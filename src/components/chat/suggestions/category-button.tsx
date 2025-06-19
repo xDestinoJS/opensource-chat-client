@@ -17,7 +17,7 @@ export default function CategoryButton({
 		<Button
 			variant={!isSelected ? "ghost" : "secondary"}
 			size="lg"
-			className="rounded-full shadow-none border border-muted-foreground/10"
+			className="rounded-full shadow-xs border border-muted-foreground/10 bg-[#f6e5f3] dark:bg-[#27222d] hover:bg-[#f1c4e6] dark:hover:bg-[#362d3d]"
 			onClick={() => onClick(category.id)}
 		>
 			{Icon && <Icon />}

@@ -1,18 +1,15 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter } from "next/font/google"; // Changed from Lato to Inter
 import "./globals.css";
 import { ConvexClientProvider } from "@/components/convex-client-provider";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 
-const geistSans = Geist({
-	variable: "--font-geist-sans",
+// Configure the Inter font
+const inter = Inter({
 	subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-	variable: "--font-geist-mono",
-	subsets: ["latin"],
+	display: "swap", // Optimizes font loading
+	variable: "--font-inter", // Define a CSS variable for easy access
 });
 
 export const metadata: Metadata = {
@@ -27,16 +24,11 @@ export default function RootLayout({
 }>) {
 	return (
 		<html lang="en" suppressHydrationWarning>
-			<head>
-				{/* <script src="https://unpkg.com/react-scan/dist/auto.global.js" /> */}
-			</head>
-			<body
-				className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-			>
+			<body className={`${inter.className} antialiased`}>
 				<ConvexClientProvider>
 					<ThemeProvider
 						attribute="class"
-						defaultTheme="light"
+						defaultTheme="system"
 						disableTransitionOnChange
 					>
 						{children}

@@ -17,7 +17,6 @@ import { ChatGroupSection } from "./chat-group-section";
 import { useSession } from "@/lib/auth-client";
 import { NavUser } from "./nav-user";
 import SearchInput from "./search-input";
-import QuickActions from "./quick-actions";
 
 interface ChatGroup {
 	label: string;
@@ -147,12 +146,10 @@ export function AppSidebar() {
 	const { pinnedChats, dateBasedGroups } = getChatGroups(matchingChats);
 
 	return (
-		<Sidebar className="duration-250 ease-in-out dark:border-r-accent">
+		<Sidebar className="duration-250 ease-in-out border-r-sidebar-border">
 			<SidebarHeader className="p-3">
-				<div className="flex justify-between items-center">
-					<QuickActions />
+				<div className="flex justify-center items-center">
 					<p className="mt-1 dark:text-[#e3bad1]">Not T3 Chat</p>
-					<div className="size-7"></div>
 				</div>
 				<Button
 					size="lg"
@@ -197,7 +194,12 @@ export function AppSidebar() {
 				{isClient && sessionData?.user && !sessionData?.user.isAnonymous ? (
 					<NavUser user={sessionData.user} />
 				) : (
-					<Button size="lg" asChild>
+					<Button
+						size="lg"
+						className="hover:bg-accent-foreground/7.5 justify-start"
+						variant="ghost"
+						asChild
+					>
 						<Link href="/auth">
 							<LogInIcon /> Login
 						</Link>

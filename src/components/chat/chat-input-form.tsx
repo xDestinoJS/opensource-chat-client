@@ -325,7 +325,7 @@ export default function ChatInputForm({
 						<Button
 							size="icon"
 							type="button"
-							className="dark:bg-[#4b1e39]  dark:border dark:border-[#6b2748]"
+							variant="highlight"
 							disabled={inputValue.length == 0}
 							onClick={handleSend}
 						>
@@ -335,7 +335,7 @@ export default function ChatInputForm({
 						<Button
 							size="icon"
 							type="button"
-							className="dark:bg-[#4b1e39] dark:border dark:border-[#6b2748]"
+							variant="highlight"
 							onClick={onCancel}
 						>
 							<Square className="fill-secondary" />

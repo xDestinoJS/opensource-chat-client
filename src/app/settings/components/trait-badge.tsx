@@ -10,19 +10,14 @@ type Props = {
 };
 
 export default function TraitBadge({ label, onClick, removable }: Props) {
-	const base = "flex items-center gap-1 px-3 py-1 transition-colors";
-	const active =
-		"bg-muted dark:bg-muted/10 text-accent-foreground/80 hover:bg-muted-foreground/15";
-	const suggested =
-		"bg-gray-100 dark:bg-gray-100/10 text-gray-700 dark:text-white hover:bg-gray-200";
+	const base =
+		"bg-muted dark:bg-muted/5 flex items-center gap-1 px-3 py-1 transition-colors text-foreground/80 hover:bg-muted-foreground/15 hover:text-foreground";
 
 	return (
 		<Badge
 			variant="secondary"
 			onClick={onClick}
-			className={`${base} ${removable ? active : suggested} select-none ${
-				onClick ? "cursor-pointer" : ""
-			}`}
+			className={`${base} select-none ${onClick ? "cursor-pointer" : ""}`}
 		>
 			{label}
 			{removable && (

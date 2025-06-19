@@ -109,7 +109,7 @@ export const ChatListItem = React.memo(function ChatListItem({
 					{!isEditing ? (
 						<div
 							className={cn(
-								"absolute bg-gradient-to-r pointer-events-none from-white/0 z-5 via-white w-4/5 to-white dark:from-[#281727]/0 dark:via-[#281727] dark:to-[#281727] h-full top-0 right-0 flex p-1 items-center justify-end transition-transform ease-in-out duration-150",
+								"absolute bg-gradient-to-r pointer-events-none from-accent/0 z-5 via-accent w-4/5 to-accent h-full top-0 right-0 flex p-1 items-center justify-end transition-transform ease-in-out duration-150",
 								isHovering ? "translate-x-0" : "translate-x-full"
 							)}
 						>

@@ -13,6 +13,7 @@ import { useEffect } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Shortcut, { ShortcutData } from "./components/shortcut";
+import ChangeThemeButton from "@/components/change-theme-button";
 
 const pages = [
 	{
@@ -70,7 +71,7 @@ export default function SettingsLayout({
 
 	return (
 		<TooltipProvider>
-			<div className="w-full bg-[#f2e3f5] dark:bg-[#20141c] min-h-screen">
+			<div className="w-full bg-gradient-to-b from-gradient-top to-gradient-top min-h-screen">
 				<div className="flex flex-col items-center gap-7 max-w-7xl p-7 md:p-10 mx-auto">
 					<div className="w-full flex justify-between">
 						<Button size="sm" variant="ghost" asChild>
@@ -82,7 +83,10 @@ export default function SettingsLayout({
 							</Link>
 						</Button>
 
-						<SignOutButton />
+						<div className="flex items-center gap-2">
+							<ChangeThemeButton />
+							<SignOutButton />
+						</div>
 					</div>
 					<div className="w-full flex flex-col sm:flex-row justify-between items-center sm:items-start gap-7 sm:gap-14">
 						<div className="flex flex-row sm:flex-col justify-center items-center gap-4 w-full sm:max-w-[280px] shrink-0">
@@ -105,7 +109,7 @@ export default function SettingsLayout({
 										{sessionData?.user?.name}
 									</h1>
 									<p
-										className="text-[.93rem] text-muted-foreground max-sm:truncate sm:w-4/5 break-all w-full"
+										className="text-[.93rem] text-foreground/80 max-sm:truncate sm:w-4/5 break-all w-full"
 										title={sessionData?.user?.email || ""}
 									>
 										{sessionData?.user?.email}
@@ -113,24 +117,22 @@ export default function SettingsLayout({
 								</div>
 								<div
 									className={cn(
-										"p-1 px-3 bg-muted dark:bg-muted/10 text-muted-foreground dark:text-white rounded-full w-max text-sm select-none cursor-pointer hover:scale-105 hover:shadow-md transition-all ease-in-out relative overflow-hidden",
+										"p-1 px-3 bg-muted dark:bg-muted/10 mt-1 text-muted-foreground dark:text-white rounded-full w-max text-sm select-none cursor-pointer hover:scale-105 hover:shadow-md transition-all ease-in-out relative overflow-hidden",
 										"group",
 										isPremium &&
 											"bg-gradient-to-t from-gradient-end via-cyan-500 via-90% to-cyan-500 text-white"
 									)}
 								>
-									<span className="relative z-10 pointer-events-none">
+									<span className="relative z-10 text-xs pointer-events-none">
 										{!isPremium ? "Free plan" : "Premium"}
 									</span>
 
-									{isPremium && (
-										<span className="absolute inset-0 z-0 before:absolute before:inset-0 before:rounded-[inherit] before:bg-[linear-gradient(45deg,transparent_25%,white_50%,transparent_75%,transparent_100%)] before:bg-[length:250%_250%] before:bg-[position:200%_0] before:bg-no-repeat before:transition-[background-position] before:duration-0 hover:before:bg-[position:-100%_0] hover:before:duration-[750ms]" />
-									)}
+									<span className="absolute inset-0 z-0 before:absolute before:inset-0 before:rounded-[inherit] before:bg-[linear-gradient(45deg,transparent_25%,white_50%,transparent_75%,transparent_100%)] before:bg-[length:250%_250%] before:bg-[position:200%_0] before:bg-no-repeat before:transition-[background-position] before:duration-0 hover:before:bg-[position:-100%_0] hover:before:duration-[750ms]" />
 								</div>
 
-								<div className="p-4 w-full border text-left rounded-lg bg-white dark:bg-[#0b080b] mt-4">
+								<div className="p-4 w-full text-left rounded-lg bg-gradient-bottom mt-4">
 									<h1 className="text-sm font-bold mb-4">Keyboard Shortcuts</h1>
-									<div className="flex flex-col gap-2">
+									<div className="flex flex-col gap-3.5">
 										{shortcuts.map((shortcut, index) => (
 											<Shortcut key={index} shortcut={shortcut}></Shortcut>
 										))}

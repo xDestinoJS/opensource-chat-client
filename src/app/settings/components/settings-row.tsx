@@ -23,7 +23,7 @@ export default function SettingsRow({ pages }: { pages: SettingsPages }) {
 	return (
 		<>
 			{/* Mobile view (visible below sm breakpoint) */}
-			<div className="sm:hidden w-full p-1.5 rounded-lg bg-muted/60 dark:bg-muted/10">
+			<div className="sm:hidden w-full p-1 rounded-lg bg-muted/60 dark:bg-muted/10">
 				<DropdownMenu>
 					<DropdownMenuTrigger asChild>
 						<Button
@@ -61,17 +61,15 @@ export default function SettingsRow({ pages }: { pages: SettingsPages }) {
 			</div>
 
 			{/* Desktop view (visible from sm breakpoint and up) */}
-			<div className="hidden sm:flex flex-wrap gap-1 p-1.5 w-max h-max rounded-lg bg-muted/60 dark:bg-muted/10">
+			<div className="hidden sm:flex flex-wrap gap-0.75 p-0.75 w-max h-max rounded-lg bg-[#f2cbe9] dark:bg-[#312836]">
 				{pages.map((page) => (
 					<Button
 						key={page.name}
 						variant="ghost"
 						size="sm"
 						className={cn(
-							"w-max hover:bg-muted-foreground/15 rounded-md dark:hover:bg-muted/20 text-sm",
-							pathname === page.href
-								? "bg-muted-foreground/15 dark:bg-muted/10"
-								: ""
+							"w-max rounded-md text-sm",
+							pathname === page.href ? "bg-gradient-top text-foreground" : ""
 						)}
 						asChild
 					>

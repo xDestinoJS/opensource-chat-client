@@ -141,7 +141,7 @@ export default function Page() {
 					})}
 
 					<div className="flex justify-end">
-						<Button type="submit" className="dark:bg-[#ae1b6c]">
+						<Button type="submit" variant="highlight">
 							Submit
 						</Button>
 					</div>

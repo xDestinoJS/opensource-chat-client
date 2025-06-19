@@ -20,6 +20,10 @@ import { useChatFeatures } from "@/stores/use-chat-features-store";
 import { authClient, useSession } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
 import SuggestionsContainer from "./suggestions/main";
+import QuickActionsLeft from "../sidebar/quick-actions-left";
+import { useSidebar } from "../ui/sidebar";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
+import QuickActionsRight from "../sidebar/quick-actions-right";
 
 export default function ChatPage({ chatId }: { chatId?: Id<"chats"> }) {
 	const router = useRouter();
@@ -146,9 +150,13 @@ export default function ChatPage({ chatId }: { chatId?: Id<"chats"> }) {
 
 		inputAreaRef.current?.textArea.focus();
 	}
+	const isSmallScreen = useMediaQuery("(max-width: 640px)");
+	const { open, openMobile, isMobile } = useSidebar();
 
 	return (
-		<main className="flex flex-col items-center justify-center flex-1 h-screen">
+		<main className="relative flex flex-col items-center justify-center flex-1 h-screen">
+			<div className="absolute w-full h-full bg-[url(/assets/noise-light.png)] opacity-8 bg-repeat" />
+
 			<div
 				ref={scrollContainerRef}
 				className={cn(
@@ -156,6 +164,100 @@ export default function ChatPage({ chatId }: { chatId?: Id<"chats"> }) {
 					pairedMessages?.length == 0 && "items-center"
 				)}
 			>
+				<div
+					className={cn(
+						"absolute overflow-x-clip right-0 w-[calc(100%+1px)] z-30 h-4 bg-sidebar border-b border-sidebar-border transition-all ease-in-out duration-500",
+						!isSmallScreen && ((open && !openMobile) || isMobile)
+							? "top-0"
+							: "-top-4.5"
+					)}
+				>
+					<div className="relative w-full h-full">
+						{!isMobile ? (
+							<div
+								className="absolute top-[calc(100%-0.25px)] left-0 size-3.5 bg-sidebar"
+								style={{ clipPath: "inset(0px 0px 0px 0px)" }}
+							>
+								<div className="bg-background border border-sidebar-border rounded-full w-[200%] h-[200%]"></div>
+							</div>
+						) : (
+							<svg
+								className="absolute left-3 top-[calc(100%-2px)] h-9 origin-top-left overflow-visible mt-0.5 translate-x-[calc(4rem+10px)] skew-x-[30deg] -scale-x-100 max-sm:hidden"
+								version="1.1"
+								xmlns="http://www.w3.org/2000/svg"
+								xmlnsXlink="http://www.w3.org/1999/xlink"
+								viewBox="0 0 128 32"
+								xmlSpace="preserve"
+							>
+								<line
+									stroke="var(--sidebar)"
+									strokeWidth="2px"
+									shapeRendering="optimizeQuality"
+									vectorEffect="non-scaling-stroke"
+									strokeLinecap="round"
+									strokeMiterlimit="10"
+									x1="1"
+									y1="0"
+									x2="128"
+									y2="0"
+								></line>
+								<path
+									stroke="var(--sidebar-border)"
+									className="translate-y-[0.5px]"
+									fill="var(--sidebar)"
+									shapeRendering="optimizeQuality"
+									strokeWidth="1px"
+									strokeLinecap="round"
+									strokeMiterlimit="10"
+									vectorEffect="non-scaling-stroke"
+									d="M0,0c5.9,0,10.7,4.8,10.7,10.7v10.7c0,5.9,4.8,10.7,10.7,10.7H128V0"
+								></path>
+							</svg>
+						)}
+
+						<svg
+							className={cn(
+								"absolute h-9 -right-8.5 origin-top-left skew-x-[30deg] overflow-visible transition-all duration-300",
+								!isSmallScreen && ((open && !openMobile) || isMobile)
+									? "top-full"
+									: "-top-9"
+							)}
+							version="1.1"
+							xmlns="http://www.w3.org/2000/svg"
+							xmlnsXlink="http://www.w3.org/1999/xlink"
+							viewBox="0 0 128 32"
+							xmlSpace="preserve"
+						>
+							<line
+								stroke="var(--sidebar)"
+								strokeWidth="2px"
+								shape-rendering="optimizeQuality"
+								vectorEffect="non-scaling-stroke"
+								strokeLinecap="round"
+								strokeMiterlimit="10"
+								x1="1"
+								y1="0"
+								x2="128"
+								y2="0"
+							></line>
+							<path
+								stroke="var(--sidebar-border)"
+								className="translate-y-[0.5px]"
+								fill="var(--sidebar)"
+								shape-rendering="optimizeQuality"
+								strokeWidth="1px"
+								strokeLinecap="round"
+								strokeMiterlimit="10"
+								vectorEffect="non-scaling-stroke"
+								d="M0,0c5.9,0,10.7,4.8,10.7,10.7v10.7c0,5.9,4.8,10.7,10.7,10.7H128V0"
+							></path>
+						</svg>
+					</div>
+
+					<QuickActionsLeft />
+					<QuickActionsRight />
+				</div>
+
 				{pairedMessages?.length > 0 ? (
 					<div className="flex flex-col gap-2 w-full max-w-3xl max-lg:px-8 px-4">
 						{chat && chat?.isShared && (

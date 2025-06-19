@@ -25,7 +25,7 @@ export default function ExpandedGrid({
 			animate={{ opacity: 1 }}
 			exit={{ opacity: 0 }}
 			transition={{ duration: 0.3 }}
-			className="flex flex-col gap-4 p-3 overflow-x-hidden max-h-120"
+			className="flex flex-col gap-4 p-3 overflow-x-hidden"
 		>
 			{favoritedModels.length > 0 && (
 				<ModelGrid

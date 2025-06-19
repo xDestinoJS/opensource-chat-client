@@ -155,8 +155,8 @@ export default function ModelDropdown({
 				{/* List and Grid */}
 				<div
 					className={cn(
-						"transition-all duration-300 overflow-x-hidden -m-1 max-h-screen max-w-screen",
-						!isExpanded ? "w-85 h-50 overflow-y-scroll" : "w-160 h-90"
+						"transition-all duration-300 overflow-x-hidden overflow-y-scroll -m-1 max-h-screen max-w-screen",
+						!isExpanded ? "w-85 h-50" : "w-160 h-90"
 					)}
 				>
 					<AnimatePresence mode="sync">

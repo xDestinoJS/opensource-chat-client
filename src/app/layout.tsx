@@ -13,7 +13,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-	title: "Not T3 Chat",
+	title: "Aiki App",
 	description: "A T3 Chat Clone",
 };
 

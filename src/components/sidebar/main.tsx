@@ -167,7 +167,7 @@ export function AppSidebar() {
 		<Sidebar className="duration-250 ease-in-out border-r-sidebar-border">
 			<SidebarHeader className="p-3">
 				<div className="flex justify-center items-center">
-					<p className="mt-1 dark:text-[#e3bad1]">Not T3 Chat</p>
+					<p className="mt-1 dark:text-[#e3bad1]">Aiki</p>
 				</div>
 				<Button
 					size="lg"

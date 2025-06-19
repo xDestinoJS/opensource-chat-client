@@ -130,11 +130,7 @@ export default function CustomizeT3Chat() {
 						control={form.control}
 						name="name"
 						render={({ field }) => (
-							<SettingsItem
-								title="What should T3 Chat call you?"
-								size="sm"
-								form
-							>
+							<SettingsItem title="What should Aiki call you?" size="sm" form>
 								{renderTextInput(field, "Enter your name", 50, field.value)}
 							</SettingsItem>
 						)}
@@ -162,7 +158,7 @@ export default function CustomizeT3Chat() {
 						name="traits"
 						render={() => (
 							<SettingsItem
-								title="What traits should T3 Chat have?"
+								title="What traits should Aiki have?"
 								subtitle="(up to 50, max 100 chars each)"
 								size="sm"
 								form
@@ -222,7 +218,7 @@ export default function CustomizeT3Chat() {
 						name="additionalInfo"
 						render={({ field }) => (
 							<SettingsItem
-								title="Anything else T3 Chat should know about you?"
+								title="Anything else Aiki should know about you?"
 								size="sm"
 								form
 							>

@@ -72,11 +72,7 @@ export default function Agent() {
 					) : (
 						<div className="grid grid-cols-2 gap-3 w-full">
 							{allAgents?.map((agent) => (
-								<AgentButton
-									key={agent._id}
-									agent={agent}
-									onClick={() => openAgent(agent)}
-								/>
+								<AgentButton key={agent._id} agent={agent} />
 							))}
 						</div>
 					)}

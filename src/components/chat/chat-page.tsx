@@ -244,7 +244,7 @@ export default function ChatPage({ chatId }: { chatId?: Id<"chats"> }) {
 							<line
 								stroke="var(--sidebar)"
 								strokeWidth="2px"
-								shape-rendering="optimizeQuality"
+								shapeRendering="optimizeQuality"
 								vectorEffect="non-scaling-stroke"
 								strokeLinecap="round"
 								strokeMiterlimit="10"
@@ -257,7 +257,7 @@ export default function ChatPage({ chatId }: { chatId?: Id<"chats"> }) {
 								stroke="var(--sidebar-border)"
 								className="translate-y-[0.5px]"
 								fill="var(--sidebar)"
-								shape-rendering="optimizeQuality"
+								shapeRendering="optimizeQuality"
 								strokeWidth="1px"
 								strokeLinecap="round"
 								strokeMiterlimit="10"

@@ -101,7 +101,7 @@ export default function Models() {
 							className="flex gap-5 w-full min-h-30 mb-4 border border-muted-foreground/20 rounded-lg p-5"
 						>
 							<Image
-								src={model.icon}
+								src={model.darkIcon ?? model.icon}
 								alt="Model Icon"
 								className="size-[40px]"
 								width={40}

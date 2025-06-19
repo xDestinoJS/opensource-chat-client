@@ -153,7 +153,7 @@ export default function ChatPage({ chatId }: { chatId?: Id<"chats"> }) {
 	// If user presses CTRL or CMD O, redirect to /chat
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
-			if (e.ctrlKey || (e.metaKey && (e.key === "o" || e.key === "O"))) {
+			if ((e.ctrlKey || e.metaKey) && (e.key === "o" || e.key === "O")) {
 				e.preventDefault();
 				router.push("/chat");
 			}

@@ -34,7 +34,7 @@ export function ExpandedGridButton({
 					>
 						<div className="flex flex-col items-center gap-2">
 							<Image
-								src={model.icon}
+								src={model.darkIcon ?? model.icon}
 								alt={model.id}
 								className="size-[27.5px]"
 								width={27.5}

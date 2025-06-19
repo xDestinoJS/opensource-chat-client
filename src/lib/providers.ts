@@ -20,6 +20,7 @@ export type ModelConfig = {
 	description: string;
 	available: boolean;
 	icon: string;
+	darkIcon?: string;
 	isFavorited?: boolean;
 	features: {
 		id: ModelFeatureId;
@@ -32,6 +33,7 @@ export type Provider = {
 	name: string;
 	id: string;
 	icon: string;
+	darkIcon?: string;
 	apiKeySource: string;
 	models: ModelConfig[];
 };
@@ -102,6 +104,7 @@ const providers: Provider[] = [
 		name: "OpenAI",
 		id: "openai",
 		icon: "/assets/icons/providers/openai.svg",
+		darkIcon: "/assets/icons/providers/openai-dark.svg",
 		apiKeySource: "OPENAI_API_KEY",
 		models: [
 			{
@@ -111,6 +114,7 @@ const providers: Provider[] = [
 				description: "OpenAI's most advanced model",
 				available: true,
 				icon: "/assets/icons/providers/openai.svg",
+				darkIcon: "/assets/icons/providers/openai-dark.svg",
 				type: "text",
 				features: [{ id: "vision", hidden: false }],
 			},
@@ -169,6 +173,7 @@ const providers: Provider[] = [
 		name: "Black Forest Labs",
 		id: "black-forest-labs",
 		icon: "/assets/icons/providers/bfl.svg",
+		darkIcon: "/assets/icons/providers/bfl-dark.svg",
 		apiKeySource: "TOGETHER_AI_API_KEY",
 		models: [
 			{
@@ -178,6 +183,7 @@ const providers: Provider[] = [
 				description: "A powerful model for complex tasks",
 				available: true,
 				icon: "/assets/icons/providers/bfl.svg",
+				darkIcon: "/assets/icons/providers/bfl-dark.svg",
 				type: "image",
 				features: [{ id: "image-generation", hidden: false }],
 			},

@@ -104,7 +104,7 @@ export default function Page() {
 										<div className="grid grid-cols-[max-content_1fr] items-center gap-4">
 											<FormLabel className="w-30 md:w-45 flex gap-4 items-center whitespace-nowrap">
 												<Image
-													src={provider.icon}
+													src={provider.darkIcon ?? provider.icon}
 													className="size-[18px]"
 													alt={provider.name}
 													width={15}

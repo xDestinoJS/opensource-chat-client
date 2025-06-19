@@ -55,7 +55,7 @@ export default function RetryDropdown({
 					<DropdownMenuSub key={provider.id}>
 						<DropdownMenuSubTrigger className="justify-start items-center h-9 gap-3 sx-4 py-2 has-[>svg]:px-3">
 							<Image
-								src={provider.icon}
+								src={provider.darkIcon ?? provider.icon}
 								alt={provider.name}
 								className="size-[16px] aspect-square"
 								width={16}

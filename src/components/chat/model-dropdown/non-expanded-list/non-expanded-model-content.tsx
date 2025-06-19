@@ -37,7 +37,7 @@ export default function NonExpandedModelContent({
 							<TooltipTrigger asChild>
 								<Image
 									className="size-[20px]"
-									src={provider.icon}
+									src={provider.darkIcon ?? provider.icon}
 									alt={provider.id}
 									width={20}
 									height={20}
@@ -49,7 +49,7 @@ export default function NonExpandedModelContent({
 				)}
 				<Image
 					className="size-[20px]"
-					src={model.icon}
+					src={model.darkIcon ?? model.icon}
 					alt={model.id}
 					width={20}
 					height={20}

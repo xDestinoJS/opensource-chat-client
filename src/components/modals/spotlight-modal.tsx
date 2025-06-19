@@ -143,7 +143,7 @@ export default function SpotlightModal() {
 						{matchingChats.map((chat, i) => (
 							<Button
 								key={chat._id}
-								className="w-full justify-start px-1.5 text-accent-foreground/80 hover:text-accent-foreground focus:text-accent-foreground focus:bg-muted focus-visible:ring-0"
+								className="w-full justify-start px-1.5 text-accent-foreground/80 hover:text-accent-foreground focus:bg-highlight-background focus:text-highlight-foreground focus-visible:ring-0"
 								variant="ghost"
 								size="lg"
 								onClick={close}

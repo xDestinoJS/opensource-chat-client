@@ -75,15 +75,14 @@ export default function ChatInputForm({
 	const [files, setFiles] = useState<UploadItem[]>([]);
 
 	const { data: sessionData } = useSession();
-	const remainingMessages =
-		useQuery(
-			api.users.remainingMessages,
-			sessionData
-				? {
-						sessionToken: sessionData.session.token,
-					}
-				: "skip"
-		) ?? 20;
+	const remainingMessages = useQuery(
+		api.users.remainingMessages,
+		sessionData
+			? {
+					sessionToken: sessionData.session.token,
+				}
+			: "skip"
+	);
 
 	const modelData = useMemo(
 		() => (modelId ? getModelDataById(modelId) : undefined),
@@ -231,7 +230,9 @@ export default function ChatInputForm({
 							Scroll to bottom <ArrowDown />
 						</Button>
 					)}
-					{((!isLimitsPopupHidden && remainingMessages <= 10) ||
+					{((remainingMessages != null &&
+						!isLimitsPopupHidden &&
+						remainingMessages <= 10) ||
 						remainingMessages == 0) && (
 						<div className="flex gap-2.5 mb-3 items-center justify-center bg-yellow-300/50 dark:bg-yellow-500/20 border border-yellow-700/30 dark:border-yellow-500/20 px-5 backdrop-blur-lg py-2.5 pointer-events-auto text-yellow-800 dark:text-yellow-100 rounded-xl shadow-sm">
 							You only have {remainingMessages} messages left.

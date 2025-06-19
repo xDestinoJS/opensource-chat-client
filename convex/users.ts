@@ -67,6 +67,6 @@ export const remainingMessages = query({
 		const user = await ctx.db.get(session.userId);
 		if (!user) throw new Error("User not found");
 
-		return user.remainingMessages ?? 0;
+		return user.remainingMessages ?? null;
 	},
 });

@@ -150,7 +150,7 @@ export function AppSidebar() {
 	// Open desktop sidebar when user runs CTRL b or CMD b
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
-			if (e.ctrlKey || (e.metaKey && (e.key === "b" || e.key === "B"))) {
+			if ((e.ctrlKey || e.metaKey) && (e.key === "b" || e.key === "B")) {
 				e.preventDefault();
 				if (!isMobile) setOpen(true);
 			}

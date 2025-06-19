@@ -38,15 +38,13 @@
   - [x] Add auth, ratelimiting (watch theo's vid)
     - [x] Link threads to accounts
   - [x] Add Thread Sharing
-  - [ ] Add Settings (50%) **TODO**
-  - [ ] Rename chats -> threads
-  - [ ] Do UI
-
-Please add, Troy:
-
-- [ ] Add Custom Agents (GPTs)
-- [ ] Create Basic Canvas (Document/Code)
-
-- Polishing:
-  - [ ] Add dark theme
+  - [x] Add Settings (50%) **TODO**
+  - [x] Do UI
+  - [x] Add dark theme
   - [ ] Add color theme changing
+  - [ ] Add Custom Agents (GPTs)
+
+Pending:
+
+- [ ] Pending -> threads
+- [ ] Create Basic Canvas (Document/Code)

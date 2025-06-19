@@ -10,6 +10,7 @@ import { getFeatureById } from "@/lib/features";
 import { Button } from "@/components/ui/button";
 import FeatureIcon from "../../feature-icon";
 import { cn } from "@/lib/utils";
+import useIcon from "@/hooks/useIcon";
 
 interface ExpandedGridButtonProps {
 	model: ModelConfig;
@@ -22,6 +23,8 @@ export function ExpandedGridButton({
 	onSelect,
 	onToggleFavorite,
 }: ExpandedGridButtonProps) {
+	const { getModelIcon } = useIcon();
+
 	return (
 		<Tooltip key={model.id}>
 			<TooltipTrigger asChild>
@@ -34,7 +37,7 @@ export function ExpandedGridButton({
 					>
 						<div className="flex flex-col items-center gap-2">
 							<Image
-								src={model.darkIcon ?? model.icon}
+								src={getModelIcon(model.id)}
 								alt={model.id}
 								className="size-[27.5px]"
 								width={27.5}

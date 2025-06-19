@@ -38,14 +38,12 @@ import { TextShimmer } from "@/components/ui/text-shimmer";
 export default function AssistantMessage({
 	userMessage,
 	assistantMessage,
-	isLastPair,
 	onBranch,
 	onRetry,
 	onQuote,
 }: {
 	userMessage: Doc<"messages">;
 	assistantMessage: Doc<"messages">;
-	isLastPair: boolean;
 	onBranch: () => void;
 	onRetry: (modelId?: ModelId) => void;
 	onQuote: (quote: string) => void;
@@ -72,8 +70,9 @@ export default function AssistantMessage({
 
 	const shouldContentExist = useMemo(() => {
 		return (
-			(assistantMessage.isStreaming || assistantMessage.isComplete) &&
-			(content.length > 0 || reasoning.length > 0)
+			((assistantMessage.isStreaming || assistantMessage.isComplete) &&
+				(content.length > 0 || reasoning.length > 0)) ||
+			assistantMessage.images.length > 0
 		);
 	}, [assistantMessage, content, reasoning]);
 
@@ -156,7 +155,7 @@ export default function AssistantMessage({
 				)}
 
 			{assistantMessage.cancelReason && (
-				<div className="w-full rounded-lg bg-destructive/7.5 my-2 py-3 px-4.5 text-sm text-destructive">
+				<div className="w-full rounded-lg bg-destructive/7.5 dark:bg-destructive/20 my-2 py-3 px-4.5 text-sm text-destructive dark:text-red-500">
 					{assistantMessage.cancelReason == "user_request" && "Stopped by user"}
 					{assistantMessage.cancelReason == "system_error" &&
 						"Something went wrong"}
@@ -198,7 +197,7 @@ export default function AssistantMessage({
 				</p>
 
 				{assistantMessage?.sources && (
-					<div className="ml-2.5 flex gap-2 hover:bg-muted text-xs rounded-full p-1 items-center overflow-y-scroll no-scrollbar">
+					<div className="ml-2.5 flex gap-2 hover:bg-muted dark:hover:bg-muted/10 text-xs rounded-full p-1 items-center overflow-y-scroll no-scrollbar">
 						{assistantMessage?.sources.map((source, index) => {
 							return (
 								<Tooltip key={index}>
@@ -208,7 +207,7 @@ export default function AssistantMessage({
 									>
 										<Link href={source.url} target="_blank">
 											<img
-												className="size-[20px] rounded-full bg-secondary border border-muted"
+												className="size-[20px] rounded-full bg-secondary border border-muted dark:border-background dark:bg-background"
 												src={`https://www.google.com/s2/favicons?domain=${source.title}&sz=256`}
 												alt={source.title}
 											/>
@@ -221,7 +220,6 @@ export default function AssistantMessage({
 					</div>
 				)}
 			</div>
-			{isLastPair && <div className="pt-4" />}
 		</div>
 	);
 }

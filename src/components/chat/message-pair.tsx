@@ -29,7 +29,7 @@ export default function MessagePair({
 	return (
 		<div
 			ref={isLastPair ? lastPairContainerRef : null}
-			className={isLastPair ? "pb-4" : "min-h-auto!"}
+			className={isLastPair ? "pb-4 grow" : "min-h-auto!"}
 		>
 			{/* User Message */}
 			<div className="flex w-full">
@@ -53,7 +53,6 @@ export default function MessagePair({
 						<AssistantMessage
 							userMessage={userMessage}
 							assistantMessage={assistantMessage}
-							isLastPair={isLastPair}
 							onBranch={async () => {
 								await onBranchMessage(assistantMessage._id);
 							}}

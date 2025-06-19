@@ -16,6 +16,7 @@ import NonExpandedModelContent from "./model-dropdown/non-expanded-list/non-expa
 import LabeledSeparator from "../labeled-separator";
 import { RefreshCcw } from "lucide-react";
 import { EffortControlContent } from "./effort-control-selector";
+import useIcon from "@/hooks/useIcon";
 
 export default function RetryDropdown({
 	children,
@@ -28,6 +29,8 @@ export default function RetryDropdown({
 	setIsDropdownOpen: (isOpen: boolean) => void;
 	onRetry: (modelId?: ModelId) => void;
 }) {
+	const { getProviderIcon } = useIcon();
+
 	return (
 		<DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
 			<DropdownMenuTrigger asChild>
@@ -35,7 +38,7 @@ export default function RetryDropdown({
 			</DropdownMenuTrigger>
 			<DropdownMenuContent
 				align="center"
-				className="z-50 bg-white border border-gray-200 rounded shadow-md w-50"
+				className="z-50 border rounded shadow-md w-50"
 			>
 				<DropdownMenuItem asChild>
 					<Button
@@ -55,7 +58,7 @@ export default function RetryDropdown({
 					<DropdownMenuSub key={provider.id}>
 						<DropdownMenuSubTrigger className="justify-start items-center h-9 gap-3 sx-4 py-2 has-[>svg]:px-3">
 							<Image
-								src={provider.darkIcon ?? provider.icon}
+								src={getProviderIcon(provider.id)}
 								alt={provider.name}
 								className="size-[16px] aspect-square"
 								width={16}

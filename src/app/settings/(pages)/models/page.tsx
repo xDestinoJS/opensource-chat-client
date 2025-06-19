@@ -24,6 +24,7 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
+import useIcon from "@/hooks/useIcon";
 
 export default function Models() {
 	const allModels = listAllModels();
@@ -71,6 +72,8 @@ export default function Models() {
 		}
 	}
 
+	const { getModelIcon } = useIcon();
+
 	return (
 		<>
 			<h1 className="text-2xl font-semibold">Available Models</h1>
@@ -101,7 +104,7 @@ export default function Models() {
 							className="flex gap-5 w-full min-h-30 mb-4 border border-muted-foreground/20 rounded-lg p-5"
 						>
 							<Image
-								src={model.darkIcon ?? model.icon}
+								src={getModelIcon(model.id)}
 								alt="Model Icon"
 								className="size-[40px]"
 								width={40}

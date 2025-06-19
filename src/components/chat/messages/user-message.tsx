@@ -90,7 +90,7 @@ export default function UserMessage({
 			)}
 			<div
 				className={cn(
-					"border border-neutral-400 px-2.5 py-2 rounded-xl max-w-3/4",
+					"bg-foreground/4 px-3.5 py-3 rounded-xl max-w-3/4",
 					isEditing ? "w-full" : "max-w-2/3"
 				)}
 			>

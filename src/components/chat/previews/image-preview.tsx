@@ -29,7 +29,7 @@ export default function ImagePreview({
 	}, [fileData?.uploadUrl, imageSrc]);
 
 	return imageSrc ? (
-		<div className="relative h-full select-none bg-muted border border-muted-foreground/20 rounded-xl aspect-square shrink-0 overflow-hidden">
+		<div className="relative h-full select-none bg-muted border border-muted-foreground/20 dark:border-muted-foreground/2.5 rounded-xl aspect-square shrink-0 overflow-hidden">
 			<Image
 				src={imageSrc}
 				className="absolute w-full h-full object-cover cursor-zoom-in"

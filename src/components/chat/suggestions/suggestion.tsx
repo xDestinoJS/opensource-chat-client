@@ -16,7 +16,7 @@ export default function Suggestion({
 	return (
 		<div className="w-full not-last:border-b py-1 border-accent-foreground/10">
 			<Button
-				className="text-left w-full justify-start px-2 text-base whitespace-normal transition-none duration-0"
+				className="text-left w-full justify-start px-2 text-base whitespace-normal text-foreground/80 hover:text-foreground/90 hover:bg-highlight-background/2.5 dark:hover:bg-highlight-background/2.5 transition-none duration-0"
 				variant="ghost"
 				size="lg"
 				onClick={() => onClick(suggestion.id)}

@@ -11,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import FeatureIcon from "../../feature-icon";
 import { getFeatureById } from "@/lib/features";
+import useIcon from "@/hooks/useIcon";
 
 export default function NonExpandedModelContent({
 	provider,
@@ -23,6 +24,8 @@ export default function NonExpandedModelContent({
 	onSelect?: (id: ModelId) => void;
 	hideProvider?: boolean;
 }) {
+	const { getProviderIcon, getModelIcon } = useIcon();
+
 	return (
 		<Button
 			className="w-full! focus-visible:ring-0 text-sm justify-between px-2.5 cursor-default"
@@ -37,7 +40,7 @@ export default function NonExpandedModelContent({
 							<TooltipTrigger asChild>
 								<Image
 									className="size-[20px]"
-									src={provider.darkIcon ?? provider.icon}
+									src={getProviderIcon(provider.id)}
 									alt={provider.id}
 									width={20}
 									height={20}
@@ -49,7 +52,7 @@ export default function NonExpandedModelContent({
 				)}
 				<Image
 					className="size-[20px]"
-					src={model.darkIcon ?? model.icon}
+					src={getModelIcon(model.id)}
 					alt={model.id}
 					width={20}
 					height={20}

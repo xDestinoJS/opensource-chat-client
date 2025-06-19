@@ -89,7 +89,7 @@ export const ChatListItem = React.memo(function ChatListItem({
 		<SidebarMenuItem ref={ref}>
 			<Button
 				className={cn(
-					"relative w-full justify-start overflow-hidden dark:text-accent-foreground!",
+					"relative w-full justify-start overflow-hidden dark:text-accent-foreground/82.5!",
 					!isEditing && highlighted && "shadow-none"
 				)}
 				variant={!isEditing && !highlighted ? "ghost" : "secondary"}

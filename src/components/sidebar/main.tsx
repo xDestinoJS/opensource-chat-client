@@ -18,6 +18,7 @@ import { ChatGroupSection } from "./chat-group-section";
 import { useSession } from "@/lib/auth-client";
 import { NavUser } from "./nav-user";
 import SearchInput from "./search-input";
+import { PiRobotFill } from "react-icons/pi";
 
 interface ChatGroup {
 	label: string;
@@ -164,22 +165,28 @@ export function AppSidebar() {
 	}, []);
 
 	return (
-		<Sidebar className="duration-250 ease-in-out border-r-sidebar-border">
+		<Sidebar className="duration-250 ease-in-out bg-gradient-to-b from-gradient-top to-gradient-bottom border-r-sidebar-border">
+			<div className="absolute top-0 -right-[3px] h-5.25 w-0.5 bg-sidebar" />
 			<SidebarHeader className="p-3">
 				<div className="flex justify-center items-center">
-					<p className="mt-1 dark:text-[#e3bad1]">Aiki</p>
+					<p className="mt-1 dark:text-[#e3bad1] font-extrabold">Aiki</p>
 				</div>
 				<Button
 					size="lg"
-					className="w-full dark:bg-[#44132b] dark:text-accent-foreground"
+					className="w-full hover:bg-highlight-background! dark:hover:bg-highlight-background dark:bg-[#44132b] dark:text-accent-foreground"
 					asChild
 				>
 					<Link href="/chat">New Chat</Link>
 				</Button>
 
+				<Button className="w-full px-4 justify-start" variant="ghost" asChild>
+					<Link href="/chat/agents">
+						<PiRobotFill /> Agents
+					</Link>
+				</Button>
 				<SearchInput query={query} setQuery={setQuery} />
 			</SidebarHeader>
-			<SidebarContent>
+			<SidebarContent className="no-scrollbar">
 				{/* Pass allChats (unfiltered) to ChatGroupSection if it needs access to the complete list for actions */}
 				<ChatGroupSection
 					label="Pinned"

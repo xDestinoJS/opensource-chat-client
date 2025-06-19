@@ -35,7 +35,7 @@ export default function SearchInput({
 	return (
 		<div
 			className={cn(
-				"flex items-center w-full border-b border-primary/10 pl-2.5 gap-1",
+				"flex items-center w-full border-b border-primary/10 pl-2.5 gap-1 text-foreground",
 				className
 			)}
 		>
@@ -58,7 +58,7 @@ export default function SearchInput({
 			</div>
 
 			<Input
-				className="grow shadow-none bg-transparent! placeholder: rounded-none border-none outline-none focus-visible:ring-0 text-sm"
+				className="grow shadow-none bg-transparent! rounded-none border-none outline-none focus-visible:ring-0 text-sm"
 				placeholder={placeholder}
 				value={query}
 				onChange={(e) => setQuery(e.target.value)}

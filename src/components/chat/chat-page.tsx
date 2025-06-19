@@ -20,15 +20,18 @@ import { useChatFeatures } from "@/stores/use-chat-features-store";
 import { authClient, useSession } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
 import SuggestionsContainer from "./suggestions/main";
-import QuickActionsLeft from "../sidebar/quick-actions-left";
-import { useSidebar } from "../ui/sidebar";
-import { useMediaQuery } from "@/hooks/useMediaQuery";
-import QuickActionsRight from "../sidebar/quick-actions-right";
+import { ScrollArea } from "../ui/scroll-area";
 
-export default function ChatPage({ chatId }: { chatId?: Id<"chats"> }) {
+export default function ChatPage({
+	chatId,
+	agentId,
+}: {
+	chatId?: Id<"chats">;
+	agentId?: Id<"agents">;
+}) {
 	const router = useRouter();
 
-	const { sessionId } = useSessionId();
+	const { sessionId, reset } = useSessionId();
 	const [quote, setQuote] = useState<string | undefined>();
 	const [mounted, setMounted] = useState(false);
 	const [inputValue, setInputValue] = useState("");
@@ -96,16 +99,29 @@ export default function ChatPage({ chatId }: { chatId?: Id<"chats"> }) {
 	// Keep a ref only for focusing & hooks – value is stored in state
 	const inputAreaRef = useRef<AutosizeTextAreaRef>(null);
 	const inputContainerRef = useRef<HTMLDivElement>(null);
-	const scrollContainerRef = useRef<HTMLDivElement>(null);
+	const scrollContentRef = useRef<HTMLDivElement>(null);
+	const scrollContainerEnd = useRef<HTMLDivElement>(null);
 	const lastPairContainerRef = useRef<HTMLDivElement>(null);
+	const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+	const agent = useQuery(
+		api.agents.getAgentData,
+		agentId
+			? {
+					id: agentId,
+				}
+			: "skip"
+	);
 
 	const { modelId, providersList, setModelId } = useChatModels();
 
 	useChatInputEvents(inputAreaRef);
-	useChatScrollManagement(
-		lastPairContainerRef,
+	const chatScrollManagment = useChatScrollManagement(
 		inputContainerRef,
+		lastPairContainerRef,
 		scrollContainerRef,
+		scrollContainerEnd,
+		scrollContentRef,
 		messages
 	);
 
@@ -135,6 +151,7 @@ export default function ChatPage({ chatId }: { chatId?: Id<"chats"> }) {
 			isSearchEnabled: isSearchEnabled,
 			reasoningEffort: reasoningEffort,
 			sessionToken: sessionData?.session.token,
+			agentId: agentId,
 		});
 
 		setQuote(undefined); // Clear the quote after sending
@@ -147,8 +164,6 @@ export default function ChatPage({ chatId }: { chatId?: Id<"chats"> }) {
 
 		inputAreaRef.current?.textArea.focus();
 	}
-	const isSmallScreen = useMediaQuery("(max-width: 640px)");
-	const { open, openMobile, isMobile } = useSidebar();
 
 	// If user presses CTRL or CMD O, redirect to /chat
 	useEffect(() => {
@@ -167,203 +182,134 @@ export default function ChatPage({ chatId }: { chatId?: Id<"chats"> }) {
 	}, []);
 
 	return (
-		<main className="relative flex flex-col items-center justify-center flex-1 h-screen">
-			<div className="absolute w-full h-full bg-[url(/assets/noise-light.png)] pointer-events-none opacity-8 bg-repeat" />
-
-			<div
+		<main className="relative h-screen overflow-y-hidden w-full">
+			<div className="fixed top-0 w-full h-screen bg-[url(/assets/noise-light.png)] pointer-events-none opacity-1 bg-repeat" />
+			<ScrollArea
+				className="relative w-full h-screen overflow-y-scroll"
 				ref={scrollContainerRef}
-				className={cn(
-					"flex w-full justify-center grow min-h-0 overflow-y-scroll pb-4 pt-8",
-					pairedMessages?.length == 0 && "items-center"
-				)}
 			>
-				<div
-					className={cn(
-						"absolute overflow-x-clip right-0 w-[calc(100%+1px)] z-30 h-4 bg-sidebar border-b border-sidebar-border transition-all ease-in-out duration-500",
-						!isSmallScreen && ((open && !openMobile) || isMobile)
-							? "top-0"
-							: "-top-4.5"
-					)}
-				>
-					<div className="relative w-full h-full">
-						{!isMobile ? (
-							<div
-								className="absolute top-[calc(100%-0.25px)] left-0 size-3.5 bg-sidebar"
-								style={{ clipPath: "inset(0px 0px 0px 0px)" }}
-							>
-								<div className="bg-background border border-sidebar-border rounded-full w-[200%] h-[200%]"></div>
+				<div className="flex flex-col min-h-screen p-10 pb-0">
+					<div
+						className={cn(
+							"flex w-full justify-center grow pb-4 pt-4",
+							pairedMessages?.length == 0 && "items-center"
+						)}
+						ref={scrollContentRef}
+					>
+						{pairedMessages?.length > 0 ? (
+							<div className="flex flex-col gap-2 w-full max-w-3xl max-lg:px-8 px-4">
+								{chat && chat?.isShared && (
+									<div className="w-full border-b border-accent-foreground/20 pb-2 mb-2">
+										<h1 className="flex gap-2 items-end">
+											<span className="text-2xl font-bold">{chat?.title}</span>
+											<span className="text-lg">by Anonymous</span>
+										</h1>
+									</div>
+								)}
+								{pairedMessages?.map((chunk, index) => {
+									const isLastPair = pairedMessages.length - 1 === index;
+									const userMessage = chunk[0]; // Always user first
+									const assistantMessage = chunk[1]; // Assistant second (might be undefined)
+
+									return (
+										<MessagePair
+											key={index}
+											userMessage={userMessage}
+											assistantMessage={assistantMessage}
+											isLastPair={isLastPair}
+											lastPairContainerRef={lastPairContainerRef}
+											onEditMessage={(messageId, content) => {
+												if (!sessionData) return;
+
+												editMessage({
+													sessionId,
+													messageId,
+													content,
+													sessionToken: sessionData?.session.token,
+												});
+											}}
+											onRetryMessage={(messageId, modelId?: ModelId) => {
+												if (!sessionData) return;
+
+												if (modelId) setModelId(modelId);
+												retryMessage({
+													sessionId,
+													messageId,
+													modelId,
+													reasoningEffort,
+													sessionToken: sessionData?.session.token,
+												});
+											}}
+											onBranchMessage={async (messageId) => {
+												if (!sessionData) return;
+
+												const response = await branchMessage({
+													messageId,
+													sessionToken: sessionData?.session.token,
+												});
+												reset();
+												redirect("/chat/" + response.chatId);
+											}}
+											onQuote={setQuote}
+										/>
+									);
+								})}
 							</div>
 						) : (
-							<svg
-								className="absolute left-3 top-[calc(100%-2px)] h-9 origin-top-left overflow-visible mt-0.5 translate-x-[calc(4rem+10px)] skew-x-[30deg] -scale-x-100 max-sm:hidden"
-								version="1.1"
-								xmlns="http://www.w3.org/2000/svg"
-								xmlnsXlink="http://www.w3.org/1999/xlink"
-								viewBox="0 0 128 32"
-								xmlSpace="preserve"
-							>
-								<line
-									stroke="var(--sidebar)"
-									strokeWidth="2px"
-									shapeRendering="optimizeQuality"
-									vectorEffect="non-scaling-stroke"
-									strokeLinecap="round"
-									strokeMiterlimit="10"
-									x1="1"
-									y1="0"
-									x2="128"
-									y2="0"
-								></line>
-								<path
-									stroke="var(--sidebar-border)"
-									className="translate-y-[0.5px]"
-									fill="var(--sidebar)"
-									shapeRendering="optimizeQuality"
-									strokeWidth="1px"
-									strokeLinecap="round"
-									strokeMiterlimit="10"
-									vectorEffect="non-scaling-stroke"
-									d="M0,0c5.9,0,10.7,4.8,10.7,10.7v10.7c0,5.9,4.8,10.7,10.7,10.7H128V0"
-								></path>
-							</svg>
+							<>
+								{!agentId ? (
+									<>
+										{inputValue.length === 0 &&
+											!areSuggestionsHidden &&
+											!chatId && (
+												<SuggestionsContainer
+													onSelect={(suggestion: string) => {
+														setInputValue(suggestion);
+														inputAreaRef.current?.textArea.focus();
+													}}
+												/>
+											)}
+									</>
+								) : (
+									<div>
+										{inputValue.length === 0 &&
+											!areSuggestionsHidden &&
+											!chatId && (
+												<h1 className="text-xl">
+													You are about to chat with Agent "{agent?.title}"
+												</h1>
+											)}
+									</div>
+								)}
+							</>
 						)}
-
-						<svg
-							className={cn(
-								"absolute h-9 -right-8.5 origin-top-left skew-x-[30deg] overflow-visible transition-all duration-300",
-								!isSmallScreen && ((open && !openMobile) || isMobile)
-									? "top-full"
-									: "-top-9"
-							)}
-							version="1.1"
-							xmlns="http://www.w3.org/2000/svg"
-							xmlnsXlink="http://www.w3.org/1999/xlink"
-							viewBox="0 0 128 32"
-							xmlSpace="preserve"
-						>
-							<line
-								stroke="var(--sidebar)"
-								strokeWidth="2px"
-								shapeRendering="optimizeQuality"
-								vectorEffect="non-scaling-stroke"
-								strokeLinecap="round"
-								strokeMiterlimit="10"
-								x1="1"
-								y1="0"
-								x2="128"
-								y2="0"
-							></line>
-							<path
-								stroke="var(--sidebar-border)"
-								className="translate-y-[0.5px]"
-								fill="var(--sidebar)"
-								shapeRendering="optimizeQuality"
-								strokeWidth="1px"
-								strokeLinecap="round"
-								strokeMiterlimit="10"
-								vectorEffect="non-scaling-stroke"
-								d="M0,0c5.9,0,10.7,4.8,10.7,10.7v10.7c0,5.9,4.8,10.7,10.7,10.7H128V0"
-							></path>
-						</svg>
 					</div>
 
-					<QuickActionsLeft />
-					<QuickActionsRight />
+					<ChatInputForm
+						chatScrollManagment={chatScrollManagment}
+						quote={quote}
+						setQuote={setQuote}
+						modelId={modelId}
+						providersList={providersList}
+						setModelId={setModelId}
+						isAnswering={!!chat?.isAnswering}
+						messagesLength={messages.length}
+						inputContainerRef={inputContainerRef}
+						onSubmit={handleSubmit}
+						onCancel={async () => {
+							if (!sessionData) return;
+							await cancelMessage({
+								chatId: chatId as Id<"chats">,
+								sessionToken: sessionData?.session.token,
+							});
+						}}
+						inputValue={inputValue}
+						setInputValue={setInputValue}
+						textAreaRef={inputAreaRef}
+					/>
 				</div>
-
-				{pairedMessages?.length > 0 ? (
-					<div className="flex flex-col gap-2 w-full max-w-3xl max-lg:px-8 px-4">
-						{chat && chat?.isShared && (
-							<div className="w-full border-b border-accent-foreground/20 pb-2 mb-2">
-								<h1 className="flex gap-2 items-end">
-									<span className="text-2xl font-bold">{chat?.title}</span>
-									<span className="text-lg">by Anonymous</span>
-								</h1>
-							</div>
-						)}
-						{pairedMessages?.map((chunk, index) => {
-							const isLastPair = pairedMessages.length - 1 === index;
-							const userMessage = chunk[0]; // Always user first
-							const assistantMessage = chunk[1]; // Assistant second (might be undefined)
-
-							return (
-								<MessagePair
-									key={index}
-									userMessage={userMessage}
-									assistantMessage={assistantMessage}
-									isLastPair={isLastPair}
-									lastPairContainerRef={lastPairContainerRef}
-									onEditMessage={(messageId, content) => {
-										if (!sessionData) return;
-
-										editMessage({
-											sessionId,
-											messageId,
-											content,
-											sessionToken: sessionData?.session.token,
-										});
-									}}
-									onRetryMessage={(messageId, modelId?: ModelId) => {
-										if (!sessionData) return;
-
-										if (modelId) setModelId(modelId);
-										retryMessage({
-											sessionId,
-											messageId,
-											modelId,
-											reasoningEffort,
-											sessionToken: sessionData?.session.token,
-										});
-									}}
-									onBranchMessage={async (messageId) => {
-										if (!sessionData) return;
-
-										const response = await branchMessage({
-											messageId,
-											sessionToken: sessionData?.session.token,
-										});
-										redirect("/chat/" + response.chatId);
-									}}
-									onQuote={setQuote}
-								/>
-							);
-						})}
-					</div>
-				) : (
-					<>
-						{inputValue.length === 0 && !areSuggestionsHidden && !chatId && (
-							<SuggestionsContainer
-								onSelect={(suggestion: string) => {
-									setInputValue(suggestion);
-									inputAreaRef.current?.textArea.focus();
-								}}
-							/>
-						)}
-					</>
-				)}
-			</div>
-
-			<ChatInputForm
-				quote={quote}
-				setQuote={setQuote}
-				modelId={modelId}
-				providersList={providersList}
-				setModelId={setModelId}
-				isAnswering={!!chat?.isAnswering}
-				messagesLength={messages.length}
-				inputContainerRef={inputContainerRef}
-				onSubmit={handleSubmit}
-				onCancel={async () => {
-					if (!sessionData) return;
-					await cancelMessage({
-						chatId: chatId as Id<"chats">,
-						sessionToken: sessionData?.session.token,
-					});
-				}}
-				inputValue={inputValue}
-				setInputValue={setInputValue}
-				textAreaRef={inputAreaRef}
-			/>
+				<div ref={scrollContainerEnd} />
+			</ScrollArea>
 		</main>
 	);
 }

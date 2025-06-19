@@ -164,7 +164,7 @@ export default function CustomizeT3Chat() {
 								form
 							>
 								<div>
-									<div className="bg-input/30 rounded-md border border-input p-2">
+									<div className="bg-transparent dark:bg-input/30 shadow-xs rounded-md border border-input p-2">
 										{/* Active Traits */}
 										{form.watch("traits").length > 0 && (
 											<div className="flex flex-wrap gap-2 mb-2">

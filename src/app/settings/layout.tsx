@@ -14,6 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Shortcut, { ShortcutData } from "./components/shortcut";
 import ChangeThemeButton from "@/components/change-theme-button";
+import useSessionId from "@/stores/use-session";
 
 const pages = [
 	{
@@ -45,6 +46,7 @@ export default function SettingsLayout({
 }: {
 	children: React.ReactNode;
 }) {
+	const { reset } = useSessionId();
 	const { data: sessionData, isPending } = useSession();
 	const isPremium = false;
 
@@ -68,6 +70,10 @@ export default function SettingsLayout({
 			redirect("/auth");
 		}
 	}, [sessionData, isPending]);
+
+	useEffect(() => {
+		reset();
+	}, []);
 
 	return (
 		<TooltipProvider>
@@ -130,7 +136,7 @@ export default function SettingsLayout({
 									<span className="absolute inset-0 z-0 before:absolute before:inset-0 before:rounded-[inherit] before:bg-[linear-gradient(45deg,transparent_25%,white_50%,transparent_75%,transparent_100%)] before:bg-[length:250%_250%] before:bg-[position:200%_0] before:bg-no-repeat before:transition-[background-position] before:duration-0 hover:before:bg-[position:-100%_0] hover:before:duration-[750ms]" />
 								</div>
 
-								<div className="p-4 w-full text-left rounded-lg bg-gradient-bottom mt-4">
+								<div className="hidden sm:block p-4 w-full text-left rounded-lg bg-gradient-bottom mt-4">
 									<h1 className="text-sm font-bold mb-4">Keyboard Shortcuts</h1>
 									<div className="flex flex-col gap-3.5">
 										{shortcuts.map((shortcut, index) => (

@@ -8,6 +8,8 @@ export default defineSchema({
 		emailVerified: v.boolean(),
 		image: v.optional(v.string()),
 		updatedAt: v.string(),
+		remainingMessages: v.optional(v.number()),
+		lastDailyMessageAt: v.optional(v.number()),
 		isAnonymous: v.optional(v.boolean()),
 	}).index("byEmail", ["email"]),
 	session: defineTable({
@@ -86,6 +88,12 @@ export default defineSchema({
 		),
 		isModifiable: v.optional(v.boolean()),
 	}),
+	agents: defineTable({
+		title: v.string(),
+		description: v.string(),
+		ownerId: v.id("user"),
+		systemPrompt: v.string(),
+	}),
 	chats: defineTable({
 		title: v.string(),
 		branchOf: v.optional(v.id("chats")),
@@ -93,5 +101,6 @@ export default defineSchema({
 		isAnswering: v.boolean(),
 		ownerId: v.id("user"),
 		isShared: v.boolean(),
+		agentId: v.optional(v.id("agents")),
 	}).index("byOwnerId", ["ownerId"]),
 });

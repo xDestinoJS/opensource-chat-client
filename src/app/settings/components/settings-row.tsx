@@ -61,14 +61,14 @@ export default function SettingsRow({ pages }: { pages: SettingsPages }) {
 			</div>
 
 			{/* Desktop view (visible from sm breakpoint and up) */}
-			<div className="hidden sm:flex flex-wrap gap-0.75 p-0.75 w-max h-max rounded-lg bg-[#f2cbe9] dark:bg-[#312836]">
+			<div className="hidden sm:flex flex-wrap gap-0.75 p-1 w-max h-max rounded-lg bg-[#f2cbe9] dark:bg-[#312836]">
 				{pages.map((page) => (
 					<Button
 						key={page.name}
 						variant="ghost"
 						size="sm"
 						className={cn(
-							"w-max rounded-md text-sm",
+							"w-max rounded-sm text-sm",
 							pathname === page.href ? "bg-gradient-top text-foreground" : ""
 						)}
 						asChild

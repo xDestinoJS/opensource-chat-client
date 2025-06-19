@@ -1,47 +1,98 @@
 "use client";
 
-import { useEffect, useRef, RefObject } from "react";
+import { useEffect, useRef, RefObject, useState } from "react"; // Import useState
 import { Doc } from "../../convex/_generated/dataModel";
 
 export function useChatScrollManagement(
-	lastPairContainerRef: RefObject<HTMLDivElement | null>,
 	inputContainerRef: RefObject<HTMLDivElement | null>,
+	lastPairContainerRef: RefObject<HTMLDivElement | null>,
 	scrollContainerRef: RefObject<HTMLDivElement | null>,
+	scrollContainerEndRef: RefObject<HTMLDivElement | null>,
+	scrollContentRef: RefObject<HTMLDivElement | null>,
 	messages: Doc<"messages">[] | undefined
 ) {
 	const isFirstLoadRef = useRef(true);
 	const lastMessageScrolledTo = useRef<string | null>(null); // use message ID for comparison
+	const [isAtBottom, setIsAtBottom] = useState(true); // New state for tracking if at bottom
+
+	/**
+	 * Scrolls the chat container to the bottom.
+	 * @param behavior "smooth" for smooth scrolling, "instant" for immediate scrolling.
+	 */
+	const scrollToBottom = (behavior: "smooth" | "instant" = "smooth") => {
+		const scrollContainerEndNode = scrollContainerEndRef.current;
+		if (scrollContainerEndNode) {
+			scrollContainerEndNode.scrollIntoView({
+				block: "end",
+				behavior: behavior,
+			});
+		}
+	};
 
 	useEffect(() => {
-		const lastPairNode = lastPairContainerRef.current;
 		const inputContainerNode = inputContainerRef.current;
-		const scrollNode = scrollContainerRef.current;
+		const scrollContainerEndNode = scrollContainerEndRef.current;
+		const scrollContentNode = scrollContentRef.current;
+		const lastPairContainerNode = lastPairContainerRef.current;
 
 		if (
-			!scrollNode ||
-			!lastPairNode ||
+			!scrollContainerEndNode ||
 			!inputContainerNode ||
+			!scrollContentNode ||
+			!lastPairContainerNode ||
 			!messages?.length
 		)
 			return;
 
-		lastPairNode.style.minHeight = `calc(100vh - ${inputContainerNode.offsetHeight + 32}px)`;
+		lastPairContainerNode.style.minHeight = `calc(100vh - ${inputContainerNode.offsetHeight + 80}px)`;
 
 		const latestMessage = messages[messages.length - 1];
 		if (lastMessageScrolledTo.current === latestMessage._id) return;
 
 		// Scroll to bottom
-		requestAnimationFrame(() => {
+		setTimeout(() => {
 			if (isFirstLoadRef.current) {
-				scrollNode.scrollTop = scrollNode.scrollHeight;
+				scrollToBottom("instant");
 				isFirstLoadRef.current = false;
 			} else {
-				scrollNode.scrollTo({
-					top: scrollNode.scrollHeight,
-					behavior: "smooth",
-				});
+				scrollToBottom("smooth");
 			}
 			lastMessageScrolledTo.current = latestMessage._id;
-		});
-	}, [messages, lastPairContainerRef]);
+		}, 250);
+	}, [
+		messages,
+		inputContainerRef.current,
+		lastPairContainerRef.current,
+		scrollContainerEndRef.current,
+		scrollContentRef.current,
+	]);
+
+	// Effect to manage the isAtBottom state
+	useEffect(() => {
+		const scrollContainerNode = scrollContainerRef.current;
+
+		if (!scrollContainerNode) return;
+
+		const handleScroll = () => {
+			// Check if the user is at the very bottom of the scrollable content
+			const { scrollTop, scrollHeight, clientHeight } = scrollContainerNode;
+			const atBottom = scrollHeight - scrollTop <= clientHeight + 1; // Add a small tolerance
+
+			setIsAtBottom(atBottom);
+		};
+
+		scrollContainerNode.addEventListener("scroll", handleScroll);
+
+		// Initial check when the component mounts or dependencies change
+		handleScroll();
+
+		return () => {
+			scrollContainerNode.removeEventListener("scroll", handleScroll);
+		};
+	}, [scrollContentRef.current]); // Re-run if the scroll content ref changes
+
+	return {
+		isAtBottom,
+		scrollToBottom,
+	};
 }

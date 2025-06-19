@@ -215,6 +215,7 @@ export const createChat = internalMutation({
 		messages: v.optional(v.array(v.id("messages"))),
 		isSearchEnabled: v.boolean(),
 		ownerId: v.id("user"),
+		agentId: v.optional(v.id("agents")),
 	},
 	handler: async (ctx, args) => {
 		// Create a new chat and generate a title based on the provided content
@@ -224,6 +225,7 @@ export const createChat = internalMutation({
 			isAnswering: true,
 			ownerId: args.ownerId,
 			isShared: false,
+			agentId: args.agentId,
 		});
 
 		// If it's a new chat, we can generate a title based on the content
@@ -325,14 +327,27 @@ export async function authorizeUser(
 	ctx: any, // Context object, likely from Convex functions
 	sessionToken: string,
 	of: {
-		chatId?: Id<"chats">;
-		messageId?: Id<"messages">;
+		chatId?: Id<"chats"> | undefined;
+		messageId?: Id<"messages"> | undefined;
+		agentId?: Id<"agents"> | undefined;
 	},
 	ownerOnlyAction?: boolean
 ) {
 	const session = await getSessionFromToken(ctx, sessionToken);
 
 	let targetChatId: Id<"chats">;
+
+	if (of.agentId) {
+		const agent = await ctx.db.get(of.agentId);
+		if (!agent) {
+			throw new Error("Agent not found.");
+		}
+		if (session.userId == agent.ownerId) {
+			return true;
+		} else {
+			throw new Error("You are not the owner of this agent.");
+		}
+	}
 
 	// 1. Determine the target chatId
 	if (of.chatId) {

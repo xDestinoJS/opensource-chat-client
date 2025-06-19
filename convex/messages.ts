@@ -8,7 +8,11 @@ import { internal } from "./_generated/api";
 import { v } from "convex/values";
 
 import { Doc, Id } from "./_generated/dataModel";
-import { getModelDataById, modelIds } from "../src/lib/providers";
+import {
+	getModelDataById,
+	getProviderDataByModelId,
+	modelIds,
+} from "../src/lib/providers";
 import { GenericFileData } from "../src/lib/files";
 import { getSessionFromToken } from "./userPreferences";
 import { authorizeUser } from "./chat";
@@ -197,11 +201,17 @@ export const sendMessage = mutation({
 			v.union(v.literal("low"), v.literal("medium"), v.literal("high"))
 		),
 		sessionToken: v.string(),
+		agentId: v.optional(v.string()),
 	},
 	handler: async (ctx, args) => {
 		const session = await getSessionFromToken(ctx, args.sessionToken);
 
-		args.model = modelIds.parse(args.model ?? "mistral-small");
+		ctx.runMutation(internal.users.rateLimit, {
+			userId: session.userId,
+			modelId: args.model,
+		});
+
+		args.model = modelIds.parse(args.model);
 
 		let chat: Doc<"chats"> | null;
 
@@ -211,6 +221,7 @@ export const sendMessage = mutation({
 				model: args.model,
 				isSearchEnabled: args.isSearchEnabled,
 				ownerId: session.userId,
+				agentId: args.agentId as Id<"agents">,
 			});
 			if (!args.chatId) {
 				throw new Error("Chat could not be created");
@@ -219,7 +230,7 @@ export const sendMessage = mutation({
 		} else {
 			chat = await ctx.db.get(args.chatId);
 			if (!chat?.isShared) {
-				authorizeUser(
+				await authorizeUser(
 					ctx,
 					args.sessionToken,
 					{

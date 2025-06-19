@@ -20,6 +20,7 @@ import { useSession } from "@/lib/auth-client";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Eye, EyeOff } from "lucide-react";
+import useIcon from "@/hooks/useIcon";
 
 // 1. Create the schema based on provider keys
 const formSchema = z.object(
@@ -81,6 +82,8 @@ export default function Page() {
 		toast("Updated API keys succesfully!");
 	};
 
+	const { getProviderIcon } = useIcon();
+
 	return (
 		<>
 			<h1 className="text-2xl font-semibold">API Keys</h1>
@@ -104,7 +107,7 @@ export default function Page() {
 										<div className="grid grid-cols-[max-content_1fr] items-center gap-4">
 											<FormLabel className="w-30 md:w-45 flex gap-4 items-center whitespace-nowrap">
 												<Image
-													src={provider.darkIcon ?? provider.icon}
+													src={getProviderIcon(provider.id)}
 													className="size-[18px]"
 													alt={provider.name}
 													width={15}

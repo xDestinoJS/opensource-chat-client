@@ -13,7 +13,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-	title: "Aiki App",
+	title: "Aiki",
 	description: "A T3 Chat Clone",
 };
 
@@ -24,6 +24,9 @@ export default function RootLayout({
 }>) {
 	return (
 		<html lang="en" suppressHydrationWarning>
+			<head>
+				<link rel="icon" href="/assets/favicon.png" sizes="any" />
+			</head>
 			<body className={`${inter.className} antialiased`}>
 				<ConvexClientProvider>
 					<ThemeProvider

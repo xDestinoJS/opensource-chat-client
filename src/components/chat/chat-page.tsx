@@ -155,7 +155,7 @@ export default function ChatPage({ chatId }: { chatId?: Id<"chats"> }) {
 
 	return (
 		<main className="relative flex flex-col items-center justify-center flex-1 h-screen">
-			<div className="absolute w-full h-full bg-[url(/assets/noise-light.png)] pointer-event-none opacity-8 bg-repeat" />
+			<div className="absolute w-full h-full bg-[url(/assets/noise-light.png)] pointer-events-none opacity-8 bg-repeat" />
 
 			<div
 				ref={scrollContainerRef}

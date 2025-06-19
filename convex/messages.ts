@@ -8,11 +8,7 @@ import { internal } from "./_generated/api";
 import { v } from "convex/values";
 
 import { Doc, Id } from "./_generated/dataModel";
-import {
-	getModelDataById,
-	getProviderDataByModelId,
-	modelIds,
-} from "../src/lib/providers";
+import { getModelDataById, modelIds } from "../src/lib/providers";
 import { GenericFileData } from "../src/lib/files";
 import { getSessionFromToken } from "./userPreferences";
 import { authorizeUser } from "./chat";
@@ -341,6 +337,15 @@ export const editMessage = mutation({
 		if (!message.isModifiable == false)
 			throw new Error("Message is not modifiable");
 
+		const session = await getSessionFromToken(ctx, args.sessionToken);
+
+		if (message.model) {
+			ctx.runMutation(internal.users.rateLimit, {
+				userId: session.userId,
+				modelId: message.model,
+			});
+		}
+
 		const { chatId, assistantMessageId } = await _handleMessageUpdate(
 			ctx,
 			args.messageId
@@ -445,10 +450,18 @@ export const retryMessage = mutation({
 			true
 		);
 
+		const session = await getSessionFromToken(ctx, args.sessionToken);
 		const message = await ctx.db.get(args.messageId);
 		if (!message) throw new Error("Message not found");
 		if (!message.isModifiable == false)
 			throw new Error("Message is not modifiable");
+
+		if (message.model) {
+			ctx.runMutation(internal.users.rateLimit, {
+				userId: session.userId,
+				modelId: message.model,
+			});
+		}
 
 		const { chatId, assistantMessageId } = await _handleMessageUpdate(
 			ctx,

@@ -282,8 +282,8 @@ export default function ChatInputForm({
 						</div>
 					)}
 
-					<div className="bg-gradient-to-b from-highlight-background/10 to-highlight-background/20 dark:from-accent/10 dark:to-gradient-bottom/60 border border-foreground/3.5 shadow-lg px-1 pt-1 backdrop-blur-xs rounded-t-3xl">
-						<div className="relative z-0 rounded-t-3xl p-4 pb-2 bg-background/85 border border-foreground/3.5 dark:bg-highlight-foreground/2">
+					<div className="bg-gradient-to-b from-highlight-background/10 to-highlight-background/20 dark:from-accent/30 dark:to-gradient-bottom/60 border border-foreground/3.5 shadow-lg px-1 pt-1 backdrop-blur-lg rounded-t-3xl">
+						<div className="relative z-0 rounded-t-3xl p-4 pb-2 bg-background/85 border border-foreground/3.5 dark:bg-highlight-foreground/5">
 							{quote && (
 								<div className="mb-2">
 									<TextQuote

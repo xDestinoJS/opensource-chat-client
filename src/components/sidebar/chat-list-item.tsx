@@ -20,6 +20,7 @@ import { useDeleteChatModal } from "@/stores/use-delete-chat-modal";
 import useSessionId from "@/stores/use-session";
 import { useShareModalStore } from "@/stores/use-share-modal";
 import { useSession } from "@/lib/auth-client";
+import { PiRobotFill } from "react-icons/pi";
 
 type ChatDoc = Doc<"chats">;
 
@@ -165,6 +166,17 @@ export const ChatListItem = React.memo(function ChatListItem({
 								<TooltipContent>
 									Branched from: {branchData.title}
 								</TooltipContent>
+							</Tooltip>
+						)}
+
+						{chat?.agentId && (
+							<Tooltip>
+								<TooltipTrigger asChild>
+									<Link href={`/chat/agents/${chat.agentId}`}>
+										<PiRobotFill />
+									</Link>
+								</TooltipTrigger>
+								<TooltipContent>Used an agent</TooltipContent>
 							</Tooltip>
 						)}
 

@@ -8,6 +8,7 @@ export const createAgent = mutation({
 		title: v.string(),
 		description: v.string(),
 		systemPrompt: v.string(),
+		imageUrl: v.string(),
 		sessionToken: v.string(),
 	},
 	handler: async (ctx, args) => {
@@ -30,6 +31,7 @@ export const updateAgent = mutation({
 	args: {
 		id: v.id("agents"),
 		title: v.string(),
+		imageUrl: v.string(),
 		systemPrompt: v.string(),
 		description: v.string(),
 		sessionToken: v.string(),

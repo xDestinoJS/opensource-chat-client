@@ -21,6 +21,7 @@ import { authClient, useSession } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
 import SuggestionsContainer from "./suggestions/main";
 import { ScrollArea } from "../ui/scroll-area";
+import { PiRobotFill } from "react-icons/pi";
 
 export default function ChatPage({
 	chatId,
@@ -204,6 +205,12 @@ export default function ChatPage({
 											<span className="text-2xl font-bold">{chat?.title}</span>
 											<span className="text-lg">by Anonymous</span>
 										</h1>
+									</div>
+								)}
+								{chat && chat?.agentId && (
+									<div className="w-full border-b border-accent-foreground/20 flex justify-center items-center text-lg font-bold gap-2 pb-2 mb-2">
+										<PiRobotFill />
+										<span>Using Agent "{chat?.title}"</span>
 									</div>
 								)}
 								{pairedMessages?.map((chunk, index) => {

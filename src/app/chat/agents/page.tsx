@@ -48,7 +48,7 @@ export default function Agent() {
 					{!ownedAgents || ownedAgents.length == 0 ? (
 						<p>You haven't created any agents yet!</p>
 					) : (
-						<div className="grid grid-cols-2 gap-3 w-full">
+						<div className="grid grid-cols-2 gap-3 w-full items-stretch">
 							{ownedAgents?.map((agent) => (
 								<AgentButton
 									key={agent._id}
@@ -70,7 +70,7 @@ export default function Agent() {
 					{!allAgents || allAgents.length == 0 ? (
 						<p>There are no community agents available.</p>
 					) : (
-						<div className="grid grid-cols-2 gap-3 w-full">
+						<div className="grid grid-cols-2 gap-3 w-full items-stretch">
 							{allAgents?.map((agent) => (
 								<AgentButton key={agent._id} agent={agent} />
 							))}

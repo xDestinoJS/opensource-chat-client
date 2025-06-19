@@ -92,6 +92,7 @@ export default defineSchema({
 		title: v.string(),
 		description: v.string(),
 		ownerId: v.id("user"),
+		imageUrl: v.optional(v.string()),
 		systemPrompt: v.string(),
 	}),
 	chats: defineTable({

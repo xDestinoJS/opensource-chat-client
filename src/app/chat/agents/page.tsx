@@ -50,7 +50,11 @@ export default function Agent() {
 					) : (
 						<div className="grid grid-cols-2 gap-3 w-full">
 							{ownedAgents?.map((agent) => (
-								<AgentButton agent={agent} onClick={() => openAgent(agent)} />
+								<AgentButton
+									key={agent._id}
+									agent={agent}
+									onClick={() => openAgent(agent)}
+								/>
 							))}
 						</div>
 					)}
@@ -68,7 +72,11 @@ export default function Agent() {
 					) : (
 						<div className="grid grid-cols-2 gap-3 w-full">
 							{allAgents?.map((agent) => (
-								<AgentButton agent={agent} onClick={() => openAgent(agent)} />
+								<AgentButton
+									key={agent._id}
+									agent={agent}
+									onClick={() => openAgent(agent)}
+								/>
 							))}
 						</div>
 					)}

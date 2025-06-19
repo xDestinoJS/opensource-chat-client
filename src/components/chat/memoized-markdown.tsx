@@ -32,7 +32,7 @@ const MemoizedMarkdown = memo(
 									code={children?.toString() || ""}
 								/>
 							) : (
-								<code className="bg-neutral-100 p-1 not-prose text-sm rounded-sm">
+								<code className="bg-gradient-top/20 p-1 not-prose text-sm rounded-sm">
 									{children}
 								</code>
 							);

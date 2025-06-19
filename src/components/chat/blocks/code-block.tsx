@@ -14,8 +14,8 @@ export default function CodeBlock({
 	code: string;
 }) {
 	return (
-		<div className="rounded-lg overflow-hidden border border-neutral-300 my-2">
-			<div className="flex justify-between items-center gap-2 w-full bg-neutral-200 p-1 pl-3 text-sm">
+		<div className="rounded-lg overflow-hidden border border-neutral-300/2.5 my-2">
+			<div className="flex justify-between items-center gap-2 w-full bg-gradient-top p-1 pl-3 text-sm">
 				<div>{language}</div>
 				<div>
 					<IconButton onClick={() => copyToClipboard(code)} hasConfirmation>

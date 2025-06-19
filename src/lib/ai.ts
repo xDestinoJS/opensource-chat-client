@@ -19,6 +19,7 @@ import { modelHasFeature, ModelId } from "./providers";
 import { createMistral } from "@ai-sdk/mistral";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { createTogetherAI } from "@ai-sdk/togetherai";
+import { createOpenAI } from "@ai-sdk/openai";
 
 export type ReasoningEffort = "low" | "medium" | "high";
 
@@ -41,11 +42,17 @@ function getModel(
 		apiKey: opts?.apiKey ?? process.env.OPENROUTER_API_KEY,
 	});
 
+	const openai = createOpenAI({
+		apiKey: opts?.apiKey ?? process.env.OPENAI_API_KEY,
+	});
+
 	switch (modelId) {
 		case "gemini-2.5-flash":
 			return google("gemini-2.5-flash-preview-05-20", {
 				useSearchGrounding: opts?.isSearchEnabled,
 			});
+		case "gpt-4o-mini":
+			return openai("gpt-4o-mini");
 		case "gemini-2.0-flash":
 			return google("gemini-2.0-flash", {
 				useSearchGrounding: opts?.isSearchEnabled,

@@ -3,7 +3,7 @@ import { ModelFeatureId } from "./features"; // Assuming ModelFeatureId is defin
 
 export const modelIds = z.enum([
 	"gemini-2.5-flash",
-	"gpt-4o",
+	"gpt-4o-mini",
 	"gemini-2.0-flash",
 	"mistral-small",
 	"llama-4-maverick",
@@ -105,9 +105,9 @@ const providers: Provider[] = [
 		apiKeySource: "OPENAI_API_KEY",
 		models: [
 			{
-				id: "gpt-4o",
+				id: "gpt-4o-mini",
 				brand: "GPT",
-				version: "4o",
+				version: "4o-mini",
 				description: "OpenAI's most advanced model",
 				available: true,
 				icon: "/assets/icons/providers/openai.svg",

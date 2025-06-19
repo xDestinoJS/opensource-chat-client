@@ -11,6 +11,7 @@ import ModelDropdown from "./model-dropdown/main";
 
 import {
 	getModelDataById,
+	getProviderDataByModelId,
 	modelHasFeature,
 	ModelId,
 	Provider,
@@ -82,6 +83,10 @@ export default function ChatInputForm({
 					sessionToken: sessionData.session.token,
 				}
 			: "skip"
+	);
+	const userPreferences = useQuery(
+		api.userPreferences.getUserPreferences,
+		sessionData ? { sessionToken: sessionData.session.token } : "skip"
 	);
 
 	const modelData = useMemo(
@@ -215,6 +220,19 @@ export default function ChatInputForm({
 	const [isLimitsPopupHidden, setIsLimitsPopupHidden] = useState(false);
 	const ReasoningEffortIcon = getIconForReasoningEffort(reasoningEffort);
 
+	const [userHasApiKey, setUserHasApiKey] = useState(false);
+	useEffect(() => {
+		if (modelId) {
+			const providerData = getProviderDataByModelId(modelId);
+			const apiKey = userPreferences?.apiKeys?.find(
+				(data: { providerId: string; key: string }) => {
+					return data.providerId === providerData?.id && data.key.length > 0;
+				}
+			)?.key;
+			setUserHasApiKey(!!apiKey);
+		}
+	}, [modelId, userPreferences]);
+
 	return (
 		<div className="sticky bottom-0 w-full" ref={inputContainerRef}>
 			<div className="relative h-full w-full flex justify-center">
@@ -230,7 +248,8 @@ export default function ChatInputForm({
 							Scroll to bottom <ArrowDown />
 						</Button>
 					)}
-					{((remainingMessages != null &&
+					{((!userHasApiKey &&
+						remainingMessages != null &&
 						!isLimitsPopupHidden &&
 						remainingMessages <= 10) ||
 						remainingMessages == 0) && (

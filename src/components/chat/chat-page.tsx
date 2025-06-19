@@ -207,10 +207,10 @@ export default function ChatPage({
 										</h1>
 									</div>
 								)}
-								{chat && chat?.agentId && (
-									<div className="w-full border-b border-accent-foreground/20 flex justify-center items-center text-lg font-bold gap-2 pb-2 mb-2">
+								{chat && agent && chat?.agentId && (
+									<div className="w-full border-b border-accent-foreground/20 flex justify-center items-center text-base gap-2 pb-2 mb-2">
 										<PiRobotFill />
-										<span>Using Agent "{chat?.title}"</span>
+										<span>Using Agent "{agent?.title}"</span>
 									</div>
 								)}
 								{pairedMessages?.map((chunk, index) => {

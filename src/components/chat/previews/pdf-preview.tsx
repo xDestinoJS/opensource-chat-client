@@ -16,9 +16,9 @@ export default function PDFPreview({
 	});
 
 	return (
-		<div className="relative flex gap-3 h-full w-75 shrink-0 p-2 select-none items-center rounded-xl border border-muted-foreground/20 dark:border-muted-foreground/2.5">
+		<div className="relative flex gap-3 h-full w-75 shrink-0 p-2 select-none items-center bg-foreground/3 rounded-xl border border-muted-foreground/20 dark:border-muted-foreground/5">
 			<div className="flex justify-center items-center h-full aspect-square rounded-lg text-white bg-pink-500">
-				{fileData?.isUploaded ? (
+				{!onRemove || fileData?.isUploaded ? (
 					<File />
 				) : (
 					<div className="p-3">

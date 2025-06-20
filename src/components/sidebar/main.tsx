@@ -146,14 +146,14 @@ export function AppSidebar() {
 	);
 
 	const { pinnedChats, dateBasedGroups } = getChatGroups(matchingChats);
-	const { setOpen, isMobile } = useSidebar();
+	const { open, setOpen, isMobile } = useSidebar();
 
 	// Open desktop sidebar when user runs CTRL b or CMD b
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
 			if ((e.ctrlKey || e.metaKey) && (e.key === "b" || e.key === "B")) {
 				e.preventDefault();
-				if (!isMobile) setOpen(true);
+				if (!isMobile) setOpen(!open);
 			}
 		};
 

@@ -1,6 +1,85 @@
-# TODO:
+![Screenshot of Aiki](https://i.imgur.com/1nS2usJ.png)
 
-## Features
+# Aiki - T3 Chat Clone
+
+This is a real-time, AI-powered chat app built during the **T3 Chat Cloneathon** by **xDestino** and **TimeTheDev**. It’s designed as a feature-rich clone of modern AI chat interfaces, including voice, image generation, PDF reading, web search, custom agents, and more.
+
+## Getting Started
+
+Follow these steps to run the project locally:
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/xDestinoJS/opensource-chat-client
+cd opensource-chat-client
+```
+
+### 2. Install dependencies
+
+```bash
+npm install
+```
+
+### 3. Set up local enviroment variables
+
+```
+NEXT_PUBLIC_CONVEX_URL=
+
+# Deployment used by `npx convex dev`
+CONVEX_DEPLOYMENT=
+
+# Same as NEXT_PUBLIC_CONVEX_URL but ends in .site
+NEXT_PUBLIC_CONVEX_SITE_URL=
+
+BETTER_AUTH_SECRET=
+BETTER_AUTH_URL=
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+
+AWS_BUCKET_NAME=
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+AWS_ENDPOINT_URL_S3=
+AWS_ENDPOINT_URL_IAM=
+AWS_REGION=auto
+```
+
+### 3. Set up Convex environment variables
+
+Create a `.env` file in the root directory and add the following environment variables:
+
+```
+AWS_ACCESS_KEY_ID=
+AWS_BUCKET_NAME=
+AWS_ENDPOINT_URL_IAM=
+AWS_ENDPOINT_URL_S3=
+AWS_REGION=
+AWS_SECRET_ACCESS_KEY=
+BETTER_AUTH_SECRET=
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+GOOGLE_GENERATIVE_AI_API_KEY=
+JWKS=
+JWT_PRIVATE_KEY=
+MISTRAL_API_KEY=
+OPENAI_API_KEY=
+OPENROUTER_API_KEY=
+SITE_URL=http://localhost:3000
+TOGETHER_AI_API_KEY=
+```
+
+> ⚠️ Be sure to replace each value with your actual API keys and credentials. Some features won't work if any of these are missing.
+
+### 4. Run the development server
+
+```bash
+npm run dev
+```
+
+Once running, open [http://localhost:3000](http://localhost:3000) in your browser.
+
+## TODO:
 
 - Must-add:
 

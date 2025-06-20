@@ -1,10 +1,12 @@
-![Screenshot of Aiki](https://i.imgur.com/1nS2usJ.png)
+<p align="center">
+  <img src="https://i.imgur.com/1nS2usJ.png" alt="Screenshot of Aiki" />
+</p>
 
 # Aiki - T3 Chat Clone
 
 This is a real-time, AI-powered chat app built during the **T3 Chat Cloneathon** by **xDestino** and **TimeTheDev**. It’s designed as a feature-rich clone of modern AI chat interfaces, including voice, image generation, PDF reading, web search, custom agents, and more.
 
-## Getting Started
+## 🚀 How to Run It Locally
 
 Follow these steps to run the project locally:
 
@@ -79,10 +81,7 @@ npm run dev
 
 Once running, open [http://localhost:3000](http://localhost:3000) in your browser.
 
-## TODO:
-
-- Must-add:
-
+## ✅ Things Done
   - [x] Create sidebar menu
   - [x] Rename chat
   - [x] Add voice feature (https://developer.puter.com/tutorials/free-unlimited-text-to-speech-api/)
@@ -123,7 +122,6 @@ Once running, open [http://localhost:3000](http://localhost:3000) in your browse
   - [x] Add Custom Agents (GPTs)
   - [x] Add color theme changing
 
-Pending:
-
+## 🛠️ Still To-Do:
 - [ ] Pending -> threads
 - [ ] Create Basic Canvas (Document/Code)
